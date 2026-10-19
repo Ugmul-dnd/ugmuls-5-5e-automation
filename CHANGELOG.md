@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+- Add Sleet Storm Region automation: placement without an immediate save, then entry/start-turn Dexterity saves once per target per turn. Failed saves apply native Prone with Undo support and end existing concentration after Dice So Nice finishes. Respect Auto Apply Saved Effects; provide a GM card control for manual application. Standing, terrain, obscurity and extinguishing flames remain table-managed.
+
+- Fix Stinking Poison persisting for an extra turn: remove its applied effect when the affected creature finishes the application turn, bypassing the native target-end expiry grace turn. Cleanup runs only for the outgoing combatant under active GM authority.
+
+- Add Stinking Cloud Region defaults: placement without an initial save, then Constitution saves at each creature's turn start. Preserve the native failed-save Poisoned effect and correct applied copies to expire at the affected creature's turn end. Existing owner/GM save routing, effect application settings, pending cards and Dice So Nice waits remain in use.
+
+- Add Conjure Woodland Beings Region defaults using the Spirit Guardians-style entry/end-turn workflow: native 10-foot Emanation, WIS saves for 5d8 Force/half, +1d8 per slot above 4, hostile-only default targeting, one save per target per turn and shared cards. Link the native Cast and Emanation Save activities for initial card/limiter registration. Correct this self-origin aura's initial target collection to use the configured Region targeting rather than the caster. Native Disengage remains manual; Conjure Celestial remains outside automation.
+
+- Add Wall of Thorns Region defaults: native wall/circle placement deals Piercing damage; entry/end-turn events use the native Traversal Save for Slashing damage, DEX save for half, once per target per turn. Preserve original slot scaling and grouped traversal cards without reusing placement damage rolls. Native dimensions remain unchanged; movement costs and sight blocking remain table-managed.
+
+- Add the table's Wall of Fire Region ruling: initial native DEX save/half damage, then entry/end-turn Fire damage without saves, once per target per turn. Use the spell card's placed Region unchanged; no automatic width expansion or hot-side geometry. Follow-ups preserve native slot scaling, grouped damage, resistance/application handling and wall/ring selection through temporary damage-only snapshots.
+- Keep Wall of Fire's initial save card separate from later no-save damage cards while recording initial target turn allowances. Preserve specialized trigger properties when editing Region recipes; explicit activity changes release stale activity-ID/shape links.
+
+- Add built-in damage-area Region recipes for Cloud of Daggers, Cloudkill, Insect Plague, Incendiary Cloud and Blade Barrier: native placement damage, entry/end-turn triggers, everyone targeting, once-per-turn limits and grouped cards. Preserve native damage types, saves, resistance handling and slot scaling. Existing local overrides remain authoritative.
+- Resolve new Region recipes by native activity ID and follow Blade Barrier's original wall/ring activity. Initial card-sharing and turn-limit seeding use the same resolution, avoiding an extra save after a ring cast. Name-only custom recipes remain supported. Cloud repositioning, terrain, cover and obscurity remain GM-managed.
+
+- Clear Confusion's targeting-only Region at caster turn end, preserving its creature effects, concentration and end-turn save prompts. Existing ongoing Region protections and local lifetime overrides still apply.
+
+- Add prompt-only end-turn saves for Confusion, Crown of Madness, all six Contagion native ability effects, Flesh to Stone, and Sleep. Sleep creates only its single follow-up save. Keep outcomes, save counts, condition changes, damage/waking/upkeep interactions and effect removal manual. GM Stop repeat saves pauses prompts without removing conditions; shared Contagion variants produce one save per cast/target/turn.
+- Add Antipathy/Sympathy end-turn cards with manual eligibility confirmation for the greater-than-120-foot condition. No automatic distance checks, effect removal or immunity tracking. Leave spells with action-, movement-, start-turn-, or long-interval checks manual rather than inventing turn-end saves.
+
+- Add Heroism and Regenerate creature triggers. Bravery refreshes temporary HP from the caster modifier recorded on application; Regenerating restores 1 HP at target turn start, separate from the native initial 4d8 + 15. Fixed benefits create native typed healing cards without repeated dialogs and follow Auto Apply Healing / manual Apply, preserving temporary-HP replacement and HP caps. Native immunity/stat changes and effect durations remain intact.
+- Extend buff-effect automation specifically to Heroism and Regenerate after their initial healing roll completes and dice finish. Recorded upcast recipients receive native effects through existing Undo/application handling; canceled or pending initial rolls do not leave ongoing buffs behind. Trigger Library entries support enable/disable, turn timing and caster-modifier/fixed amount overrides.
+
+- Register Weird Frightening Terrors as an explicit AC5E disadvantage source for attack rolls and ability checks while the tracked effect is active, with normal advantage cancellation. Supply native attack/check defaults and attack-dialog button selection when the rule bridge is unavailable. No saving-throw penalty is added.
+
+- Fix Weird Frightened roll recommendations with AC5E: link the applied effect's legacy origin to the actual caster while preserving native activity, message, concentration and source-effect metadata. AC5E can then enforce visible-source disadvantage normally. Reload also repairs active matching effects on world/current-scene actors.
+
+- Ensure Weird's applied Frightening Terrors effect includes the native Frightened status, retaining other statuses and changes. The condition follows the same tracked effect and ends with it; no duplicate standalone condition is created.
+
+- Default Weird's targeting-only Region to cleanup at the end of the caster's turn, like Fear. Preserve concentration, creature effects and recurring saves/damage; honor ongoing Region configurations and local lifetime overrides.
+
+- Complete Phantasmal Killer's applied Fears Manifested effect with native disadvantage defaults for all ability checks and attack rolls. Preserve existing/custom changes, avoid duplicate entries, and leave book source effects and saving throws unchanged.
+
+- Add save-first turn-end triggers for Phantasmal Killer and Weird. Failed Wisdom saves prompt recurring Psychic damage only after save dice finish: native slot-scaled Phantasmal Killer dice, or Weird's separate 5d10 repeat damage. Successful saves remove the tracked target effect after animations; Phantasmal Killer also ends its own concentration. Temporary helpers spend no resources, repeat no initial effects/Metamagic selections, and suppress cast-animation replay. Existing damage-then-save triggers remain supported.
+
 - Fix Melf's Acid Arrow initial misses: prompt damage on either outcome and keep splash damage visible after a miss or Shield. Native damage application defaults to full damage on a hit and half on a miss, retaining resistance/immunity calculations and explicit GM multipliers. Delayed acid remains hit-only.
 
 - Add one-shot Lingering Acid triggers for Melf's Acid Arrow (hits only) and Vitriolic Sphere (failed saves only). Create one delayed-damage card at the target's turn end, preserve Arrow slot scaling and Sphere's fixed 5d4, and remove only the spent effect after dice finish. Pending/canceled rolls retain that card without producing later-turn duplicates. Prevent the native turn-start expiry from deleting the delayed effect prematurely; book source items remain unchanged.

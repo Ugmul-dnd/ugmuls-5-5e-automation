@@ -9,7 +9,13 @@ export function automaticTargetMode(activity, config) {
     const type = activity.target?.affects?.type;
     if (type === "enemy") return "hostilesOnly";
     if (type === "ally") return "friendliesOnly";
-    if (type === "self") return "self";
+    if (type === "self") {
+        if(config?.enabled!==false&&config?.targetSelfEmanation===true&&activity.target?.template?.type){
+            const modes=new Set((config.triggers??[]).filter(trigger=>trigger.activityId===activity.id||trigger.initialActivityIds?.includes(activity.id)||trigger.activity===activity.name).map(trigger=>trigger.targeting));
+            if(modes.size===1)return [...modes][0];
+        }
+        return "self";
+    }
     const modes = new Set((config?.enabled === false ? [] : config?.triggers ?? [])
         .filter(trigger => trigger.activity === activity.name).map(trigger => trigger.targeting));
     return modes.size === 1 ? [...modes][0] : "everyone";

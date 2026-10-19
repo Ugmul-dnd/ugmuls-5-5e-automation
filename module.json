@@ -37,6 +37,7 @@
   },
   "esmodules": [
     "scripts/region-library.js",
+    "scripts/sleet-storm.js",
     "scripts/spell-escapes.js",
     "scripts/movement-placement.js",
     "scripts/target-use-guard.js",
@@ -108,7 +109,8 @@
     "scripts/concentration-checks.js",
     "scripts/blink.js",
     "scripts/escape-check-prompts.js",
-    "scripts/acid-arrow.js"
+    "scripts/acid-arrow.js",
+    "scripts/weird-conditions.js"
   ],
   "styles": [
     "styles/save-roll-controls.css",

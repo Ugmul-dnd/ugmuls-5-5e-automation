@@ -2150,6 +2150,9 @@ class RegionSpellManager
 
 
         const trigger = {
+            ...existingTrigger,
+            activityId:existingTrigger?.activity===result.activity?existingTrigger.activityId:undefined,
+            useRegionActivity:existingTrigger?.activity===result.activity?existingTrigger.useRegionActivity:undefined,
 
             id:
                 existingTrigger?.id ??

@@ -323,7 +323,7 @@ export function addDamageUndoButton(message,html) {
 }
 function report(err){console.error("Ugmuls 5.5e Automation | Damage undo failed:",err);ui.notifications.error("Could not undo damage. Check the console.");}
 Hooks.once("ready",()=>{
-    globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo};
+    globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo,applyConditionWithUndo};
     const prototype=customElements.get("effect-application")?.prototype;
     if(prototype&&typeof prototype.buildEffectsList==="function"&&!prototype.rsaRegionEffectList){
         const build=prototype.buildEffectsList;

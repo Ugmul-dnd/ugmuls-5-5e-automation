@@ -1,4 +1,4 @@
-import {getRegionSpellTable} from "./region-library.js";
+import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
 // v0.7.0
@@ -521,12 +521,7 @@ async function executeRegionEvent({
     // ACTIVITY
     // --------------------------------------------------------
 
-    const activity =
-        spell.system.activities.find(
-            entry =>
-                entry.name ===
-                trigger.activity
-        );
+    const activity = resolveRegionTriggerActivity(trigger,spell,region);
 
 
     if (!activity) {
@@ -654,8 +649,13 @@ async function executeRegionEvent({
         // EXECUTE ORIGINAL ACTIVITY
         // ----------------------------------------------------
 
-        const results = await activity.use(
+        const damageData=trigger.damageOnly?buildRegionDamageSpellData(activity):null;
+        const triggerItem=damageData?new CONFIG.Item.documentClass(damageData,{parent:activity.actor??spell.actor}):null;
+        triggerItem?.prepareFinalAttributes?.();
+        const triggerActivity=triggerItem?.system.activities.get(activity.id)??activity;
+        const results = await triggerActivity.use(
             {
+                ...((damageData||trigger.preserveCastScaling)?{scaling:Math.max(0,Number(castLevel)-Number(spell.system.level))}:{}),
                 consume:
                     false,
 
@@ -685,7 +685,7 @@ async function executeRegionEvent({
             {
                 data: {
                     system: { targets: [describeTarget(targetDoc)] },
-                    flags: { [MODULE_ID]: { regionTriggered: true,sourceRegion:region.uuid,
+                    flags: { ...(damageData?{dnd5e:{item:{data:damageData}}}:{}), [MODULE_ID]: { regionTriggered: true,sourceRegion:region.uuid,
                         ...(() => {
                             const origin=game.messages.get(region.getFlag?.(MODULE_ID,"metamagicOrigin"));
                             const meta=origin?.getFlag?.(MODULE_ID,"metamagic"),transmuted=origin?.getFlag?.(MODULE_ID,"transmutedSpell");
@@ -813,12 +813,12 @@ Hooks.once("ready", () => {
         const registrations = [];
         const sharedCardKeys = [];
         for (const trigger of config.triggers ?? []) {
-            if (!trigger.shareCardPerTurn || trigger.movementDamage || trigger.activity !== activity.name) continue;
+            if (!trigger.shareCardPerTurn || trigger.movementDamage) continue;
             for (const region of results.templates) {
+                if(resolveRegionTriggerActivity(trigger,spell,region)?.id!==activity.id&&!trigger.initialActivityIds?.includes(activity.id))continue;
                 const key = getSharedCardKey(trigger, spell, region, event, game.combat);
                 if (!key) continue;
-                sharedCardHistory.set(key, message.id);
-                sharedCardKeys.push(key);
+                if(trigger.shareInitialCard!==false){sharedCardHistory.set(key, message.id);sharedCardKeys.push(key);}
                 registrations.push(trigger);
             }
         }
@@ -826,7 +826,7 @@ Hooks.once("ready", () => {
         // The hook does not await us, so register the card synchronously above;
         // serialize its metadata and limiter updates with later Region events.
         enqueueRegionEvent(async () => {
-            await message.update({
+            if(sharedCardKeys.length)await message.update({
                 [`flags.${MODULE_ID}.sharedCardPerTurn`]: true,
                 [`flags.${MODULE_ID}.sharedCardKeys`]: sharedCardKeys
             });
