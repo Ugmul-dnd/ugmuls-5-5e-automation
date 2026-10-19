@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
 // v0.7.0
@@ -342,10 +343,7 @@ async function executeRegionEvent({
     // --------------------------------------------------------
 
     const spellTable =
-        game.settings.get(
-            MODULE_ID,
-            SETTING_KEY
-        ) ?? {};
+        getRegionSpellTable() ?? {};
 
 
     const config =
@@ -687,7 +685,7 @@ async function executeRegionEvent({
             {
                 data: {
                     system: { targets: [describeTarget(targetDoc)] },
-                    flags: { [MODULE_ID]: { regionTriggered: true,
+                    flags: { [MODULE_ID]: { regionTriggered: true,sourceRegion:region.uuid,
                         ...(() => {
                             const origin=game.messages.get(region.getFlag?.(MODULE_ID,"metamagicOrigin"));
                             const meta=origin?.getFlag?.(MODULE_ID,"metamagic"),transmuted=origin?.getFlag?.(MODULE_ID,"transmutedSpell");
@@ -796,7 +794,7 @@ Hooks.once("ready", () => {
         const itemUUID = region.flags?.dnd5e?.item;
         if (!itemUUID) return;
         const item = fromUuidSync(itemUUID, { strict: false });
-        const config = item ? game.settings.get(MODULE_ID, SETTING_KEY)?.[item.name] : null;
+        const config = item ? getRegionSpellTable()?.[item.name] : null;
         if (config?.hideRegionFromPlayers === true) {
             region.updateSource({ visibility: CONST.REGION_VISIBILITY.GAMEMASTER });
         }
@@ -808,8 +806,8 @@ Hooks.once("ready", () => {
     Hooks.on("dnd5e.postUseActivity", (activity, usage, results) => {
         const spell = activity?.item;
         const message = results?.message;
-        if (!spell || !message?.id || !results?.templates?.length) return;
-        const config = game.settings.get(MODULE_ID, SETTING_KEY)?.[spell.name];
+        if (!spell || !message?.id || !results?.templates?.length || message.getFlag?.(MODULE_ID,"regionPlacementOnly")) return;
+        const config = getRegionSpellTable()?.[spell.name];
         if (!config || config.enabled === false) return;
         const event = { data: { combat: game.combat, round: game.combat?.round, turn: game.combat?.turn } };
         const registrations = [];
@@ -929,10 +927,7 @@ Hooks.once("ready", () => {
             // ------------------------------------------------
 
             const spellTable =
-                game.settings.get(
-                    MODULE_ID,
-                    SETTING_KEY
-                ) ?? {};
+                getRegionSpellTable() ?? {};
 
 
             const config =
@@ -1456,7 +1451,7 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
             const item = await fromUuid(itemUUID);
             if (item) {
                 const update = { [`flags.${MODULE_ID}.casterUserId`]: userId ?? game.user.id };
-                const config = game.settings.get(MODULE_ID, SETTING_KEY)?.[item.name];
+                const config = getRegionSpellTable()?.[item.name];
                 if (config?.hideRegionFromPlayers === true) update.visibility = CONST.REGION_VISIBILITY.GAMEMASTER;
                 await region.update(update);
                 await attachSpellRegions({ item }, [region]);

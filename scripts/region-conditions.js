@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import {isEligibleTarget,regionEffectDispositions,resolveRegionCaster} from "./shared-activity-card.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const TYPE = `${MODULE_ID}.conditions`;
@@ -14,7 +15,7 @@ export async function syncRegionConditions(region, conditions = [], removed = fa
         for (const actor of game.actors) actors.set(actor.uuid, actor);
         for (const token of region.parent.tokens) if (token.actor) actors.set(token.actor.uuid, token.actor);
         const item=region.flags?.dnd5e?.item?await fromUuid(region.flags.dnd5e.item):null;
-        const config=game.settings?.get(MODULE_ID,"spellTable")?.[item?.name];
+        const config=getRegionSpellTable()?.[item?.name];
         const dispositions=regionEffectDispositions(config,await resolveRegionCaster(region,item));
         const inside = new Set(removed ? [] : Array.from(region.tokens).filter(token=>isEligibleTarget(token)&&
             dispositions!==null&&(!dispositions.length||dispositions.includes((token.document??token).disposition))).map(token => token.actor?.uuid));
@@ -67,7 +68,7 @@ Hooks.once("ready", () => {
         if (!isAuthority() || !region.flags?.dnd5e?.item) return;
         try {
             const item = await fromUuid(region.flags.dnd5e.item);
-            const config = game.settings.get(MODULE_ID, "spellTable")?.[item?.name];
+            const config = getRegionSpellTable()?.[item?.name];
             if (!config || config.enabled === false || !config.regionConditions?.length) return;
             await region.createEmbeddedDocuments("RegionBehavior", [{name:"Region Conditions", type:TYPE,
                 system:{conditions:config.regionConditions}}]);

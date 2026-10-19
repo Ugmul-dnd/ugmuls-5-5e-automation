@@ -2,6 +2,55 @@
 
 ## Unreleased
 
+- Fix Melf's Acid Arrow initial misses: prompt damage on either outcome and keep splash damage visible after a miss or Shield. Native damage application defaults to full damage on a hit and half on a miss, retaining resistance/immunity calculations and explicit GM multipliers. Delayed acid remains hit-only.
+
+- Add one-shot Lingering Acid triggers for Melf's Acid Arrow (hits only) and Vitriolic Sphere (failed saves only). Create one delayed-damage card at the target's turn end, preserve Arrow slot scaling and Sphere's fixed 5d4, and remove only the spent effect after dice finish. Pending/canceled rolls retain that card without producing later-turn duplicates. Prevent the native turn-start expiry from deleting the delayed effect prematurely; book source items remain unchanged.
+
+- Add Power Word Stun to the Creature Effect Trigger Library: the native Stunned effect prompts a Constitution save at turn end using the caster DC recorded on application. Successful saves remove only that stun after dice animations; the separate No Movement effect does not prompt saves. The book spell remains unchanged.
+
+- Show optional escape action buttons to the affected token�s owners as well as GMs. Player requests are validated and released by the active GM before routing the roll prompt.
+
+- Wait for action-based escape check dice animations on connected clients before removing the restraint or ending its concentration.
+
+- Prepare final actor-dependent attributes on temporary escape-spell cast/card copies so initial saves and Pending retries retain a calculated save DC, including Entangle.
+
+- Add action-based Strength (Athletics) escape checks for Ensnaring Strike, Web, Evard’s Black Tentacles and Entangle, using the original caster DC. The GM chooses the action; connected owners receive a manual check dialog with GM fallback, including for NPCs. Successful checks remove only the tracked restraint after animations.
+- Add separate Region recipes for Web (entry/start-turn restraint saves), Evard’s (entry/end-turn damage and restraint saves, once per turn), and Entangle’s initial-cast area. Restrained stays a failed-save target effect, not a continuous membership effect. Web ends only its own restraint on exit/deletion; spell concentration dependencies are retained on Region-triggered applications.
+- Use temporary cast snapshots instead of modifying native items: omit burning-web damage from Web’s ordinary saves, defer Ensnaring damage to the native scaled start-turn activity, and make Evard’s damage failure-only. Web placement completes without an initial save/damage roll. Ensnaring’s successful initial save or successful escape ends its own concentration.
+
+- Treat Spike Growth and other enabled movement-only Region casts as placement without initial damage. Suppress native/confirmation damage on placement, hide the initial card’s Damage action, and commit the pending cast after successful Region placement and target/Metamagic confirmation. Concentration handoff completes without requiring a damage roll; canceled placement still refunds and cleans up.
+- Mark genuine movement-counter damage rolls separately so placement safeguards do not block them. Preserve accumulated movement, increments, targeting, and existing movement damage processing.
+
+- Include the caster’s native Half Speed effect in Spirit Guardians’ default Region recipe. Region membership controls the speed reduction independently of saves; the Region/card ownership rule prevents duplicate card application. Existing world effect overrides remain intact.
+
+- Treat effects assigned in a spell’s Region configuration as continuous Region-owned effects. Exclude those effects from automatic save/hit/buff application and manual chat-card Apply Effect controls, while preserving other effects and normal save outcomes. Match copied book effects without editing their source data. Region membership continues to control application/removal independently of damage saves; Region-only effects no longer mark a card as having applied an outcome effect.
+
+- Move the seven currently saved Region recipes into a module-owned Region library: Hunger of Hadar, Spirit Guardians, Grease, Fog Cloud, Conjure Animals, Spike Growth, and Moonbeam. Resolve module defaults with world overrides/custom entries across Region placement, conditions, targeting, save/damage prompts, and cleanup. Preserve current trigger IDs, timing, targeting, shared cards and movement behavior; portable source references point to PHB items.
+- Automatically migrate the current module’s legacy spell table on the next GM load, retaining the original table and a backup. Keep local enablement, activity/effect references, trigger IDs, conditions and custom entries; retry interrupted migrations without discarding the original configuration. The former module namespace is not reactivated.
+- Remove Add Starting Spell List from the manager: defaults are available automatically. Show Module default / Customized / Custom entry and Reset to Default for built-ins. Disable built-ins rather than delete them; custom entries remain locally editable and removable.
+
+- Add Blink automation with its original chat card available for manual checks during the caster’s turn. The active GM rolls automatically at turn end only if that turn has not already been rolled. Persist a shared turn claim to prevent duplicate player/GM clicks or turn updates from rerolling.
+- On a Blink result of 4–6, apply a source-specific Ethereal effect after dice animations. Clear it at the caster’s next turn start or when Blink ends, preserving other effects. Keep the token visible and show a reminder to choose the return space manually. A one-minute tracking effect and Trigger Automation Library toggle control the workflow without repeated spell costs.
+
+- Disable the unarmed damage dialog’s Grapple choice when that target is already actively grappled by the same attacker. Keep Prone available and clear stale duplicate selections before damage replacement or submission, avoiding wasted damage or Grappler usage.
+
+- Fix concentration replacement being rejected after selecting Break Current Concentration. Keep the chosen old effect available through native consumption validation, then defer its removal until the pending cast commits. Canceled casts preserve the old concentration and refund resources; disabling new concentration does not end the previous spell.
+
+- Add Grapple to the Trigger Automation Library. New module-created Grappled effects record their grappler’s DC and show an optional escape save card at turn start. The GM chooses whether to use the action; the target uses its better Strength/Dexterity save, with Strength on ties. Success removes only the tracked grapple after dice animations, without requiring the original temporary grapple item. Prone is excluded.
+
+- Add optional action-save cards at turn start for Otto’s Irresistible Dance. Cards wait for the GM’s choice and do not automatically prompt or roll, including for GM-run NPCs. The brief successful-save dance effect is not registered.
+- Add damage-triggered repeat saves for Dominate Beast, Dominate Person, Dominate Monster, and Tasha’s Hideous Laughter. Each positive native damage application, including damage absorbed by temporary HP, creates its own save; healing and Undo do not. Hideous Laughter also repeats at turn end and receives advantage only on its damage-triggered saves.
+- Expose damage-taken triggers, additional damage saves, damage-save advantage, and card-only prompting in the Trigger Automation Library. Coordinate player-applied damage through the active GM without duplicating socket events; preserve native effects, resources, pending routing, and animation-aware success cleanup.
+
+- Add end-of-turn repeat-save recipes for Hold Person, Hold Monster, Blinding Smite, Wrathful Smite, Slow, Blindness/Deafness, Ray of Enfeeblement, Synaptic Static, and Sunburst. Preserve native conditions and stat changes, track Blindness and Deafness separately, and exclude Brief Enfeeblement. Follow-up cards use save-only activities without repeating initial damage, spending spell resources, or replaying casting animations. Successful saves remove only their tracked effect after dice animations; library overrides remain available.
+
+- Default spell card recipient displays to Target once recorded recipients are available, including area spells, attacks, and damage cards. Correct the Selected fallback from initially empty targeting while preserving later manual mode choices and the actual recipient data.
+
+- Remove layout-forcing geometry measurements from chat result visibility checks. Determine handoff from DOM/animation state before styling cards, preserving pending-card visibility through Dice So Nice.
+- Limit feature-driven chat refreshes to mounted messages and grouped summaries. Explicit result, correction, and Undo refreshes remain available for unmounted cards.
+
+- Add Moonbeam to Region starter recipes: native Save activity on entry and turn end, once per creature per combat turn, with a shared damage card. Existing world configurations are preserved.
+
 - Disable Automated Animations recognition on temporary recurring save/eligibility helpers so Fear repeat saves do not replay casting or area animations. Original spell, effect, recurring-damage, and dice animation settings remain intact.
 
 - Add a Targeting area lifetime override to creature-trigger entries. Fear defaults to removing its targeting cone at the caster’s turn end without changing concentration, spell duration, or creature effects. Ongoing manager-configured Regions remain protected.

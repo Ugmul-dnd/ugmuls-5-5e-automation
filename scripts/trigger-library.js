@@ -1,12 +1,348 @@
 const ID="ugmuls-5-5e-automation";
 // Recipes only: book items and effects remain the source of spell data.
-export const TRIGGER_DEFAULTS=Object.freeze({"searing-smite":Object.freeze({name:"Searing Smite",enabled:true,attachment:"creature",effectName:"Seared",event:"turnStart",damageActivity:"Damage",saveActivity:"Start of Turn Save",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",endOnSuccess:true}),"fear":Object.freeze({name:"Fear",enabled:true,attachment:"creature",effectName:"Fear",effectId:"ijiWLu6EJZmEJPOZ",event:"turnEnd",damageActivity:"",saveActivity:"Save",saveActivityId:"dnd5eactivity000",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",saveCondition:"gmNoLineOfSight",targetingRegionCleanup:"casterTurnEnd",endOnSuccess:true})});
+// Save-only recipes reuse book activities but never repeat initial spell damage.
+const ESCAPE_DEFAULTS={
+  "ensnaring-strike": {
+    "name": "Ensnaring Strike",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "athleticsEscape",
+    "sourceIdentifier": "ensnaring-strike",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnsnaringS",
+    "effectName": "Ensnared",
+    "effectId": "tFGMG3cjQTEeAhv2",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkAbility": "str",
+    "checkSkill": "ath",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageActivity": "Start of Turn Damage",
+    "damageActivityId": "ZWId9mbOE9zFnP6f",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "endConcentrationOnEscape": true
+  },
+  "entangle": {
+    "name": "Entangle",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "athleticsEscape",
+    "sourceIdentifier": "entangle",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEntangle00",
+    "effectName": "Restrained",
+    "effectId": "wn7K2m4XhXhItgPT",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkAbility": "str",
+    "checkSkill": "ath",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true
+  },
+  "evards-black-tentacles": {
+    "name": "Evard's Black Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "athleticsEscape",
+    "sourceIdentifier": "evards-black-tentacles",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEvardsBlac",
+    "effectName": "Restrained",
+    "effectId": "NDytclFrNmC418CS",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkAbility": "str",
+    "checkSkill": "ath",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true
+  },
+  "web": {
+    "name": "Web",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "athleticsEscape",
+    "sourceIdentifier": "web",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWeb0000000",
+    "effectName": "Restrained",
+    "effectId": "rsaWebRestrained",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkAbility": "str",
+    "checkSkill": "ath",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "exitRegionEnds": true
+  }
+};
+const EVENT_SAVE_DEFAULTS={
+  "dominate-beast": {
+    "name": "Dominate Beast",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "dominate-beast",
+    "effectName": "Dominated",
+    "effectId": "PuOL8FylatY9CFzr",
+    "event": "damage",
+    "promptMode": "automatic",
+    "onDamage": false,
+    "damageSaveAdvantage": false,
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateBe",
+    "endOnSuccess": true
+  },
+  "dominate-monster": {
+    "name": "Dominate Monster",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "dominate-monster",
+    "effectName": "Dominated",
+    "effectId": "aAbTb2vkRQiBp9Oz",
+    "event": "damage",
+    "promptMode": "automatic",
+    "onDamage": false,
+    "damageSaveAdvantage": false,
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "b1s2oESIl76fHcqA",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateMo",
+    "endOnSuccess": true
+  },
+  "dominate-person": {
+    "name": "Dominate Person",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "dominate-person",
+    "effectName": "Dominated",
+    "effectId": "Edq07kTLIVkuDjtn",
+    "event": "damage",
+    "promptMode": "automatic",
+    "onDamage": false,
+    "damageSaveAdvantage": false,
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominatePe",
+    "endOnSuccess": true
+  },
+  "ottos-irresistible-dance": {
+    "name": "Otto's Irresistible Dance",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "ottos-irresistible-dance",
+    "effectName": "Irresistible Dance",
+    "effectId": "MpToumiJ2o3S16K7",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "onDamage": false,
+    "damageSaveAdvantage": false,
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "DonYhtwZ56TnAk3B",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplOttosIrres",
+    "endOnSuccess": true
+  },
+  "tashas-hideous-laughter": {
+    "name": "Tasha's Hideous Laughter",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "tashas-hideous-laughter",
+    "effectName": "Uncontrollable Laughter",
+    "effectId": "5nrcjxzmy3FCLCkV",
+    "event": "turnEnd",
+    "promptMode": "automatic",
+    "onDamage": true,
+    "damageSaveAdvantage": true,
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTashasHide",
+    "endOnSuccess": true
+  }
+};
+const REPEAT_SAVE_DEFAULTS={
+  "blinding-smite": {
+    "name": "Blinding Smite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "blinding-smite",
+    "effectName": "Blinded",
+    "effectId": "5FPaEGhqJ5yPP2Ln",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "End of Turn Save",
+    "saveActivityId": "dnd5eactivity100",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindingSm",
+    "endOnSuccess": true
+  },
+  "blindness-deafness-blindness": {
+    "name": "Blindness/Deafness — Blindness",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "blindness-deafness",
+    "effectName": "Blindness",
+    "effectId": "MIYqFloILx3luzwc",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindnessD",
+    "endOnSuccess": true
+  },
+  "blindness-deafness-deafness": {
+    "name": "Blindness/Deafness — Deafness",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "blindness-deafness",
+    "effectName": "Deafness",
+    "effectId": "XY351duUwtwqIGHC",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindnessD",
+    "endOnSuccess": true
+  },
+  "hold-monster": {
+    "name": "Hold Monster",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "hold-monster",
+    "effectName": "Paralyzed",
+    "effectId": "vC7qgyy8cjgi3t0T",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldMonste",
+    "endOnSuccess": true
+  },
+  "hold-person": {
+    "name": "Hold Person",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "hold-person",
+    "effectName": "Paralyzed",
+    "effectId": "PklwZi3SKQ3JU2M2",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldPerson",
+    "endOnSuccess": true
+  },
+  "ray-of-enfeeblement": {
+    "name": "Ray of Enfeeblement",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "ray-of-enfeeblement",
+    "effectName": "Enervated",
+    "effectId": "uaHZaHEalgWa6eoC",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRayofEnfee",
+    "endOnSuccess": true
+  },
+  "slow": {
+    "name": "Slow",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "slow",
+    "effectName": "Slowed",
+    "effectId": "z1lkguBohjqXRSHm",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSlow000000",
+    "endOnSuccess": true
+  },
+  "sunburst": {
+    "name": "Sunburst",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "sunburst",
+    "effectName": "Blinded",
+    "effectId": "G813GhbtXMeZfUHe",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "GunsbnehgeyBUMUX",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSunburst00",
+    "endOnSuccess": true
+  },
+  "synaptic-static": {
+    "name": "Synaptic Static",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "synaptic-static",
+    "effectName": "Muddled Thoughts",
+    "effectId": "J92ctOoK4mEo5V02",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Save",
+    "saveActivityId": "Um2mWH62piec6mVJ",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSynapticSt",
+    "endOnSuccess": true
+  },
+  "wrathful-smite": {
+    "name": "Wrathful Smite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceIdentifier": "wrathful-smite",
+    "effectName": "Frightened",
+    "effectId": "AGxThnIAskdh5Nqr",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "saveActivity": "Frightened Save",
+    "saveActivityId": "dnd5eactivity000",
+    "damageFormula": "",
+    "sourceSpellUuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWrathfulSm",
+    "endOnSuccess": true
+  }
+};
+const DELAYED_DAMAGE_DEFAULTS={
+ "melfs-acid-arrow":{name:"Melf's Acid Arrow",enabled:true,attachment:"creature",sourceIdentifier:"melfs-acid-arrow",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplMelfsAcidA",effectName:"Lingering Acid",effectId:"NgglkyjzTbDh5Loa",event:"turnEnd",damageActivity:"Lingering Acid Damage",damageActivityId:"uAyE5DrJp0YpElcw",damageFormula:"",saveActivity:"",oneShot:true,initialOutcome:"hit",endOnSuccess:false},
+ "vitriolic-sphere":{name:"Vitriolic Sphere",enabled:true,attachment:"creature",sourceIdentifier:"vitriolic-sphere",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplVitriolicS",effectName:"Lingering Acid",effectId:"WHhf4PFHQBDkCAyb",event:"turnEnd",damageActivity:"End of Turn Damage",damageActivityId:"dnd5eactivity200",damageFormula:"",saveActivity:"",oneShot:true,initialOutcome:"failure",endOnSuccess:false}
+};
+export const TRIGGER_DEFAULTS=Object.freeze({...Object.fromEntries(Object.entries(DELAYED_DAMAGE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"power-word-stun":Object.freeze({name:"Power Word Stun",enabled:true,attachment:"creature",sourceKind:"syntheticSave",sourceIdentifier:"power-word-stun",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordS",effectName:"Stunned",effectId:"o7XJceFSBTiIIPFo",event:"turnEnd",damageActivity:"",saveActivity:"End of Turn Save",saveActivityId:"rsaStunEndSave01",saveAbility:"con",damageFormula:"",endOnSuccess:true}),...Object.fromEntries(Object.entries(ESCAPE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"blink":Object.freeze({name:"Blink",enabled:true,attachment:"creature",sourceKind:"blink",effectName:"Blink — Active",event:"turnEnd",damageActivity:"",saveActivity:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplBlink00000"}),"grapple":Object.freeze({name:"Grapple",enabled:true,attachment:"creature",sourceKind:"grapple",effectName:"Grappled",event:"turnStart",promptMode:"manual",damageActivity:"",saveActivity:"Escape Grapple",endOnSuccess:true}),...Object.fromEntries(Object.entries(EVENT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(REPEAT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"searing-smite":Object.freeze({name:"Searing Smite",enabled:true,attachment:"creature",effectName:"Seared",event:"turnStart",damageActivity:"Damage",saveActivity:"Start of Turn Save",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",endOnSuccess:true}),"fear":Object.freeze({name:"Fear",enabled:true,attachment:"creature",effectName:"Fear",effectId:"ijiWLu6EJZmEJPOZ",event:"turnEnd",damageActivity:"",saveActivity:"Save",saveActivityId:"dnd5eactivity000",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",saveCondition:"gmNoLineOfSight",targetingRegionCleanup:"casterTurnEnd",endOnSuccess:true})});
 export function triggerKeys(){return [...new Set([...Object.keys(TRIGGER_DEFAULTS),...Object.entries(game.settings.get(ID,"triggerLibraryCustoms")??{}).filter(([,entry])=>entry?.name&&entry?.sourceSpellUuid).map(([key])=>key)])];}
 export function triggerEntry(key){const custom=game.settings.get(ID,"triggerLibraryCustoms")?.[key];const base=TRIGGER_DEFAULTS[key]??custom;return base?{...base,...(TRIGGER_DEFAULTS[key]?game.settings.get(ID,"triggerLibraryOverrides")?.[key]:{}),attachment:"creature"}:null;}
 export function triggerKeyForSpell(spell,effect){const identifier=spell?.identifier??spell?.system?.identifier;const keys=triggerKeys().filter(key=>{const entry=triggerEntry(key);return (!effect||entry.effectName===effect.name)&&(identifier===key||!!entry.sourceIdentifier&&identifier===entry.sourceIdentifier||!!entry.sourceSpellUuid&&spell?.uuid===entry.sourceSpellUuid);});return keys.find(key=>!TRIGGER_DEFAULTS[key]&&triggerEntry(key).sourceSpellUuid===spell?.uuid)??keys[0];}
 export async function saveTriggerEntry(key,entry){validateTriggerEntry(entry);const setting=TRIGGER_DEFAULTS[key]?"triggerLibraryOverrides":"triggerLibraryCustoms";const entries=foundry.utils.deepClone(game.settings.get(ID,setting)??{});entries[key]=entry;await game.settings.set(ID,setting,entries);}
 export function validateTriggerEntry(entry){
- if(!["turnStart","turnEnd"].includes(entry.event))throw Error("Choose start or end of turn.");
+ if(entry.sourceKind==="blink")return entry;
+ if(!["turnStart","turnEnd","damage"].includes(entry.event))throw Error("Choose start of turn, end of turn, or damage taken.");
+ if((entry.event==="damage"||entry.onDamage)&&(!entry.saveActivity||entry.damageActivity))throw Error("Damage-taken triggers require a save-only activity.");
  if(!entry.effectName?.trim()||(!entry.damageActivity?.trim()&&!entry.saveActivity?.trim()))throw Error("Choose an applied effect and at least one damage or save activity.");
  if(entry.damageFormula&&!entry.damageActivity)throw Error("Custom damage requires a damage activity.");
  if(entry.damageFormula&&!Roll.validate(entry.damageFormula))throw Error("The damage formula is invalid.");
@@ -16,13 +352,15 @@ const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
 export class TriggerLibraryApp extends foundry.applications.api.ApplicationV2{
  static DEFAULT_OPTIONS={id:"rsa-trigger-library",window:{title:"Trigger Automation Library — Creature Effects",resizable:true},position:{width:830,height:400}};
  editors=new Map();
+ searchText="";
  async _renderHTML(){
   const overrides=game.settings.get(ID,"triggerLibraryOverrides")??{};
-  const rows=triggerKeys().map(key=>{const entry=triggerEntry(key);return `<tr><th scope="row">${escape(entry.name)}</th><td>${escape(entry.effectName)}</td><td>${entry.event==="turnEnd"?"Turn end":"Turn start"}</td><td>${entry.enabled?"Enabled":"Disabled"}</td><td>${!TRIGGER_DEFAULTS[key]?"Custom entry":Object.keys(overrides[key]??{}).length?"Customized":"Default"}</td><td><button type="button" data-edit-entry="${escape(key)}" aria-label="View or edit ${escape(entry.name)}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> View/Edit</button></td></tr>`;}).join("");
-  return `<div style="padding:16px;display:grid;gap:12px"><div><button type="button" data-add-entry style="width:auto"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add New Effect</button></div><h2>Creature Effect Triggers</h2><p>Choose an entry to view its trigger and settings. Existing book effects and Region settings are preserved.</p><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th scope="col">Spell / Feature</th><th scope="col">Effect</th><th scope="col">Trigger</th><th scope="col">Status</th><th scope="col">Settings</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const rows=triggerKeys().map(key=>{const entry=triggerEntry(key);return `<tr data-trigger-search="${escape((entry.name+' '+entry.effectName).toLocaleLowerCase())}"><th scope="row">${escape(entry.name)}</th><td>${escape(entry.effectName)}</td><td>${entry.event==="damage"?"Damage taken":entry.event==="turnEnd"?"Turn end":"Turn start"}${entry.onDamage?" + damage taken":""}${entry.promptMode==="manual"?" (GM chooses)":""}</td><td>${entry.enabled?"Enabled":"Disabled"}</td><td>${!TRIGGER_DEFAULTS[key]?"Custom entry":Object.keys(overrides[key]??{}).length?"Customized":"Default"}</td><td><button type="button" data-edit-entry="${escape(key)}" aria-label="View or edit ${escape(entry.name)}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> View/Edit</button></td></tr>`;}).join("");
+  return `<div style="padding:16px;display:grid;gap:12px"><div><button type="button" data-add-entry style="width:auto"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add New Effect</button></div><h2>Creature Effect Triggers</h2><p>Choose an entry to view its trigger and settings. Existing book effects and Region settings are preserved.</p><label style="display:grid;gap:4px">Search triggers<input type="search" data-trigger-filter placeholder="Search by spell or effect name…" value="${escape(this.searchText)}"></label><p data-trigger-empty role="status" hidden>No matching triggers.</p><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th scope="col">Spell / Feature</th><th scope="col">Effect</th><th scope="col">Trigger</th><th scope="col">Status</th><th scope="col">Settings</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
  }
- _replaceHTML(result,content){content.innerHTML=result;}
- _onRender(context,options){super._onRender(context,options);this.element.querySelector("[data-add-entry]").addEventListener("click",()=>this.openCreate());for(const button of this.element.querySelectorAll('[data-edit-entry]'))button.addEventListener('click',()=>this.openEntry(button.dataset.editEntry));}
+ _replaceHTML(result,content){content.style.display="block";content.style.minHeight="0";content.style.overflowY="auto";content.style.scrollbarGutter="stable";content.innerHTML=result;}
+ applySearch(){const terms=this.searchText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);let visible=0;for(const row of this.element.querySelectorAll("[data-trigger-search]")){const matches=terms.every(term=>row.dataset.triggerSearch.includes(term));row.hidden=!matches;row.style.display=matches?"":"none";if(matches)visible++;}this.element.querySelector("[data-trigger-empty]").hidden=visible>0;}
+ _onRender(context,options){super._onRender(context,options);this.element.querySelector("[data-trigger-filter]").addEventListener("input",event=>{this.searchText=event.currentTarget.value;this.applySearch();});this.applySearch();this.element.querySelector("[data-add-entry]").addEventListener("click",()=>this.openCreate());for(const button of this.element.querySelectorAll('[data-edit-entry]'))button.addEventListener('click',()=>this.openEntry(button.dataset.editEntry));}
  openCreate(){new TriggerSourceApp(async item=>{const key="custom-"+foundry.utils.randomID();const draft=newTriggerFromSpell(item);const editor=new TriggerEntryApp(key,()=>{if(this.rendered)this.render({force:true});},draft);this.editors.set(key,editor);editor.render({force:true});}).render({force:true});}
  openEntry(key){
   if(!triggerEntry(key))return;
@@ -32,18 +370,19 @@ export class TriggerLibraryApp extends foundry.applications.api.ApplicationV2{
  }
 }
 export async function resolveEntrySource(entry){
+ if(entry.sourceKind==="grapple")return null;
  if(entry.sourceSpellUuid){try{const item=await fromUuid(entry.sourceSpellUuid);if(item?.type==="spell")return item;}catch{}}
  const actors=[...Array.from(game.actors??[]),...Array.from(globalThis.canvas?.tokens?.placeables??[],token=>token.actor).filter(Boolean)];
  for(const actor of actors){const item=Array.from(actor.items??[]).find(item=>item.type==="spell"&&((item.identifier??item.system?.identifier)===(entry.sourceIdentifier??"searing-smite")||item.name===entry.name));if(item)return item;}
  return null;
 }
 export function entrySourceOptions(item,entry){
- return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage").map(a=>({id:a.id,name:a.name})),save:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name}))};
+ return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage").map(a=>({id:a.id,name:a.name})),save:entry?.sourceKind==="syntheticSave"?[{id:entry.saveActivityId,name:entry.saveActivity}]:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name}))};
 }
 const HELP={
  source:["Source spell","Use Choose Source to open a separate window where you can drop a spell or paste its UUID. This loads its effects and activities without changing the spell. Save the entry to keep changes."],
  effect:["Applied effect","Choose the book effect that carries this trigger on a creature. Its existing stat changes and duration stay intact. Removing, disabling, or expiring the effect stops future triggers."],
- trigger:["Turn trigger","Run on the affected creature’s turn start or turn end. Searing Smite normally triggers at turn start. Turn progression stays unblocked while rolls resolve."],
+ trigger:["Turn trigger","Choose turn start, turn end, or damage taken. Optional action saves can show a card without opening a roll; the GM decides whether to use it. Damage taken means a positive damage application, including temporary HP, not healing or Undo. Turn progression stays unblocked."],
  damage:["Damage","Choose None for save-only effects such as Fear. Use spell damage preserves the native damage type and scaling at the original cast level. Custom damage replaces that calculation with a fixed formula, such as 3d6. It does not automatically scale with the spell slot."],
  save:["Saving throw","Choose a save activity from the spell. It runs after the recurring damage and uses the caster’s save DC recorded when the effect was applied. None skips this step. Fear requires GM confirmation that the affected creature cannot see the caster before its repeat save."],
  area:["Targeting area lifetime","Use spell duration keeps the area for its normal duration. Remove at caster turn end treats the area as a targeting aid only, like Fear’s cone. It removes only the Region, preserving concentration and creature effects. Requires the Remove Instantaneous Areas at Turn End option and active combat. Regions configured with ongoing triggers or effects are preserved."],
@@ -64,12 +403,15 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
  }
  async _renderHTML(){
   const e=this.draft??=triggerEntry(this.entryKey);this.source??=await resolveEntrySource(e);
+  if(e.sourceKind==="blink")return `<div style="padding:16px;display:grid;gap:12px"><h2>Blink</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable Blink automation</label><p>The initial card stays available. Roll manually on your turn, or let turn end roll automatically; only one check is allowed per turn. On 4–6, Ethereal applies after the dice finish. At turn start, return and choose your space manually.</p><p>Token visibility and movement stay under player/GM control. Ending the tracked effect clears its Ethereal effect.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
+  if(e.sourceKind==="athleticsEscape")return `<div style="padding:16px;display:grid;gap:12px"><h2>${escape(e.name)} — Escape</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable creature escape checks</label><p>${escape(e.effectName)} ${info("effect")}</p><p>Spend an action to attempt a Strength (Athletics) check against the original caster’s recorded spell DC. The GM chooses when to open the check; it never rolls automatically.</p><label>Show escape card <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>At turn start</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>At turn end</option></select></label><p>${e.damageActivity?"Turn-start damage resolves first; the optional escape check follows. Native cast-level scaling is preserved.":"The escape check deals no damage and does not repeat the initial save."}</p><p>Success removes only this spell’s tracked restraint after dice animations. Region saves and effects remain separate.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   const choices=entrySourceOptions(this.source,e),custom=!!e.damageFormula;
   const section=(title,key,body)=>`<section style="display:grid;gap:6px"><div style="display:flex;align-items:center;gap:6px"><strong>${title}</strong>${info(key)}</div>${body}</section>`;
-  return `<div style="padding:16px;display:grid;gap:15px;min-height:0;max-height:100%;overflow-y:auto"><div><button type="button" data-choose-source style="width:auto"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Choose Source</button></div><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?'checked':''}> Enable recurring triggers</label>
-  ${section('Source spell','source',`<p>${this.source?escape(this.source.name):'Saved recipe (source unavailable)'}</p>`)}
+  return `<div style="padding:16px;display:grid;gap:15px;min-height:0;max-height:100%;overflow-y:auto"><div><button type="button" data-choose-source style="width:auto" ${e.sourceKind==="grapple"?"disabled":""}><i class="fa-solid fa-book-open" aria-hidden="true"></i> Choose Source</button></div><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?'checked':''}> Enable recurring triggers</label>
+  ${section('Source spell','source',`<p>${e.sourceKind==="grapple"?'Unarmed Grapple — uses the original grappler’s recorded DC and the target’s better Strength/Dexterity save.':this.source?escape(this.source.name):'Saved recipe (source unavailable)'}</p>`)}
+  ${e.oneShot?"<p>One-time delayed damage: create one card at turn end, then remove this effect after its damage dice finish. A canceled roll stays on that same card for retry.</p>":""}
   ${section('Applied effect','effect',dropdown('effectName',choices.effects,e.effectName,e.effectId))}
-  ${section('Trigger','trigger',`<select name="event"><option value="turnStart" ${e.event==='turnStart'?'selected':''}>Start of affected creature’s turn</option><option value="turnEnd" ${e.event==='turnEnd'?'selected':''}>End of affected creature’s turn</option></select>`)}
+  ${section('Trigger','trigger',`<select name="event"><option value="turnStart" ${e.event==='turnStart'?'selected':''}>Start of affected creature’s turn</option><option value="turnEnd" ${e.event==='turnEnd'?'selected':''}>End of affected creature’s turn</option><option value="damage" ${e.event==='damage'?'selected':''}>When the affected creature takes damage</option></select><label><input name="onDamage" type="checkbox" ${e.onDamage?'checked':''}> Also trigger on damage taken</label><label><input name="damageSaveAdvantage" type="checkbox" ${e.damageSaveAdvantage?'checked':''}> Advantage on damage-triggered saves</label><label>Roll prompt <select name="promptMode"><option value="automatic" ${e.promptMode!=="manual"?'selected':''}>Prompt normally</option><option value="manual" ${e.promptMode==="manual"?'selected':''}>Card only — GM chooses whether to roll</option></select></label>`)}
   ${section('Damage','damage',`${dropdown('damageActivity',choices.damage,e.damageActivity,e.damageActivityId,{none:true})}<select name="damageMode"><option value="native" ${!custom?'selected':''}>Use spell damage and cast-level scaling</option><option value="custom" ${custom?'selected':''}>Custom damage</option></select><label data-custom-damage ${!custom?'hidden':''}>Custom formula <input name="damageFormula" value="${escape(e.damageFormula)}" placeholder="Example: 3d6"></label>`)}
   ${section('Saving throw','save',dropdown('saveActivity',choices.save,e.saveActivity,e.saveActivityId,{none:true})+`<label>Save eligibility <select name="saveCondition"><option value="always" ${e.saveCondition!=="gmNoLineOfSight"?'selected':''}>Every matching turn</option><option value="gmNoLineOfSight" ${e.saveCondition==="gmNoLineOfSight"?'selected':''}>GM confirms no line of sight to caster</option></select></label>`)}
   ${section('Targeting area lifetime','area',`<select name="targetingRegionCleanup"><option value="native" ${e.targetingRegionCleanup!=="casterTurnEnd"?'selected':''}>Use spell duration</option><option value="casterTurnEnd" ${e.targetingRegionCleanup==="casterTurnEnd"?'selected':''}>Remove targeting area at caster turn end</option></select>`)}
@@ -79,12 +421,14 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
  _replaceHTML(result,content){content.style.overflowY="auto";content.style.minHeight="0";content.innerHTML=result;}
  readDraft(){
   const entry={...this.draft};
-  for(const key of ["enabled","effectName","event","damageActivity","saveActivity","saveCondition","targetingRegionCleanup","endOnSuccess"]){const input=this.element.querySelector('[name="'+key+'"]');entry[key]=input.type==="checkbox"?input.checked:input.value;}
+  if(entry.sourceKind==="athleticsEscape")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value};
+  if(entry.sourceKind==="blink")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
+  for(const key of ["enabled","effectName","event","onDamage","damageSaveAdvantage","promptMode","damageActivity","saveActivity","saveCondition","targetingRegionCleanup","endOnSuccess"]){const input=this.element.querySelector('[name="'+key+'"]');entry[key]=input.type==="checkbox"?input.checked:input.value;}
   for(const [name,key]of [["effectName","effectId"],["damageActivity","damageActivityId"],["saveActivity","saveActivityId"]])entry[key]=this.element.querySelector('[name="'+name+'"]').selectedOptions[0]?.dataset.id??"";
   entry.damageFormula=this.element.querySelector('[name="damageMode"]').value==="custom"?this.element.querySelector('[name="damageFormula"]').value.trim():"";
   return this.draft=entry;
  }
- updatePreview(){const e=this.readDraft();this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent='At the affected creature’s '+(e.event==='turnEnd'?'turn end':'turn start')+', '+(e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':'request its saving throw. '):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
+ updatePreview(){if(["blink","athleticsEscape"].includes(this.draft?.sourceKind))return;const e=this.readDraft();this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent=(e.event==='damage'?'When the creature takes damage':('At the affected creature’s '+(e.event==='turnEnd'?'turn end':'turn start')))+(e.onDamage?' and when it takes damage':'')+', '+(e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':(e.promptMode==='manual'?'show a save card for the GM to choose whether to roll. ':'request its saving throw. ')):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
  async loadDroppedSpell(item){
   validateSourceSpell(item);
   const choices=entrySourceOptions(item,this.draft);if((!choices.damage.length&&!choices.save.length)||!choices.effects.length)throw Error("Choose a spell with an applied effect and a damage or save activity.");
@@ -96,8 +440,8 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
   super._onRender(context,options);this.updatePreview();
   for(const input of this.element.querySelectorAll('input,select'))input.addEventListener('change',()=>this.updatePreview());
   for(const button of this.element.querySelectorAll('[data-info]'))button.addEventListener('click',()=>{const [title,text]=HELP[button.dataset.info];foundry.applications.api.DialogV2.wait({window:{title},content:'<p>'+escape(text)+'</p>',rejectClose:false,buttons:[{action:'close',label:'Close',default:true}]});});
-  this.element.querySelector('[data-choose-source]').addEventListener('click',()=>{this.readDraft();new TriggerSourceApp(item=>this.loadDroppedSpell(item)).render({force:true});});
-  this.element.querySelector('[data-save]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const draft=this.readDraft();if(this.element.querySelector('[name="damageMode"]').value==="custom"&&!draft.damageFormula)throw Error("Enter a custom damage formula, or choose Use spell damage.");await saveTriggerEntry(this.entryKey,draft);this.onChange?.();await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
+  this.element.querySelector('[data-choose-source]')?.addEventListener('click',()=>{this.readDraft();new TriggerSourceApp(item=>this.loadDroppedSpell(item)).render({force:true});});
+  this.element.querySelector('[data-save]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const draft=this.readDraft();if(this.element.querySelector('[name="damageMode"]')?.value==="custom"&&!draft.damageFormula)throw Error("Enter a custom damage formula, or choose Use spell damage.");await saveTriggerEntry(this.entryKey,draft);this.onChange?.();await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
   this.element.querySelector('[data-reset]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const overrides=foundry.utils.deepClone(game.settings.get(ID,"triggerLibraryOverrides")??{});if(TRIGGER_DEFAULTS[this.entryKey]){delete overrides[this.entryKey];await game.settings.set(ID,"triggerLibraryOverrides",overrides);}else if(!triggerEntry(this.entryKey)){await this.close();return;}this.draft=null;this.source=null;this.onChange?.();await this.render({force:true});}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
  }
  async close(options){this.draft=null;this.source=null;return super.close(options);}
@@ -122,13 +466,13 @@ export function validateSourceSpell(item){
 export function newTriggerFromSpell(item){
  validateSourceSpell(item);const choices=entrySourceOptions(item);
  const recipe=Object.values(TRIGGER_DEFAULTS).find(entry=>entry.sourceSpellUuid===item.uuid||entry.name===item.name);
- return {name:item.name,enabled:true,attachment:"creature",effectName:choices.effects[0].name,effectId:choices.effects[0].id,event:recipe?.event??"turnStart",saveCondition:recipe?.saveCondition??"always",targetingRegionCleanup:recipe?.targetingRegionCleanup??"native",damageActivity:choices.damage[0]?.name??"",damageActivityId:choices.damage[0]?.id??"",saveActivity:choices.save[0]?.name??"",saveActivityId:choices.save[0]?.id??"",damageFormula:"",sourceSpellUuid:item.uuid,sourceIdentifier:item.identifier??item.system?.identifier,endOnSuccess:!!choices.save.length};
+ return {name:item.name,enabled:true,attachment:"creature",effectName:choices.effects[0].name,effectId:choices.effects[0].id,event:recipe?.event??"turnStart",saveCondition:recipe?.saveCondition??"always",targetingRegionCleanup:recipe?.targetingRegionCleanup??"native",damageActivity:choices.damage[0]?.name??"",damageActivityId:choices.damage[0]?.id??"",saveActivity:choices.save[0]?.name??"",saveActivityId:choices.save[0]?.id??"",damageFormula:"",sourceSpellUuid:item.uuid,sourceIdentifier:item.identifier??item.system?.identifier,endOnSuccess:!!choices.save.length,...(recipe?{...(recipe.oneShot?{oneShot:true,initialOutcome:recipe.initialOutcome}:{}),...(recipe.sourceKind==="syntheticSave"?{sourceKind:recipe.sourceKind,saveAbility:recipe.saveAbility}:{}),...(recipe.escapeCheck?{sourceKind:recipe.sourceKind,escapeCheck:true,checkAbility:recipe.checkAbility,checkSkill:recipe.checkSkill,exitRegionEnds:recipe.exitRegionEnds,endConcentrationOnEscape:recipe.endConcentrationOnEscape}:{}),promptMode:recipe.promptMode??"automatic",onDamage:recipe.onDamage??false,damageSaveAdvantage:recipe.damageSaveAdvantage??false,effectName:recipe.effectName,effectId:choices.effects.find(e=>e.name===recipe.effectName)?.id??recipe.effectId,damageActivity:recipe.damageActivity,damageActivityId:recipe.damageActivity?choices.damage.find(a=>a.name===recipe.damageActivity)?.id:undefined,saveActivity:recipe.saveActivity,saveActivityId:choices.save.find(a=>a.name===recipe.saveActivity||a.id===recipe.saveActivityId)?.id??recipe.saveActivityId}: {})};
 }
 export class TriggerSourceApp extends foundry.applications.api.ApplicationV2{
  static DEFAULT_OPTIONS={window:{title:"Choose Trigger Source",resizable:true},position:{width:570,height:350}};
  constructor(onChoose){super({id:"rsa-trigger-source-"+foundry.utils.randomID()});this.onChoose=onChoose;}
  async _renderHTML(){return `<div style="padding:16px;display:grid;gap:14px;overflow-y:auto"><p>Choose the spell whose effect needs recurring automation. Its existing effects and stats will be preserved.</p><div data-source-drop style="border:2px dashed var(--color-border-light-primary);border-radius:6px;padding:24px;text-align:center"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Drop a spell from a sheet or compendium</div><label>Or paste the spell’s UUID <input name="sourceUuid" type="text" placeholder="Compendium.… or Actor.…Item.…"></label><footer style="display:flex;gap:8px"><button type="button" data-load-source>Load Spell</button><button type="button" data-cancel-source>Cancel</button></footer></div>`;}
- _replaceHTML(result,content){content.innerHTML=result;}
+ _replaceHTML(result,content){content.style.display="block";content.style.minHeight="0";content.style.overflowY="auto";content.style.scrollbarGutter="stable";content.innerHTML=result;}
  async chooseUuid(uuid){if(this.busy)return;this.busy=true;try{if(!uuid?.trim())throw Error("Drop a spell or enter its UUID.");const item=validateSourceSpell(await fromUuid(uuid.trim()));await this.onChoose(item);await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}}
  _onRender(context,options){super._onRender(context,options);const drop=this.element.querySelector('[data-source-drop]');drop.addEventListener('dragover',event=>event.preventDefault());drop.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();const data=foundry.applications.ux.TextEditor.getDragEventData(event);this.chooseUuid(data?.uuid);});this.element.querySelector('[data-load-source]').addEventListener('click',()=>this.chooseUuid(this.element.querySelector('[name="sourceUuid"]').value));this.element.querySelector('[data-cancel-source]').addEventListener('click',()=>this.close());this.element.querySelector('[name="sourceUuid"]').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();this.chooseUuid(event.currentTarget.value);}});}
 }

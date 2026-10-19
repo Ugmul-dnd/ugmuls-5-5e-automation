@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import {describeTarget} from "./shared-activity-card.js";
 import {selectSaveUser} from "./save-prompts.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
@@ -196,7 +197,7 @@ export function configurePromptDialog(kind, dialog = {}) {
             window:{...dialog.options?.window,frame:true,positioned:true}}};
 }
 export function turnOnlyAura(activity) {
-    const config = game.settings.get(MODULE_ID, "spellTable")?.[activity.item?.name];
+    const config = getRegionSpellTable()?.[activity.item?.name];
     const triggers = config?.enabled === false ? [] : (config?.triggers ?? []).filter(t => t.activity === activity.name);
     return activity.item?.type === "feat" && activity.target?.template?.type && triggers.length &&
         triggers.every(t => t.events?.length && t.events.every(e => ["tokenTurnStart", "tokenTurnEnd"].includes(e)));
@@ -255,7 +256,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     try {
         if (attack) {
             await waitForAttackAnimation(attack);
-            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false)) return;
+            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
         }
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
@@ -356,7 +357,7 @@ Hooks.once("ready", () => {
         const attack = Array.from(game.messages).reverse().find(message =>
             message.author?.id === game.user.id && message.type === "attack" &&
             message.getAssociatedActivity?.()?.uuid === activity.uuid && message.rolls?.[0]?.total === rolls[0].total);
-        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false)) return;
+        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
         const origin = attack.system.origin;
         const card = typeof origin === "string" ? game.messages.get(origin) : origin;
         if (card) promptDamage(activity,card,"attack",attack).catch(report);

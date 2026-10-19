@@ -12,8 +12,7 @@
 // ============================================================
 
 const MODULE_ID = "ugmuls-5-5e-automation";
-const SETTING_KEY = "spellTable";
-import { addStartingSpells } from "./starter-spells.js";
+import {getRegionSpellTable,saveRegionSpellTable,resetRegionSpell,regionEntryStatus,REGION_DEFAULTS} from "./region-library.js";
 
 
 // ============================================================
@@ -99,10 +98,7 @@ class RegionSpellManager
     ) {
 
         const spellTable =
-            game.settings.get(
-                MODULE_ID,
-                SETTING_KEY
-            ) ?? {};
+            getRegionSpellTable() ?? {};
 
 
         const configuredSpells =
@@ -187,13 +183,13 @@ class RegionSpellManager
                         <input type="checkbox" class="rsa-select-spell" data-spell="${encodedName}" aria-label="Select ${safeName}"
                             ${this.selectedSpells.has(spellName) ? "checked" : ""}>
                         <strong style="flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${safeName}">
-                            ${safeName}${config.enabled === false ? " (Disabled)" : ""}
+                            ${safeName}${config.enabled === false ? " (Disabled)" : ""}<small style="display:block;font-weight:normal;opacity:.75">${regionEntryStatus(spellName)}</small>
                         </strong>
                         <button type="button" class="rsa-toggle-enabled" data-spell="${encodedName}" style="flex:0 0 auto;width:auto;">
                             ${config.enabled !== false ? "Disable" : "Enable"}
                         </button>
                         <button type="button" class="rsa-edit-spell" data-spell="${encodedName}" style="flex:0 0 auto;width:auto;">Edit</button>
-                        <button type="button" class="rsa-delete-spell" data-spell="${encodedName}" style="flex:0 0 auto;width:auto;">Delete</button>
+                        ${Object.hasOwn(REGION_DEFAULTS,spellName)?`<button type="button" class="rsa-reset-spell" data-spell="${encodedName}" style="flex:0 0 auto;width:auto;">Reset to Default</button>`:`<button type="button" class="rsa-delete-spell" data-spell="${encodedName}" style="flex:0 0 auto;width:auto;">Delete</button>`}
                     </div>`;
                     continue;
                 }
@@ -647,16 +643,9 @@ class RegionSpellManager
                 <!-- DROP ZONE                                -->
                 <!-- ======================================== -->
 
+                <p>Module defaults are included automatically. Edits are saved as world overrides; reset restores the module recipe. Custom spells stay local.</p>
                 <div style="margin-bottom:12px;">
                     <div style="display:flex;gap:6px;">
-                    <button type="button" id="rsa-add-starters">
-                        <i class="fa-solid fa-book-open"></i> Add Starting Spell List
-                    </button>
-                    <span tabindex="0" role="img" style="align-self:center;cursor:help;flex:0 0 auto;"
-                        aria-label="These spells are based on the Official Foundry 5.5e Player Handbook. Adds missing configurations only, disabled for review. Matching activities are required. No Region Effects or spell content are included."
-                        data-tooltip="These spells are based on the Official Foundry 5.5e Player Handbook. Adds missing configurations only, disabled for review. Matching activities are required. No Region Effects or spell content are included.">
-                        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
-                    </span>
                     <button type="button" id="rsa-add-new-spell">
                         <i class="fa-solid fa-plus"></i> Add New Spell / Feature Region
                     </button>
@@ -666,7 +655,7 @@ class RegionSpellManager
                 <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">
                     <button type="button" id="rsa-select-all" title="Select all configured spells and features, including filtered entries">Select all</button>
                     <button type="button" id="rsa-deselect-all">Deselect all</button>
-                    <button type="button" id="rsa-delete-selected" ${this.selectedSpells.size ? "" : "disabled"}>Delete Selected</button>
+                    <button type="button" id="rsa-delete-selected" ${this.selectedSpells.size ? "" : "disabled"}>Remove / Disable Selected</button>
                     <span id="rsa-selected-count">${this.selectedSpells.size} selected</span>
                 </div>
                 <div style="display:flex;gap:6px;margin-bottom:12px;">
@@ -825,6 +814,7 @@ class RegionSpellManager
 
         const root =
             this.element;
+        for(const button of root.querySelectorAll(".rsa-reset-spell"))button.addEventListener("click",async()=>{button.disabled=true;try{await resetRegionSpell(decodeURIComponent(button.dataset.spell));this.render({force:true});}catch(error){ui.notifications.error(error.message);}finally{button.disabled=false;}});
 
         for (const button of root.querySelectorAll(".rsa-edit-conditions")) {
             button.addEventListener("click", () => {
@@ -840,12 +830,12 @@ class RegionSpellManager
                 checkbox.disabled = true;
                 const name = decodeURIComponent(checkbox.dataset.spell);
                 try {
-                    const table = foundry.utils.deepClone(game.settings.get(MODULE_ID, SETTING_KEY) ?? {});
+                    const table = foundry.utils.deepClone(getRegionSpellTable() ?? {});
                     if (!Object.hasOwn(table, name)) return;
                     table[name].hideRegionFromPlayers = checkbox.checked;
-                    await game.settings.set(MODULE_ID, SETTING_KEY, table);
+                    await saveRegionSpellTable(table);
                 } catch (err) {
-                    checkbox.checked = game.settings.get(MODULE_ID, SETTING_KEY)?.[name]?.hideRegionFromPlayers === true;
+                    checkbox.checked = getRegionSpellTable()?.[name]?.hideRegionFromPlayers === true;
                     console.error("Ugmuls 5.5e Automation | Could not save Region visibility:", err);
                     ui.notifications.error("Could not save Region visibility. Check F12 console.");
                 } finally { checkbox.disabled = false; }
@@ -896,11 +886,11 @@ class RegionSpellManager
                 if (!this.selectedSpells.size || !game.user.isGM) return;
                 event.currentTarget.disabled = true;
                 try {
-                    const table = foundry.utils.deepClone(game.settings.get(MODULE_ID, SETTING_KEY) ?? {});
+                    const table = foundry.utils.deepClone(getRegionSpellTable() ?? {});
                     for (const name of this.selectedSpells) {
                         if (Object.hasOwn(table, name)) table[name].enabled = enabled;
                     }
-                    await game.settings.set(MODULE_ID, SETTING_KEY, table);
+                    await saveRegionSpellTable(table);
                     this.render({ force: true });
                 } catch (err) {
                     console.error("Ugmuls 5.5e Automation | Bulk enable/disable failed:", err);
@@ -931,16 +921,16 @@ class RegionSpellManager
             button.disabled = true;
             try {
                 const confirmed = await foundry.applications.api.DialogV2.confirm({
-                    window: { title: "Delete Selected Spells" },
-                    content: `<p>Delete these ${names.length} saved spell configuration(s) and all their triggers and Region Effect settings?</p>
+                    window: { title: "Remove Selected Region Entries" },
+                    content: `<p>Custom entries will be deleted. Module defaults will be disabled, preserving local edits.</p>
                         <p>${names.map(name => foundry.utils.escapeHTML(name)).join(", ")}</p>
                         <p><strong>This cannot be undone. Are you sure?</strong></p>`,
                     yes: { label: "Yes" }, no: { label: "No" }, rejectClose: false
                 });
                 if (!confirmed) return;
-                const table = foundry.utils.deepClone(game.settings.get(MODULE_ID, SETTING_KEY) ?? {});
+                const table = foundry.utils.deepClone(getRegionSpellTable() ?? {});
                 for (const name of names) delete table[name];
-                await game.settings.set(MODULE_ID, SETTING_KEY, table);
+                await saveRegionSpellTable(table);
                 for (const name of names) this.selectedSpells.delete(name);
                 this.render({ force: true });
             } catch (err) {
@@ -948,23 +938,6 @@ class RegionSpellManager
                 ui.notifications.error("Could not delete selected spells. Check F12 console.");
             } finally { refreshSelection(); }
         });
-
-        root.querySelector("#rsa-add-starters")?.addEventListener("click", async event => {
-            const button = event.currentTarget;
-            button.disabled = true;
-            try {
-                if (!game.user.isGM) return;
-                const { table, added } = addStartingSpells(game.settings.get(MODULE_ID, SETTING_KEY), foundry.utils.randomID);
-                if (!added.length) { ui.notifications.info("All starting spells are already configured. Existing settings were preserved."); return; }
-                await game.settings.set(MODULE_ID, SETTING_KEY, table);
-                ui.notifications.info(`Added ${added.length} starting spell(s), disabled for review. Match activities/effects, then enable them.`);
-                this.render({ force: true });
-            } catch (err) {
-                console.error("Ugmuls 5.5e Automation | Could not add starting spells:", err);
-                ui.notifications.error("Could not add starting spells. Check F12 console.");
-            } finally { button.disabled = false; }
-        });
-
 
         // ====================================================
         // LIVE SEARCH
@@ -1047,10 +1020,7 @@ class RegionSpellManager
 
                     const table =
                         foundry.utils.deepClone(
-                            game.settings.get(
-                                MODULE_ID,
-                                SETTING_KEY
-                            ) ?? {}
+                            getRegionSpellTable() ?? {}
                         );
 
 
@@ -1063,11 +1033,7 @@ class RegionSpellManager
                         table[spellName].enabled === false;
 
 
-                    await game.settings.set(
-                        MODULE_ID,
-                        SETTING_KEY,
-                        table
-                    );
+                    await saveRegionSpellTable(table);
                     this.render({ force: true });
                     } catch (err) {
                         console.error('Ugmuls 5.5e Automation | Enable/disable failed:', err);
@@ -1152,10 +1118,7 @@ class RegionSpellManager
 
 
                     const table =
-                        game.settings.get(
-                            MODULE_ID,
-                            SETTING_KEY
-                        ) ?? {};
+                        getRegionSpellTable() ?? {};
 
 
                     const trigger =
@@ -1230,10 +1193,7 @@ class RegionSpellManager
 
                     const table =
                         foundry.utils.deepClone(
-                            game.settings.get(
-                                MODULE_ID,
-                                SETTING_KEY
-                            ) ?? {}
+                            getRegionSpellTable() ?? {}
                         );
 
 
@@ -1260,11 +1220,7 @@ class RegionSpellManager
                             );
 
 
-                    await game.settings.set(
-                        MODULE_ID,
-                        SETTING_KEY,
-                        table
-                    );
+                    await saveRegionSpellTable(table);
 
 
                     this.render({
@@ -1350,10 +1306,7 @@ class RegionSpellManager
 
 
                     const table =
-                        game.settings.get(
-                            MODULE_ID,
-                            SETTING_KEY
-                        ) ?? {};
+                        getRegionSpellTable() ?? {};
 
 
                     const regionEffect =
@@ -1428,10 +1381,7 @@ class RegionSpellManager
 
                     const table =
                         foundry.utils.deepClone(
-                            game.settings.get(
-                                MODULE_ID,
-                                SETTING_KEY
-                            ) ?? {}
+                            getRegionSpellTable() ?? {}
                         );
 
 
@@ -1458,11 +1408,7 @@ class RegionSpellManager
                             );
 
 
-                    await game.settings.set(
-                        MODULE_ID,
-                        SETTING_KEY,
-                        table
-                    );
+                    await saveRegionSpellTable(table);
 
 
                     this.render({
@@ -1532,10 +1478,7 @@ class RegionSpellManager
 
                     const table =
                         foundry.utils.deepClone(
-                            game.settings.get(
-                                MODULE_ID,
-                                SETTING_KEY
-                            ) ?? {}
+                            getRegionSpellTable() ?? {}
                         );
 
 
@@ -1544,11 +1487,7 @@ class RegionSpellManager
                     ];
 
 
-                    await game.settings.set(
-                        MODULE_ID,
-                        SETTING_KEY,
-                        table
-                    );
+                    await saveRegionSpellTable(table);
 
 
                     this.render({
@@ -1568,10 +1507,7 @@ class RegionSpellManager
     ) {
 
         const table =
-            game.settings.get(
-                MODULE_ID,
-                SETTING_KEY
-            ) ?? {};
+            getRegionSpellTable() ?? {};
 
 
         const config =
@@ -2175,10 +2111,7 @@ class RegionSpellManager
 
         const table =
             foundry.utils.deepClone(
-                game.settings.get(
-                    MODULE_ID,
-                    SETTING_KEY
-                ) ?? {}
+                getRegionSpellTable() ?? {}
             );
 
 
@@ -2275,11 +2208,7 @@ class RegionSpellManager
         }
 
 
-        await game.settings.set(
-            MODULE_ID,
-            SETTING_KEY,
-            table
-        );
+        await saveRegionSpellTable(table);
 
 
         ui.notifications.info(
@@ -2457,10 +2386,7 @@ class RegionSpellManager
 
         const table =
             foundry.utils.deepClone(
-                game.settings.get(
-                    MODULE_ID,
-                    SETTING_KEY
-                ) ?? {}
+                getRegionSpellTable() ?? {}
             );
 
 
@@ -2545,11 +2471,7 @@ class RegionSpellManager
         }
 
 
-        await game.settings.set(
-            MODULE_ID,
-            SETTING_KEY,
-            table
-        );
+        await saveRegionSpellTable(table);
 
 
         ui.notifications.info(
@@ -2577,7 +2499,7 @@ class RegionConditionPicker extends foundry.applications.api.ApplicationV2 {
         this.spellName = name;
     }
     async _renderHTML() {
-        const selected = game.settings.get(MODULE_ID, SETTING_KEY)?.[this.spellName]?.regionConditions ?? [];
+        const selected = getRegionSpellTable()?.[this.spellName]?.regionConditions ?? [];
         const choices = Object.values(CONFIG.statusEffects).filter(status => status.id)
             .map(status => ({id:status.id,name:game.i18n.localize(status.name)}))
             .sort((a,b)=>a.name.localeCompare(b.name));
@@ -2598,7 +2520,7 @@ class RegionConditionPicker extends foundry.applications.api.ApplicationV2 {
             if (!game.user.isGM || button.disabled) return;
             button.disabled=true;
             try {
-                const table=foundry.utils.deepClone(game.settings.get(MODULE_ID,SETTING_KEY) ?? {});
+                const table=foundry.utils.deepClone(getRegionSpellTable() ?? {});
                 if (!table[this.spellName]) {await this.close();return;}
                 // Preserve saved IDs unavailable in the current system's list.
                 const boxes=Array.from(this.element.querySelectorAll("[data-rsa-condition]"));
@@ -2607,7 +2529,7 @@ class RegionConditionPicker extends foundry.applications.api.ApplicationV2 {
                     ...(table[this.spellName].regionConditions ?? []).filter(id=>!shown.has(id)),
                     ...boxes.filter(box=>box.checked).map(box=>box.dataset.rsaCondition)
                 ];
-                await game.settings.set(MODULE_ID,SETTING_KEY,table);
+                await saveRegionSpellTable(table);
                 await this.close();
                 this.editor.render({force:true});
                 this.editor.bringToFront?.();
@@ -2669,13 +2591,13 @@ class RegionSpellDropDialog extends foundry.applications.api.ApplicationV2 {
                     ui.notifications.warn("Please drop a spell or feature Item.");
                     return;
                 }
-                const table = foundry.utils.deepClone(game.settings.get(MODULE_ID, SETTING_KEY) ?? {});
+                const table = foundry.utils.deepClone(getRegionSpellTable() ?? {});
                 table[item.name] ??= {
                     enabled:true, hideRegionFromPlayers:false,
                     triggers:[], regionEffects:[], regionConditions:[]
                 };
                 table[item.name].sourceUuid = item.uuid;
-                await game.settings.set(MODULE_ID, SETTING_KEY, table);
+                await saveRegionSpellTable(table);
                 await this.close();
                 let editor = this.manager.spellEditors.get(item.name);
                 if (!editor) {

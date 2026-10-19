@@ -35,7 +35,11 @@ export async function flushChatRefresh(){
  try{
   while(pending.size||direct.size){
    const requests=Array.from(pending.values()),cards=new Map(direct);pending.clear();direct.clear();
+   // Feature state is recomputed when history cards are rendered again.
+   // Keep explicit result/Undo refreshes even when their cards are unmounted.
+   const mounted=requests.length&&globalThis.document?.querySelectorAll?new Set(Array.from(document.querySelectorAll('[data-message-id]'),node=>node.dataset?.messageId).filter(Boolean)):null;
    if(requests.length)for(const card of Array.from(game.messages??[]).slice(-100)){
+    if(mounted&&!mounted.has(card.id))continue;
     if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))))cards.set(card.id,card);
    }
    const list=Array.from(cards.values());for(let index=0;index<list.length;index+=8){

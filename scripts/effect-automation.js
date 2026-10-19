@@ -1,4 +1,5 @@
 import {hasEquivalentActiveEffect,regionOwnsEffect} from "./shared-activity-card.js";
+import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const completed=new Set();
 const pending=new Set();
@@ -27,7 +28,7 @@ export async function applyBuffEffects(message) {
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     const activity=message.getAssociatedActivity?.({scaled:true});
     if (!eligibleBuffActivity(activity)) return;
-    const effects=await activity.getApplicableEffects?.() ?? [];
+    const effects=(await activity.getApplicableEffects?.() ?? []).filter(effect=>!regionManagesCardEffect(activity,effect));
     if (!effects.length) return;
     const caster=message.getAssociatedActor?.();
     const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity);

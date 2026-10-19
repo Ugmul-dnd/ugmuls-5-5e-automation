@@ -24,11 +24,18 @@ export function preparePendingCast(activity,usage,dialog,message){
 function wirePendingActivity(state,activity){
  state.activities??=new WeakSet();if(state.activities.has(activity))return;state.activities.add(activity);state.activity=activity;
  const scaling=activity._prepareUsageScaling;
- activity._prepareUsageScaling=async function(config,...args){await state.ready;const result=await scaling.call(this,config,...args);if(config.concentration?.end){state.previousConcentration=config.concentration.end;config.concentration.end=false;}const rebuilt=args.at(-1)?.system?.activities?.get?.(this.id);if(rebuilt&&rebuilt!==this)wirePendingActivity(state,rebuilt);return result;};
+ activity._prepareUsageScaling=async function(config,...args){await state.ready;const result=await scaling.call(this,config,...args);const rebuilt=args.at(-1)?.system?.activities?.get?.(this.id);if(rebuilt&&rebuilt!==this)wirePendingActivity(state,rebuilt);return result;};
  const finalize=activity._finalizeUsage;
  activity._finalizeUsage=async function(config,results){const result=await finalize.call(this,config,results);state.results=results;if(config.create?.measuredTemplate&&!results.templates?.length){config.subsequentActions=false;await cancelPendingCast(state.card);results.message=null;}return result;};
  const consume=activity.consume;
- activity.consume=async function(...args){await state.ready;return consume.apply(this,args);};
+ activity.consume=async function(config,...args){
+  await state.ready;
+  // Foundry validates the chosen replacement during consumption. Preserve it
+  // until that succeeds, then defer its removal so canceled casts keep it.
+  const result=await consume.call(this,config,...args);
+  if(result!==false&&config.concentration?.begin!==false&&config.concentration?.end){state.previousConcentration=config.concentration.end;config.concentration.end=false;}
+  return result;
+ };
  const create=activity._createUsageMessage;
  activity._createUsageMessage=async function(config){
   await state.ready;
@@ -38,6 +45,7 @@ function wirePendingActivity(state,activity){
   return state.card;
  };
 }
+function noInitialRoll(state){return state.activity.type==="utility"&&(!state.activity.roll?.formula||state.activity.roll?.prompt===false)||(state.card?.getFlag?.(ID,"movementRegionPlacement")===true||state.card?.getFlag?.(ID,"regionPlacementOnly")===true)&&state.results?.templates?.length>0;}
 export function trackCastTask(message,task){const state=stateFor(message?.data)??castState(message);if(state)state.tasks.push(Promise.resolve(task));return task;}
 export async function settlePendingCast(card){
  const state=castState(card);if(!state||state.committed)return;state.committed=true;
@@ -95,9 +103,9 @@ Hooks.once("ready",()=>{
  for(const type of Object.values(CONFIG.DND5E.activityTypes))installPendingCast(type.documentClass);
  Hooks.on("dnd5e.preUseActivity",preparePendingCast);
  Hooks.on("dnd5e.postActivityConsumption",(activity,usage,message)=>{const state=stateFor(message.data);if(state)state.deltas=foundry.utils.deepClone(message.data?.system?.deltas);});
- Hooks.on("dnd5e.postUseActivity",(activity,usage,results)=>{const state=castState(results?.message);if(state){state.results=results;if(activity.type==="utility"&&(!activity.roll?.formula||activity.roll?.prompt===false)&&!results.message.getFlag?.(ID,"targetsConfirmationPending"))settlePendingCast(results.message).catch(console.error);}});
+ Hooks.on("dnd5e.postUseActivity",(activity,usage,results)=>{const state=castState(results?.message);if(state){state.results=results;if(noInitialRoll(state)&&!results.message.getFlag?.(ID,"targetsConfirmationPending"))settlePendingCast(results.message).catch(console.error);}});
  for(const kind of ["Attack","Damage","SavingThrow","AbilityCheck"])Hooks.on("dnd5e.preRoll"+kind+"V2",pendingRollDialog);
  Hooks.on("createChatMessage",card=>{if(!card.rolls?.length)return;const origin=originOf(card);if(castState(origin))settlePendingCast(origin).catch(console.error);});
- Hooks.on("ugmuls55eAutomation.targetsConfirmed",card=>{const state=castState(card);if(state?.activity.type==="utility"&&(!state.activity.roll?.formula||state.activity.roll?.prompt===false))settlePendingCast(card).catch(console.error);});
+ Hooks.on("ugmuls55eAutomation.targetsConfirmed",card=>{const state=castState(card);if(state&&noInitialRoll(state))settlePendingCast(card).catch(console.error);});
  Hooks.on("dnd5e.renderChatMessage",renderPendingCast);
 });

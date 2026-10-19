@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import { describeTarget, isEligibleTarget, isEligibleHealingTarget } from "./shared-activity-card.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const DIAGNOSTIC_REVISION = "2026-10-08-confirmation-3";
@@ -211,7 +212,7 @@ export async function confirmCastTargets(activity, usage, results) {
     await new Promise(resolve => setTimeout(resolve, 0)); // Let Region geometry finish preparation.
     const origin = results.templates?.[0]?.flags?.dnd5e?.origin;
     const caster = origin ? await fromUuid(origin) : activity.getUsageToken?.();
-    const config = game.settings.get(MODULE_ID, "spellTable")?.[activity.item.name];
+    const config = getRegionSpellTable()?.[activity.item.name];
     const mode = automaticTargetMode(activity, config);
     const targets = results.templates?.length?collectAreaTargets(canvas.tokens.placeables.map(token => token.document), results.templates, caster?.document ?? caster, mode,activity.type==="heal"):Array.from(game.user.targets,token=>token.document??token);
     if(!requiresTargetConfirmation(activity)) {
@@ -246,17 +247,19 @@ export async function finishConfirmedCast(activity, message, targets) {
     const eligible = [],tokens=[];
     for (const descriptor of targets) {
         const token = await fromUuid(descriptor.token);
+        if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}
     }
     targets = eligible;
     if(activity.target?.affects?.choice!==true)globalThis.canvas?.tokens?.setTargets?.(tokens.map(token=>token.id));
     if (message._targetState) { message._targetState.mode = "targeted"; message._targetState.checked?.clear?.(); }
     await message.update({ "system.targets": targets });
-    for(const target of targets){const token=await fromUuid(target.token);if(token)await globalThis.Ugmuls55eAutomationMetamagic?.carefulSave(message,token);}
+    if(!message.getFlag?.(MODULE_ID,"regionPlacementOnly"))for(const target of targets){const token=await fromUuid(target.token);if(token)await globalThis.Ugmuls55eAutomationMetamagic?.carefulSave(message,token);}
     await message.update({ [`flags.${MODULE_ID}.targetsConfirmationPending`]: false,
         [`flags.${MODULE_ID}.targetsConfirmationCanceled`]: false });
     pendingCards.delete(message.id);
     Hooks.callAll("ugmuls55eAutomation.targetsConfirmed", message);
+    if(message.getFlag?.(MODULE_ID,"regionPlacementOnly"))return;
     if(activity.type==="attack"&&message.getFlag?.(MODULE_ID,"resumeAreaDamage")!==false&&targets.length){
         const scaled=message.getAssociatedActivity?.({scaled:true})??activity;
         // Notify the existing multi-shot helper before the first attack opens.

@@ -1,4 +1,5 @@
 import {createEventQueue,isDamageOrHealingCard,isHealingCard} from "./shared-activity-card.js";
+import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
 const hpKeys=["value","temp","tempmax"];
@@ -22,6 +23,7 @@ async function refreshHpUndoCard(message) {
 
 export async function applyEffectWithUndo(card,usage,effect,actor,tray) {
     return enqueue(async()=>{
+        if(regionManagesCardEffect(usage?.getAssociatedActivity?.({scaled:true}),effect))return null;
         const existing=Array.from(actor.effects??[]).find(entry=>entry._stats?.duplicateSource===effect.uuid||entry._stats?.compendiumSource===effect.uuid);
         const before=existing?existing.toObject():null;
         const applied=await tray._applyEffectToActor(effect,actor);
@@ -131,6 +133,7 @@ export async function storeReappliedEffectUndo(message,records,user=game.user) {
 }
 export async function manualSaveEffectAllowed(message,effect,actor){
     const activity=message.getAssociatedActivity?.({scaled:true});
+    if(regionManagesCardEffect(activity,effect))return {allowed:false,reason:"This effect is managed by the spell’s Region while the creature is inside it."};
     if(activity?.type!=="save")return {allowed:true};
     const profile=activity.effects?.find(profile=>profile.uuid===effect.uuid||profile._id===effect.id);
     // Restrict save effects to recorded recipients and completed save outcomes.
@@ -150,6 +153,8 @@ export async function applyManualEffectsWithUndo(tray,apply) {
     // may make an effect applicable even though this card has never been undone.
     if(!message?.uuid||typeof tray._prepareEffectData!=="function")return apply.call(tray);
     const prepare=tray._prepareEffectData;
+    const originalEffects=tray.effects;
+    if(Array.isArray(originalEffects))tray.effects=originalEffects.filter(effect=>!regionManagesCardEffect(message.getAssociatedActivity?.({scaled:true}),effect));
     const operations=[];
     tray._prepareEffectData=async function(effect,actor) {
         const eligibility=await manualSaveEffectAllowed(message,effect,actor);
@@ -174,7 +179,7 @@ export async function applyManualEffectsWithUndo(tray,apply) {
             else if(game.user.isGM)await enqueue(()=>storeReappliedEffectUndo(message,records));
         }
         return result;
-    } finally {tray._prepareEffectData=prepare;}
+    } finally {tray._prepareEffectData=prepare;if(Array.isArray(originalEffects))tray.effects=originalEffects;}
 }
 
 export function captureDamageUndo(actor,damages,updates,options) {
@@ -320,6 +325,17 @@ function report(err){console.error("Ugmuls 5.5e Automation | Damage undo failed:
 Hooks.once("ready",()=>{
     globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo};
     const prototype=customElements.get("effect-application")?.prototype;
+    if(prototype&&typeof prototype.buildEffectsList==="function"&&!prototype.rsaRegionEffectList){
+        const build=prototype.buildEffectsList;
+        prototype.buildEffectsList=function(){
+            const activity=this.chatMessage?.getAssociatedActivity?.({scaled:true});
+            this.effects=this.effects.filter(effect=>!regionManagesCardEffect(activity,effect));
+            if(!this.effects.length){this.hidden=true;this.dataset.rsaRegionEffectsHidden="";}
+            else if(Object.hasOwn(this.dataset,"rsaRegionEffectsHidden")){this.hidden=false;delete this.dataset.rsaRegionEffectsHidden;}
+            return build.apply(this,arguments);
+        };
+        prototype.rsaRegionEffectList=true;
+    }
     if(prototype&&typeof prototype._onApplyEffects==="function"&&!prototype.rsaUndoReapplication) {
         const original=prototype._onApplyEffects;
         prototype._onApplyEffects=function(){return applyManualEffectsWithUndo(this,original);};

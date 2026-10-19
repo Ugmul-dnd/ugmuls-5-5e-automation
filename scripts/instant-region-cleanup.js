@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import {triggerEntry,triggerKeyForSpell} from "./trigger-library.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 
@@ -25,7 +26,7 @@ export async function trackInstantRegion(region) {
     const item = await fromUuid(itemUUID);
     const activityUUID = region.flags?.dnd5e?.activity;
     const activity = activityUUID ? await fromUuid(activityUUID) : null;
-    const config = item ? game.settings.get(MODULE_ID, "spellTable")?.[item.name] : null;
+    const config = item ? getRegionSpellTable()?.[item.name] : null;
     if (!shouldCleanInstantRegion(item, config, activity)) return;
     const matchesCaster = combat => combat.started &&
         combat.combatants.some(combatant => combatant.token?.uuid === casterTokenUuid);
@@ -55,7 +56,7 @@ export async function cleanupInstantRegions(combat, changes, options = {}) {
             // A configuration may have been added after casting. Preserve it.
             const item = await fromUuid(marker.itemUUID);
             const activity = marker.activityUUID ? await fromUuid(marker.activityUUID) : null;
-            const config = item ? game.settings.get(MODULE_ID, "spellTable")?.[item.name] : null;
+            const config = item ? getRegionSpellTable()?.[item.name] : null;
             if (shouldCleanInstantRegion(item, config, activity)) ids.push(region.id);
         }
         if (ids.length) {

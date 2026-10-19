@@ -1,0 +1,4109 @@
+{
+  "date": "2026-10-18",
+  "packVersion": "2.2.0",
+  "status": "Audit only; not an import file or enabled configuration",
+  "spellsScanned": 391,
+  "candidates": [
+    {
+      "name": "Hold Person",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldPerson",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Wisdom save at target turn end; remove Paralyzed on success.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Paralyzed",
+          "statuses": [
+            "paralyzed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Hold Monster",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldMonste",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Wisdom save at target turn end; remove Paralyzed on success.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Paralyzed",
+          "statuses": [
+            "paralyzed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Blinding Smite",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindingSm",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Constitution save at target turn end; remove Blinded on success.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "damage"
+        },
+        {
+          "id": "dnd5eactivity100",
+          "name": "End of Turn Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Blinded",
+          "statuses": [
+            "blinded"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Wrathful Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWrathfulSm",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Wisdom save at target turn end; keep initial smite save separate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Frightened Save",
+          "type": "save"
+        },
+        {
+          "id": "7g4z2R5Xozd8TESe",
+          "name": "Damage",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Frightened",
+          "statuses": [
+            "frightened"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Slow",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSlow000000",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Wisdom save at target turn end; preserve native stat changes.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Slowed",
+          "statuses": [],
+          "changes": 3
+        }
+      ]
+    },
+    {
+      "name": "Blindness/Deafness",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindnessD",
+      "category": "Repeat-save candidates",
+      "review": "Preserve the chosen condition when registering and removing the effect.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Blindness",
+          "statuses": [
+            "blinded"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Deafness",
+          "statuses": [
+            "deafened"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Ray of Enfeeblement",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRayofEnfee",
+      "category": "Repeat-save candidates",
+      "review": "Only the persistent failed-save effect gets repeat saves; preserve native changes.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Brief Enfeeblement",
+          "statuses": [],
+          "changes": 0
+        },
+        {
+          "name": "Enervated",
+          "statuses": [],
+          "changes": 6
+        }
+      ]
+    },
+    {
+      "name": "Synaptic Static",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSynapticSt",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Intelligence save only; never repeat initial damage.",
+      "activities": [
+        {
+          "id": "Um2mWH62piec6mVJ",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Muddled Thoughts",
+          "statuses": [],
+          "changes": 6
+        }
+      ]
+    },
+    {
+      "name": "Sunburst",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSunburst00",
+      "category": "Repeat-save candidates",
+      "review": "Repeat Constitution save only; never repeat initial damage.",
+      "activities": [
+        {
+          "id": "GunsbnehgeyBUMUX",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Blinded",
+          "statuses": [
+            "blinded"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Searing Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",
+      "category": "Existing creature triggers",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Start of Turn Save",
+          "type": "save"
+        },
+        {
+          "id": "M4KS57lcf4K6fUMU",
+          "name": "Damage",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Seared",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Fear",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",
+      "category": "Existing creature triggers",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Ensnaring Strike",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnsnaringS",
+      "category": "Additional creature-trigger behavior",
+      "review": "Start-of-turn damage; escape uses an action/check, not an automatic repeat save.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        },
+        {
+          "id": "ZWId9mbOE9zFnP6f",
+          "name": "Start of Turn Damage",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Ensnared",
+          "statuses": [
+            "restrained"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Melf's Acid Arrow",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMelfsAcidA",
+      "category": "Additional creature-trigger behavior",
+      "review": "One delayed damage event after a hit, then stop.",
+      "activities": [
+        {
+          "id": "UvDr2eESFyDiTwTX",
+          "name": "Cast and Attack",
+          "type": "attack"
+        },
+        {
+          "id": "uAyE5DrJp0YpElcw",
+          "name": "Lingering Acid Damage",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Lingering Acid",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Vitriolic Sphere",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplVitriolicS",
+      "category": "Additional creature-trigger behavior",
+      "review": "One delayed damage event after an initial failed save, then stop.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "save"
+        },
+        {
+          "id": "dnd5eactivity200",
+          "name": "End of Turn Damage",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Lingering Acid",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Phantasmal Killer",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPhantasmal",
+      "category": "Additional creature-trigger behavior",
+      "review": "Save first; recurring damage only on failure. Success ends the effect.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Fears Manifested",
+          "statuses": [],
+          "changes": 6
+        }
+      ]
+    },
+    {
+      "name": "Weird",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWeird00000",
+      "category": "Additional creature-trigger behavior",
+      "review": "Save first; repeat damage differs from initial damage.",
+      "activities": [
+        {
+          "id": "jkeV3qQGtdK21eBm",
+          "name": "",
+          "type": "save"
+        },
+        {
+          "id": "nuStSySOEkwOUnXf",
+          "name": "End of Turn Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Frightening Terrors",
+          "statuses": [
+            "frightened"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Heroism",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHeroism000",
+      "category": "Additional creature-trigger behavior",
+      "review": "Refresh temporary HP at turn start; needs healing support and no stacking.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "heal"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Bravery",
+          "statuses": [],
+          "changes": 1
+        }
+      ]
+    },
+    {
+      "name": "Regenerate",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRegenerate",
+      "category": "Additional creature-trigger behavior",
+      "review": "Turn-start healing must be separate from initial healing.",
+      "activities": [
+        {
+          "id": "RqNTdCQHfXDYaG41",
+          "name": "",
+          "type": "heal"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Regenerating",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Power Word Stun",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordS",
+      "category": "Additional creature-trigger behavior",
+      "review": "No native save activity: requires a dedicated repeat-save helper.",
+      "activities": [
+        {
+          "id": "Sy5x2VhhG7mcnPvF",
+          "name": "",
+          "type": "utility"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Stunned",
+          "statuses": [
+            "stunned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "No Movement",
+          "statuses": [],
+          "changes": 1
+        }
+      ]
+    },
+    {
+      "name": "Contagion",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplContagion0",
+      "category": "Additional creature-trigger behavior",
+      "review": "Track three successes/failures and preserve chosen ability penalty.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Infected (Strength)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Infected (Dexterity)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Infected (Constitution)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Infected (Intelligence)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Infected (Wisdom)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Infected (Charisma)",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Flesh to Stone",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFleshtoSto",
+      "category": "Additional creature-trigger behavior",
+      "review": "Track counters and transition to Petrified.",
+      "activities": [
+        {
+          "id": "g34TzvzMcBYBxqp4",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Turning to Stone",
+          "statuses": [
+            "restrained"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Unable to Move",
+          "statuses": [],
+          "changes": 1
+        }
+      ]
+    },
+    {
+      "name": "Sleep",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSleep00000",
+      "category": "Additional creature-trigger behavior",
+      "review": "One repeat save, then change Incapacitated to Unconscious on failure; waking/damage can end it.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Sleeping",
+          "statuses": [
+            "incapacitated"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Confusion",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConfusion0",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save plus a separate start-of-turn behavior roll.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Confused",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Crown of Madness",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCrownofMad",
+      "category": "Additional creature-trigger behavior",
+      "review": "Caster upkeep and forced action choices remain decisions.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Spectral Crown",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Bestow Curse",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBestowCurs",
+      "category": "Additional creature-trigger behavior",
+      "review": "Only the action-denial option needs a turn-start save; success does not end the curse.",
+      "activities": [
+        {
+          "id": "PYFPZ4aLWjKJ1tLZ",
+          "name": "Curse Ability",
+          "type": "save"
+        },
+        {
+          "id": "azVyTkiGPeIqMzxu",
+          "name": "Curse Attacks",
+          "type": "save"
+        },
+        {
+          "id": "nWXSXy8ybiVolvEP",
+          "name": "Curse Actions",
+          "type": "save"
+        },
+        {
+          "id": "fkQUKM8bxHgAUcg5",
+          "name": "Curse Resilience",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Cursed Charisma",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Constitution",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Dexterity",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Intelligence",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Strength",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Wisdom",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 2
+        },
+        {
+          "name": "Cursed Attacks",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Cursed Actions",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Cursed Resilience",
+          "statuses": [
+            "cursed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Blink",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlink00000",
+      "category": "Additional creature-trigger behavior",
+      "review": "Random check plus return/positioning phases.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "utility"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Ethereal",
+          "statuses": [
+            "ethereal"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Compulsion",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCompulsion",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save follows compelled movement.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Charmed",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Dominate Beast",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateBe",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save when damaged.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Dominated",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Dominate Person",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominatePe",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save when damaged.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Dominated",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Dominate Monster",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateMo",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save when damaged.",
+      "activities": [
+        {
+          "id": "b1s2oESIl76fHcqA",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Dominated",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Compelled Duel",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCompelledD",
+      "category": "Additional creature-trigger behavior",
+      "review": "Conditional ending events need dedicated checks.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Compelled",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Otto's Irresistible Dance",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplOttosIrres",
+      "category": "Additional creature-trigger behavior",
+      "review": "Repeat save costs the target an action.",
+      "activities": [
+        {
+          "id": "DonYhtwZ56TnAk3B",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Irresistible Dance",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Short Dance",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Eyebite",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEyebite000",
+      "category": "Additional creature-trigger behavior",
+      "review": "Requires outcome-specific review.",
+      "activities": [
+        {
+          "id": "r5eaxtkEdeKOXeHb",
+          "name": "Initial Cast",
+          "type": "save"
+        },
+        {
+          "id": "3PZbzzH8sBJl3heA",
+          "name": "While Concentrating",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Asleep",
+          "statuses": [
+            "unconscious"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Panicked",
+          "statuses": [
+            "frightened"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Sickened",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Antipathy/Sympathy",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAntipathyS",
+      "category": "Additional creature-trigger behavior",
+      "review": "Requires outcome-specific review.",
+      "activities": [
+        {
+          "id": "BcL0t9o1WyOIZ5El",
+          "name": "Cast",
+          "type": "utility"
+        },
+        {
+          "id": "VlGQ41g1j0LeL8QY",
+          "name": "Antipathy Save",
+          "type": "save"
+        },
+        {
+          "id": "J6kTEeQc2cCyfppj",
+          "name": "Sympathy Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Antipathy",
+          "statuses": [],
+          "changes": 0
+        },
+        {
+          "name": "Sympathy",
+          "statuses": [],
+          "changes": 0
+        },
+        {
+          "name": "Frightened",
+          "statuses": [
+            "frightened"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Charmed",
+          "statuses": [
+            "charmed"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Befuddlement",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBefuddleme",
+      "category": "Additional creature-trigger behavior",
+      "review": "Long-interval save, outside combat-turn timing.",
+      "activities": [
+        {
+          "id": "TAVpYz6KXNk1xZi1",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Befuddled",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Phantasmal Force",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbPhantasmalFor",
+      "category": "Additional creature-trigger behavior",
+      "review": "Conditional damage needs GM judgment.",
+      "activities": [
+        {
+          "id": "5LLVXOLZf1fTstUw",
+          "name": "Cast",
+          "type": "save"
+        },
+        {
+          "id": "QCUpctimdMH6E6F8",
+          "name": "Phantasm Damage",
+          "type": "damage"
+        },
+        {
+          "id": "ffUmsOEgNdJuBbkv",
+          "name": "Study",
+          "type": "check"
+        }
+      ]
+    },
+    {
+      "name": "Blade Barrier",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBladeBarri",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "Y0nT1EvDbg7IDovC",
+          "name": "Blade Wall",
+          "type": "save"
+        },
+        {
+          "id": "SRwETzebAYXEJKux",
+          "name": "Blade Ring",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Cloud of Daggers",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCloudofDag",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Cloudkill",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCloudkill0",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Cast and Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Conjure Celestial",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureCel",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "VjKltnyiWXZ0xDGZ",
+          "name": "Conjure Pillar",
+          "type": "utility"
+        },
+        {
+          "id": "ke8eykrnAdAq5nfZ",
+          "name": "Healing Light",
+          "type": "heal"
+        },
+        {
+          "id": "naMU3mLP7jLZu1IG",
+          "name": "Searing Light",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Conjure Woodland Beings",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureWoo",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Cast",
+          "type": "save"
+        },
+        {
+          "id": "GAQKUmYcWR3SjxiV",
+          "name": "Disengage",
+          "type": "utility"
+        },
+        {
+          "id": "UkXLSgFbCBI9CHMf",
+          "name": "Emanation Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Control Water",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplControlWat",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Create Whirlpool",
+          "type": "save"
+        },
+        {
+          "id": "uvlPi5Em9KSfKICT",
+          "name": "Flood, Part, or Redirect",
+          "type": "utility"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Cordon of Arrows",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCordonofAr",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "save"
+        },
+        {
+          "id": "7FxhT4svBreaSOvk",
+          "name": "Cast",
+          "type": "utility"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Evard's Black Tentacles",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEvardsBlac",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Restrained",
+          "statuses": [
+            "restrained"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Flaming Sphere",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFlamingSph",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "summon"
+        },
+        {
+          "id": "dnd5eactivity100",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Forbiddance",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplForbiddanc",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "T2XK004SAb09LvvP",
+          "name": "Create Ward",
+          "type": "utility"
+        },
+        {
+          "id": "9IBiOeIf2PC1wcLp",
+          "name": "Damage Forbidden Creature",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Guardian of Faith",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGuardianof",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "summon"
+        },
+        {
+          "id": "dnd5eactivity100",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Incendiary Cloud",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIncendiary",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "Hhw0octbLetO5Nsi",
+          "name": "Cast and Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Insect Plague",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplInsectPlag",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Jallarzi's Storm of Radiance",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplJallarzisS",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Senses Overwhelmed",
+          "statuses": [
+            "blinded",
+            "deafened",
+            "silenced"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Stinking Cloud",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStinkingCl",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Cast and Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Stinking Poison",
+          "statuses": [
+            "poisoned"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Wall of Thorns",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofThor",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "Az2cq7SukeQquptz",
+          "name": "Create Wall",
+          "type": "save"
+        },
+        {
+          "id": "cgge2ISpX3u70Dof",
+          "name": "Create Circle",
+          "type": "save"
+        },
+        {
+          "id": "dMiM7Qec4keU3w7B",
+          "name": "Traversal Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Yolande's Regal Presence",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplYolandesRe",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "OJHRKWz8JvLzyl9R",
+          "name": "Surround Self",
+          "type": "utility"
+        },
+        {
+          "id": "dzeoGwKOPG7PHbyE",
+          "name": "Emanation Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Zone of Truth",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplZoneofTrut",
+      "category": "Region or aura review",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Cannot Lie",
+          "statuses": [],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Web",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWeb0000000",
+      "category": "Region or aura review",
+      "review": "Do not confuse restraint saves with burning-web damage.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Wall of Fire",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofFire",
+      "category": "Region or aura review",
+      "review": "One-sided wall geometry; recurring damage has no save.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Create Wall",
+          "type": "save"
+        },
+        {
+          "id": "aLgpPe1PPRQ0zIrL",
+          "name": "Create Ring",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Wall of Ice",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofIce0",
+      "category": "Region or aura review",
+      "review": "Traversal damage applies to the frigid air remaining after a section breaks.",
+      "activities": [
+        {
+          "id": "c4ttlpiIpyf3dFdf",
+          "name": "Create Globe",
+          "type": "save"
+        },
+        {
+          "id": "zjpb29Tww0iuv1P3",
+          "name": "Create Panels",
+          "type": "save"
+        },
+        {
+          "id": "D8Q85bjeZgiFky5j",
+          "name": "Frigid Air",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Sleet Storm",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSleetStorm",
+      "category": "Region or aura review",
+      "review": "Entry/start-of-turn save can cause Prone and loss of concentration.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Gust of Wind",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGustofWind",
+      "category": "Region or aura review",
+      "review": "Turn-end save and forced movement; direction can change.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Aura of Life",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAuraofLife",
+      "category": "Region or aura review",
+      "review": "Turn-start healing only for eligible allies at zero HP.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Create Aura",
+          "type": "heal"
+        }
+      ]
+    },
+    {
+      "name": "Aura of Vitality",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAuraofVita",
+      "category": "Region or aura review",
+      "review": "Caster-turn healing requires choosing a creature.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Create Aura",
+          "type": "heal"
+        },
+        {
+          "id": "0vYjMbBcXaMfGWR2",
+          "name": "Start of Turn Heal",
+          "type": "heal"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Conjure Elemental",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureEle",
+      "category": "Region or aura review",
+      "review": "Inspect summoned actor activities, not only the spell item.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Conjure",
+          "type": "summon"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Prismatic Wall",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPrismaticW",
+      "category": "Region or aura review",
+      "review": "Layer-specific conditions and counters.",
+      "activities": [
+        {
+          "id": "5f0JerdDSOQQXiTe",
+          "name": "Create Wall",
+          "type": "utility"
+        },
+        {
+          "id": "fOYr1bgsB1VXROcm",
+          "name": "Create Globe",
+          "type": "utility"
+        },
+        {
+          "id": "Pm0Re9Gt8pJNaF1C",
+          "name": "Blinding Save",
+          "type": "save"
+        },
+        {
+          "id": "fxEIn0sNwZReZJhV",
+          "name": "Traversal Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Prismatic Blinding",
+          "statuses": [
+            "blinded"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Restrained (Indigo)",
+          "statuses": [
+            "restrained"
+          ],
+          "changes": 0
+        },
+        {
+          "name": "Blinded (Violet)",
+          "statuses": [
+            "blinded"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Storm of Vengeance",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStormofVen",
+      "category": "Region or aura review",
+      "review": "Round-dependent phases and target selection.",
+      "activities": [
+        {
+          "id": "8QALATRgSsmWWxCl",
+          "name": "Create Storm",
+          "type": "save"
+        },
+        {
+          "id": "WOo8u0FLAzNMpMJN",
+          "name": "Turn 2: Acid Rain",
+          "type": "damage"
+        },
+        {
+          "id": "Fd8ZGgmDyNmJJuj3",
+          "name": "Turn 3: Lightning",
+          "type": "save"
+        },
+        {
+          "id": "H4uCtCkANBkttnov",
+          "name": "Turn 4: Hailstones",
+          "type": "damage"
+        },
+        {
+          "id": "yt2oWWelZl1zV4CB",
+          "name": "Turn 5+: Gusts and Rain",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Deafened",
+          "statuses": [
+            "deafened"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Tsunami",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTsunami000",
+      "category": "Region or aura review",
+      "review": "Changing area and damage across turns.",
+      "activities": [
+        {
+          "id": "XrJhKOVyHfLOkJ8b",
+          "name": "Create Tsunami",
+          "type": "save"
+        },
+        {
+          "id": "o7MOuS6uL1ZV3dhe",
+          "name": "Start of Turn Effects",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Earthquake",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEarthquake",
+      "category": "Region or aura review",
+      "review": "Terrain events and GM choices.",
+      "activities": [
+        {
+          "id": "Z1voDdIYLdJfGwMH",
+          "name": "Cast",
+          "type": "save"
+        },
+        {
+          "id": "2CCthCZliyjEoavy",
+          "name": "End of Turn Fissures",
+          "type": "save"
+        },
+        {
+          "id": "qQtXMvVJZDL3NtNF",
+          "name": "Collapsing Structure Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Buried in Rubble",
+          "statuses": [
+            "prone"
+          ],
+          "changes": 0
+        }
+      ]
+    },
+    {
+      "name": "Hunger of Hadar",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHungerofHa",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Open Gateway",
+          "type": "utility"
+        },
+        {
+          "id": "G6bH5mBR3kkEYjYe",
+          "name": "Start of Turn Damage",
+          "type": "damage"
+        },
+        {
+          "id": "FGDyvqQz5JQQc5mf",
+          "name": "End of Turn Save",
+          "type": "save"
+        }
+      ]
+    },
+    {
+      "name": "Spirit Guardians",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpiritGuar",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "Cast and Save",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": [
+        {
+          "name": "Half Speed",
+          "statuses": [],
+          "changes": 1
+        }
+      ]
+    },
+    {
+      "name": "Moonbeam",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMoonbeam00",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Grease",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGrease0000",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Spike Growth",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpikeGrowt",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "name": "",
+          "type": "damage"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Conjure Animals",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureAni",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "summon"
+        },
+        {
+          "id": "dnd5eactivity100",
+          "type": "save"
+        }
+      ],
+      "nativeEffects": []
+    },
+    {
+      "name": "Fog Cloud",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFogCloud00",
+      "category": "Existing region starters",
+      "review": "Verify existing support; do not duplicate.",
+      "activities": [
+        {
+          "id": "dnd5eactivity000",
+          "type": "utility"
+        }
+      ]
+    }
+  ],
+  "inventory": [
+    {
+      "name": "Acid Splash",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAcidSplash",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Aid",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAid0000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Alarm",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAlarm00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Alter Self",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAlterSelf0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Animal Friendship",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAnimalFrie",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Animal Messenger",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAnimalMess",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Animal Shapes",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAnimalShap",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Animate Dead",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAnimateDea",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Animate Objects",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAnimateObj",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Antilife Shell",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAntilifeSh",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Antimagic Field",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAntimagicF",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Antipathy/Sympathy",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAntipathyS",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Arcane Eye",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplArcaneEye0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Arcane Gate",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbArcaneGate000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Arcane Lock",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplArcaneLock",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Arcane Vigor",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplArcaneVigo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Armor of Agathys",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplArmorofAga",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Arms of Hadar",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplArmsofHada",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Astral Projection",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAstralProj",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Augury",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAugury0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Aura of Life",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAuraofLife",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Aura of Purity",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAuraofPuri",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Aura of Vitality",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAuraofVita",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Awaken",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplAwaken0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Bane",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBane000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Banishing Smite",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBanishingS",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Banishment",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBanishment",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Barkskin",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBarkskin00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Beacon of Hope",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBeaconofHo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Beast Sense",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBeastSense",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Befuddlement",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBefuddleme",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Bestow Curse",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBestowCurs",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Bigby's Hand",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBigbysHand",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Blade Barrier",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBladeBarri",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Blade Ward",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBladeWard0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Bless",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBless00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Blight",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlight0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Blinding Smite",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindingSm",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Blindness/Deafness",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlindnessD",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Blink",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlink00000",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Blur",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBlur000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Burning Hands",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplBurningHan",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Call Lightning",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCallLightn",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Calm Emotions",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCalmEmotio",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Chain Lightning",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplChainLight",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Charm Monster",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCharmMonst",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Charm Person",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCharmPerso",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Chill Touch",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplChillTouch",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Chromatic Orb",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplChromaticO",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Circle of Death",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCircleofDe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Circle of Power",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCircleofPo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Clairvoyance",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplClairvoyan",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Clone",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplClone00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Cloud of Daggers",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCloudofDag",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Cloudkill",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCloudkill0",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Color Spray",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplColorSpray",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Command",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCommand000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Commune",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCommune000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Commune with Nature",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCommunewit",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Compelled Duel",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCompelledD",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Comprehend Languages",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplComprehend",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Compulsion",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCompulsion",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Cone of Cold",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConeofCold",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Confusion",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConfusion0",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Conjure Animals",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureAni",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Conjure Barrage",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureBar",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Conjure Celestial",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureCel",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Conjure Elemental",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureEle",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Conjure Fey",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureFey",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Conjure Minor Elementals",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureMin",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Conjure Volley",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureVol",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Conjure Woodland Beings",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplConjureWoo",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Contact Other Plane",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplContactOth",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Contagion",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplContagion0",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Contingency",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplContingenc",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Continual Flame",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplContinualF",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Control Water",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplControlWat",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Control Weather",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplControlWea",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCordonofAr",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Counterspell",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCounterspe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Create Food and Water",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCreateFood",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Create or Destroy Water",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCreateorDe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Create Undead",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCreateUnde",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Creation",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCreation00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Crown of Madness",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCrownofMad",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Crusader's Mantle",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCrusadersM",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Cure Wounds",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplCureWounds",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dancing Lights",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDancingLig",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Darkness",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDarkness00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Darkvision",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDarkvision",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Daylight",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDaylight00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Death Ward",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDeathWard0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Delayed Blast Fireball",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDelayedBla",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Demiplane",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDemiplane0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Destructive Wave",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDestructiv",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Detect Evil and Good",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDetectEvil",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Detect Magic",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDetectMagi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Detect Poison and Disease",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDetectPois",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Detect Thoughts",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDetectThou",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dimension Door",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDimensionD",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Disguise Self",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDisguiseSe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Disintegrate",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDisintegra",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dispel Evil and Good",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDispelEvil",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dispel Magic",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDispelMagi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dissonant Whispers",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDissonantW",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Divination",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDivination",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Divine Favor",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDivineFavo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Divine Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDivineSmit",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Divine Word",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDivineWord",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dominate Beast",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateBe",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Dominate Monster",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominateMo",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Dominate Person",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDominatePe",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Dragon's Breath",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDragonsBre",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Drawmij's Instant Summons",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDrawmijsIn",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Dream",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDream00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Druidcraft",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplDruidcraft",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Earthquake",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEarthquake",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Eldritch Blast",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEldritchBl",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Elemental Weapon",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplElementalW",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Elementalism",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplElementali",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Enhance Ability",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnhanceAbi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Enlarge/Reduce",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnlargeRed",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Ensnaring Strike",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnsnaringS",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Entangle",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEntangle00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Enthrall",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEnthrall00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Etherealness",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEtherealne",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Evard's Black Tentacles",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEvardsBlac",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Expeditious Retreat",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplExpeditiou",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Eyebite",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplEyebite000",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Fabricate",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFabricate0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Faerie Fire",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFaerieFire",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "False Life",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFalseLife0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fear",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",
+      "classification": "Existing creature triggers"
+    },
+    {
+      "name": "Feather Fall",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFeatherFal",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Feign Death",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFeignDeath",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Find Familiar",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFindFamili",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Find Steed",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFindSteed0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Find the Path",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFindthePat",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Find Traps",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFindTraps0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Finger of Death",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFingerofDe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fire Bolt",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFireBolt00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fire Shield",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFireShield",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fire Storm",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFireStorm0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fireball",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFireball00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Flame Blade",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFlameBlade",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Flame Strike",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFlameStrik",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Flaming Sphere",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFlamingSph",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Flesh to Stone",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFleshtoSto",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Fly",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFly0000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fog Cloud",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFogCloud00",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Forbiddance",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplForbiddanc",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Forcecage",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplForcecage0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Foresight",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplForesight0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Fount of Moonlight",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFountofMoo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Freedom of Movement",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFreedomofM",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Friends",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplFriends000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Gaseous Form",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGaseousFor",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Gate",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGate000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Geas",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGeas000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Gentle Repose",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGentleRepo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Giant Insect",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGiantInsec",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Glibness",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGlibness00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Globe of Invulnerability",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGlobeofInv",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Glyph of Warding",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGlyphofWar",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Goodberry",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGoodberry0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Grasping Vine",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGraspingVi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Grease",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGrease0000",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Greater Invisibility",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGreaterInv",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Greater Restoration",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGreaterRes",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Guardian of Faith",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGuardianof",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Guards and Wards",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGuardsandW",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Guidance",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGuidance00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Guiding Bolt",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGuidingBol",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Gust of Wind",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplGustofWind",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Hail of Thorns",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHailofThor",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hallow",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHallow0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hallucinatory Terrain",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHallucinat",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Harm",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHarm000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Haste",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHaste00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Heal",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHeal000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Healing Word",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHealingWor",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Heat Metal",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHeatMetal0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hellish Rebuke",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHellishReb",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Heroes' Feast",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHeroesFeas",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Heroism",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHeroism000",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Hex",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHex0000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hold Monster",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldMonste",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Hold Person",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHoldPerson",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Holy Aura",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHolyAura00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hunger of Hadar",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHungerofHa",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Hunter's Mark",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHuntersMar",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Hypnotic Pattern",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplHypnoticPa",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Ice Knife",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIceKnife00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Ice Storm",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIceStorm00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Identify",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIdentify00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Illusory Script",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIllusorySc",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Imprisonment",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplImprisonme",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Incendiary Cloud",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplIncendiary",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Inflict Wounds",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplInflictWou",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Insect Plague",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplInsectPlag",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Invisibility",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplInvisibili",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Jallarzi's Storm of Radiance",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplJallarzisS",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Jump",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplJump000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Knock",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplKnock00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Legend Lore",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLegendLore",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Leomund's Secret Chest",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLeomundsSe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Leomund's Tiny Hut",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLeomundsTi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Lesser Restoration",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLesserRest",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Levitate",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLevitate00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Light",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLight00000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Lightning Arrow",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLightningA",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Lightning Bolt",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLightningB",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Locate Animals or Plants",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLocateAnim",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Locate Creature",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLocateCrea",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Locate Object",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLocateObje",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Longstrider",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplLongstride",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mage Armor",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMageArmor0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mage Hand",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMageHand00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Magic Circle",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMagicCircl",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Magic Jar",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMagicJar00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Magic Missile",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMagicMissi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Magic Mouth",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMagicMouth",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Magic Weapon",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMagicWeapo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Major Image",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMajorImage",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mass Cure Wounds",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMassCureWo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mass Heal",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMassHeal00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mass Healing Word",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMassHealin",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mass Suggestion",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMassSugges",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Maze",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMaze000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Meld into Stone",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMeldintoSt",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Melf's Acid Arrow",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMelfsAcidA",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Mending",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMending000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Message",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMessage000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Meteor Swarm",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMeteorSwar",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mind Blank",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMindBlank0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mind Sliver",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMindSliver",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mind Spike",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMindSpike0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Minor Illusion",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMinorIllus",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mirage Arcane",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMirageArca",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mirror Image",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMirrorImag",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mislead",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMislead000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Misty Step",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMistyStep0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Modify Memory",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplModifyMemo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Moonbeam",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMoonbeam00",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Mordenkainen's Faithful Hound",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbFaithfulHound",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mordenkainen's Magnificent Mansion",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbMagnificentMa",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mordenkainen's Private Sanctum",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbPrivateSanctu",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Mordenkainen's Sword",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbswdMordenkain",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Move Earth",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplMoveEarth0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Nondetection",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplNondetecti",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Nystul's Magic Aura",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplNystulsMag",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Otiluke's Freezing Sphere",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplOtilukesFr",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Otiluke's Resilient Sphere",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplOtilukesRe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Otto's Irresistible Dance",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplOttosIrres",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Pass without Trace",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPasswithou",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Passwall",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPasswall00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Phantasmal Force",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbPhantasmalFor",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Phantasmal Killer",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPhantasmal",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Phantom Steed",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPhantomSte",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Planar Ally",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPlanarAlly",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Planar Binding",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPlanarBind",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Plane Shift",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPlaneShift",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Plant Growth",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPlantGrowt",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Poison Spray",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPoisonSpra",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Polymorph",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPolymorph0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Power Word Fortify",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordF",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Power Word Heal",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordH",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Power Word Kill",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordK",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Power Word Stun",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordS",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Prayer of Healing",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPrayerofHe",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Prestidigitation",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPrestidigi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Prismatic Spray",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPrismaticS",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Prismatic Wall",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPrismaticW",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Produce Flame",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplProduceFla",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Programmed Illusion",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplProgrammed",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Project Image",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplProjectIma",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Protection from Energy",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbProtectionFro",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Protection from Evil and Good",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbEvilAndGoodPr",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Protection from Poison",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplProtection",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Purify Food and Drink",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplPurifyFood",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Raise Dead",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRaiseDead0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Rary's Telepathic Bond",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRarysTelep",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Ray of Enfeeblement",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRayofEnfee",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Ray of Frost",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRayofFrost",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Ray of Sickness",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRayofSickn",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Regenerate",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRegenerate",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Reincarnate",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplReincarnat",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Remove Curse",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRemoveCurs",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Resistance",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplResistance",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Resurrection",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplResurrecti",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Reverse Gravity",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplReverseGra",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Revivify",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRevivify00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Rope Trick",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplRopeTrick0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sacred Flame",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSacredFlam",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sanctuary",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbSanctuary0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Scorching Ray",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplScorchingR",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Scrying",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplScrying000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Searing Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",
+      "classification": "Existing creature triggers"
+    },
+    {
+      "name": "See Invisibility",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSeeInvisib",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Seeming",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSeeming000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sending",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSending000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sequester",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSequester0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shapechange",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShapechang",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shatter",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShatter000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shield",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShield0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shield of Faith",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShieldofFa",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shillelagh",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShillelagh",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shining Smite",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShiningSmi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Shocking Grasp",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplShockingGr",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Silence",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSilence000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Silent Image",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSilentImag",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Simulacrum",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSimulacrum",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sleep",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSleep00000",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Sleet Storm",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSleetStorm",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Slow",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSlow000000",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Sorcerous Burst",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSorcerousB",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Spare the Dying",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSparetheDy",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Speak with Animals",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpeakwithA",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Speak with Dead",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpeakwithD",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Speak with Plants",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpeakwithP",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Spider Climb",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpiderClim",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Spike Growth",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpikeGrowt",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Spirit Guardians",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpiritGuar",
+      "classification": "Existing region starters"
+    },
+    {
+      "name": "Spiritual Weapon",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSpiritualW",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Staggering Smite",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStaggering",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Starry Wisp",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStarryWisp",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Steel Wind Strike",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSteelWindS",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Stinking Cloud",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStinkingCl",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Stone Shape",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStoneShape",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Stoneskin",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStoneskin0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplStormofVen",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Suggestion",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSuggestion",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Aberration",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonAber",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Beast",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonBeas",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Celestial",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonCele",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Construct",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonCons",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Dragon",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonDrag",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Elemental",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonElem",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Fey",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonFey0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Fiend",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonFien",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Summon Undead",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSummonUnde",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sunbeam",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSunbeam000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Sunburst",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSunburst00",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Swift Quiver",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSwiftQuive",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Symbol",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSymbol0000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Synaptic Static",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplSynapticSt",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Tasha's Bubbling Cauldron",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTashasBubb",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Tasha's Hideous Laughter",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTashasHide",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Telekinesis",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTelekinesi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Telepathy",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTelepathy0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Teleport",
+      "level": 7,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTeleport00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Teleportation Circle",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTeleportat",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Tenser's Floating Disk",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTensersFlo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Thaumaturgy",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplThaumaturg",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Thorn Whip",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplThornWhip0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Thunderclap",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplThundercla",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Thunderous Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplThunderous",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Thunderwave",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplThunderwav",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Time Stop",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTimeStop00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Toll the Dead",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTolltheDea",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Tongues",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTongues000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Transport via Plants",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTransportv",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Tree Stride",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTreeStride",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "True Polymorph",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTruePolymo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "True Resurrection",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTrueResurr",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "True Seeing",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTrueSeeing",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "True Strike",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTrueStrike",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Tsunami",
+      "level": 8,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplTsunami000",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Unseen Servant",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplUnseenServ",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Vampiric Touch",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplVampiricTo",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Vicious Mockery",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplViciousMoc",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Vitriolic Sphere",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplVitriolicS",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Wall of Fire",
+      "level": 4,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofFire",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Wall of Force",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofForc",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Wall of Ice",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofIce0",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Wall of Stone",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofSton",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Wall of Thorns",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWallofThor",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Warding Bond",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWardingBon",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Water Breathing",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWaterBreat",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Water Walk",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWaterWalk0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Web",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWeb0000000",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Weird",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWeird00000",
+      "classification": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Wind Walk",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWindWalk00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Wind Wall",
+      "level": 3,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWindWall00",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Wish",
+      "level": 9,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWish000000",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Witch Bolt",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWitchBolt0",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Word of Radiance",
+      "level": 0,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWordofRadi",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Word of Recall",
+      "level": 6,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWordofReca",
+      "classification": "No automatic turn-trigger entry proposed in this pass"
+    },
+    {
+      "name": "Wrathful Smite",
+      "level": 1,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplWrathfulSm",
+      "classification": "Repeat-save candidates"
+    },
+    {
+      "name": "Yolande's Regal Presence",
+      "level": 5,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplYolandesRe",
+      "classification": "Region or aura review"
+    },
+    {
+      "name": "Zone of Truth",
+      "level": 2,
+      "uuid": "Compendium.dnd-players-handbook.spells.Item.phbsplZoneofTrut",
+      "classification": "Region or aura review"
+    }
+  ]
+}

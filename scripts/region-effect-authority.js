@@ -1,10 +1,11 @@
+import {getRegionSpellTable} from "./region-library.js";
 const ID="ugmuls-5-5e-automation";
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export function managedRegionEffect(model) {
     const behavior=model.behavior;
     if(behavior?.getFlag?.(ID,"managedRegionEffect"))return true;
     const item=fromUuidSync(model.region?.flags?.dnd5e?.item??"",{strict:false});
-    const config=item?game.settings.get(ID,"spellTable")?.[item.name]:null;
+    const config=item?getRegionSpellTable()?.[item.name]:null;
     return !!item&&(config?.regionEffects??[]).some(effect=>behavior?.name===`${item.name} - Effect - ${effect.name}`);
 }
 export function installRegionEffectAuthority(Type=CONFIG.RegionBehavior?.dataModels?.["dnd5e.applyActiveEffect"]) {

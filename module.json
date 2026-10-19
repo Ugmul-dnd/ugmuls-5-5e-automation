@@ -36,6 +36,9 @@
     ]
   },
   "esmodules": [
+    "scripts/region-library.js",
+    "scripts/spell-escapes.js",
+    "scripts/movement-placement.js",
     "scripts/target-use-guard.js",
     "scripts/animation-wait.js",
     "scripts/chat-refresh.js",
@@ -102,7 +105,10 @@
     "scripts/pending-damage.js",
     "scripts/parry.js",
     "scripts/pending-cast.js",
-    "scripts/concentration-checks.js"
+    "scripts/concentration-checks.js",
+    "scripts/blink.js",
+    "scripts/escape-check-prompts.js",
+    "scripts/acid-arrow.js"
   ],
   "styles": [
     "styles/save-roll-controls.css",

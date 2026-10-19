@@ -53,7 +53,8 @@ export async function receiveSavePrompt(packet) {
     if (packet.userId !== game.user.id) return;
     const message = game.messages.get(packet.messageId);
     const source = game.users.get(packet.sourceId);
-    if (!message || !source?.active) return;
+    if (!message || !source?.active || message.getFlag?.(MODULE_ID,"regionPlacementOnly")===true) return;
+    if(["condition","skipped","manual","manualCheck","check"].includes(message.getFlag?.(MODULE_ID,"recurringTrigger")?.phase))return;
     const token = await fromUuid(packet.tokenUuid);
     const actor = token?.actor;
     const retryAllowed=packet.retry===true&&actor?.testUserPermission(source,"OWNER")&&
@@ -92,6 +93,7 @@ export async function receiveSavePrompt(packet) {
     const bonus = CONFIG.Dice.BasicRoll.replaceFormulaData(activity.save.bonus ?? "", activity.getRollData(), { missing: 0 });
     const bonusData = CONFIG.Dice.BasicRoll.constructParts({ activityBonus: bonus });
     const config = { ability, target: dc };
+    if(message.getFlag?.(MODULE_ID,"recurringTrigger")?.advantage===true||globalThis.Ugmuls55eAutomationSpellEscapes?.initialSaveAdvantage(message,actor))config.advantage=true;
     if (bonusData.parts.length) config.rolls = [bonusData];
     try {
         const auto=!takeover&&globalThis.Ugmuls55eAutomationNpcDamage?.shouldAutoRollNpc(actor)===true;
@@ -145,6 +147,8 @@ export async function promptTargetSave(message, token, trigger) {
 }
 
 export async function sendSavePrompt(message, token, kind) {
+    if(message.getFlag?.(MODULE_ID,"regionPlacementOnly"))return;
+    if(["condition","skipped","manual","manualCheck","check"].includes(message.getFlag?.(MODULE_ID,"recurringTrigger")?.phase))return;
     if (!isEligibleTarget(token)) return;
     if(globalThis.Ugmuls55eAutomationGrapple?.deferGrappleSave(message))return;
     if(await globalThis.Ugmuls55eAutomationMetamagic?.carefulSave(message,token))return;

@@ -184,6 +184,7 @@ export async function rollPendingMovementDamage(card) {
                 isCritical: false, scaling: Math.max(0, reservation.data.castLevel - spell.system.level),
                 movementDamageSteps: reservation.steps
             }, { configure: false }, { data: {
+                flags:{[MODULE_ID]:{movementDamageRoll:true}},
                 flavor: `${reservation.data.spellName}: ${reservation.steps} movement damage increment(s)`,
                 system: { targets: [reservation.data.target] }
             } });
@@ -211,6 +212,7 @@ export async function rollPendingMovementDamage(card) {
         rolls = await activity.rollDamage({
             isCritical: false, scaling: Math.max(0, data.castLevel - spell.system.level), movementDamageSteps: steps
         }, { configure: false }, { data: {
+            flags:{[MODULE_ID]:{movementDamageRoll:true}},
             flavor: `${data.spellName}: ${steps} movement damage increment(s)`, system: { targets: [data.target] }
         } });
     } catch (err) {

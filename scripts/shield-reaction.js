@@ -65,7 +65,7 @@ export async function refreshShieldAttack(attack) {
 
 export function damageMissedAfterAttack(damage) {
     if (damage?.type !== "damage") return false;
-    if(damage.getFlag?.(MODULE_ID,"masteryGraze"))return false;
+    if(damage.getFlag?.(MODULE_ID,"masteryGraze")||globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(damage.getAssociatedActivity?.()))return false;
     const origin=damage.system?.origin;
     const card=typeof origin === "string" ? game.messages.get(origin) : origin;
     if (!card&&!damage.getFlag?.(MODULE_ID,"damageAttackId")) return false;

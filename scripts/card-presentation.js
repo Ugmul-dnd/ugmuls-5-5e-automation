@@ -1,11 +1,18 @@
 const MODULE_ID="ugmuls-5-5e-automation";
 
+// Inspect presentation state only. Geometry reads during render hooks force
+// pending DOM writes through style/layout for the entire chat log.
 export function rollCardVisible(message){
-    // A document can exist while DsN still suppresses its chat presentation.
     if(message?._dice3danimating&&game.settings.get("dice-so-nice","immediatelyDisplayChatMessages")!==true)return false;
     const nodes=globalThis.document?.querySelectorAll?.('[data-message-id="'+message?.id+'"]')??[];
-    return Array.from(nodes).some(node=>node.isConnected!==false&&!node.hidden&&!node.closest?.('.dsn-hide,[hidden]')&&
-        (!node.getClientRects||node.getClientRects().length>0));
+    return Array.from(nodes).some(node=>{
+        if(node.isConnected===false||node.closest?.('.dsn-hide'))return false;
+        for(let ancestor=node;ancestor;ancestor=ancestor.parentElement){
+            const ownHiding=ancestor.dataset?.rsaProcessedAttack||ancestor.dataset?.rsaProcessedFace;
+            if(!ownHiding&&(ancestor.hidden||ancestor.style?.display==="none"||ancestor.style?.visibility==="hidden"||ancestor.style?.visibility==="collapse"))return false;
+        }
+        return true;
+    });
 }
 export function attackCardProgress(message) {
     if(message?.type!=="usage"||message.getAssociatedActivity?.()?.type!=="attack")return null;
@@ -13,9 +20,32 @@ export function attackCardProgress(message) {
     return {attack:attacks.some(rollCardVisible),damage:damages.some(rollCardVisible),attackRecorded:attacks.length>0,damageRecorded:damages.length>0};
 }
 
+const targetDisplayInitialized=new WeakSet();
+export function defaultSpellTargetDisplay(message,html){
+    const root=html?.[0]??html;
+    const entries=[{card:message,root}];
+    for(const summary of root?.querySelectorAll?.('.card-summary[data-message-id]')??[]){const card=game.messages.get(summary.dataset.messageId);if(card)entries.push({card,root:summary});}
+    for(const {card,root}of entries){
+        if(!card||targetDisplayInitialized.has(card)||!card.system?.targets?.length)continue;
+        const itemType=card.system.item?.type??card.getAssociatedItem?.()?.type??card.getAssociatedActivity?.()?.item?.type;
+        if(itemType!=="spell")continue;
+        targetDisplayInitialized.add(card);
+        card._targetState??={checked:new Map(),mode:""};
+        card._targetState.mode="targeted";card._targetState.checked?.clear?.();
+        // Connected trays can retain their earlier Selected mode; update them
+        // through the native setter. Detached trays read this state on insertion.
+        const roots=root?[root]:globalThis.document?.querySelectorAll?.('[data-message-id="'+card.id+'"]')??[];
+        for(const node of roots)for(const targets of node.querySelectorAll?.('recorded-targets')??[]){
+            if(targets.chatMessage===card&&targets.targetingMode!=="targeted")targets.targetingMode="targeted";
+        }
+    }
+}
 export function styleActivityCard(message,html) {
     const root=html instanceof HTMLElement ? html : html?.[0];
     if (!root) return;
+    // Read result presentation before making any changes to this card.
+    const progress=game.settings.get(MODULE_ID,"simplifyAttackCards")===true?attackCardProgress(message):null;
+    defaultSpellTargetDisplay(message,root);
     hideUndoneGraze(message,root);
     addMetamagicTags(message,root);
     root.classList.add("rsa-action-colors");
@@ -31,7 +61,6 @@ export function styleActivityCard(message,html) {
     if(root.dataset.rsaProcessedAttack){root.hidden=false;root.style.display="";delete root.dataset.rsaProcessedAttack;root.classList.remove("rsa-processed-attack");}
     const previousFace=root.querySelector(".chat-card");
     if(previousFace?.dataset.rsaProcessedFace){previousFace.hidden=false;previousFace.style.display="";delete previousFace.dataset.rsaProcessedFace;}
-    const progress=attackCardProgress(message);
     if (!progress) {
         if (message.type === "attack") addAttackDamageButton(message,root);
         return;
@@ -300,6 +329,8 @@ Hooks.once("ready",()=>{
     globalThis.Ugmuls55eAutomationFollowChatChanges=followChatCardChanges;
     Hooks.on("dnd5e.renderChatMessage",styleActivityCard);
     Hooks.on("renderChatMessageHTML",refreshOrigin);
+    Hooks.on("createChatMessage",card=>defaultSpellTargetDisplay(card));
+    Hooks.on("updateChatMessage",card=>defaultSpellTargetDisplay(card));
     Hooks.on("updateChatMessage",(card,changes)=>{
         if(card.type==="attack"&&changes.flags?.[MODULE_ID]?.seekingSpellUsed)
             for(const damage of linkedAttackDamage(card))ui.chat?.updateMessage?.(damage);
