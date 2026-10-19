@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Add automatic token-attached Heat Aura, Flame Aura and Fire Aura Regions for ten Monster Manual creatures. Regions default to hidden from players and retain the Region Library visibility override. Use each monsterâ€™s native radius/damage at its own turn end, exclude the source, offer GM target choice where specified and pause Azer auras while Incapacitated. Damage cards default to their recorded targets.
+
+- Add native recurring damage for Vrock, Pit Fiend, Vine Blight, Tree Blight, Shambling Mound and Blob of Annihilation. Keep start-turn damage separate from end-turn repeat saves; show optional native escape actions for Tree Blight and Shambling Mound after damage. Add Pit Fiend confirmed-hit poison saving throws, supplying its missing Constitution ability on temporary helpers only. Preserve source damage, DCs, effects and local library overrides.
+
+- Add the first Monster Manual grapple-escape batch: native grapple effects from 24 monsters now show optional action escape cards at the affected creature's turn start. Record the originating monster's native Escape Check DC, offer Athletics/Acrobatics where allowed, and default Mimic escapes to Disadvantage. Success removes only the tracked grapple and its combined native conditions after dice; separate poison/paralysis remains. No forced action spending, movement checks, grapple-capacity counters, or swallowed/ongoing-damage mechanics are added.
+
+- Remove Unsettling Visage and Haunting Glare targeting Regions at the originating monster's turn end, preserving applied creature effects and their repeat saves.
+
+- Exclude Graveyard Revenant from its own Haunting Glare automatic area targets, matching the Unsettling Visage self-exclusion while preserving other eligible creatures.
+
+- Exclude Doppelganger from its own Unsettling Visage automatic area targets. Preserve all other eligible creatures, including creatures sharing its disposition; other areas retain their existing targeting.
+
+- Fix tracked Monster Manual effects appearing not to apply: newly applied copies now receive a fresh native effect start timestamp and clear inherited expired state, instead of retaining an imported start time of zero. Preserve source book effects, native duration/status/stat changes and external turn automation.
+
+- Prevent repeated Grell poison-save cards across hit/damage updates: store target UUIDs as values in a persistent handoff array instead of dotted flag keys, and retain a completed-handoff guard during local update races. Pending saves are reused rather than recreated.
+
+- Fix monster natural-weapon saves being excluded from save prompts and repeat-effect registration. Accept Save activities on weapon items alongside spells/features, and allow explicitly configured Monster Manual repeat recipes to resolve weapon sources. Correct Grell coverage to use its actual weapon type; remove attack-only description links and unrelated grapple effects from its temporary poison-save card.
+
+- Fix Grell's initial poison-save handoff: after a confirmed Paralyzing Tentacles hit and dice animation, create a separate native Constitution-save card for that recorded target, with prepared DC and persisted item data. Preserve the on-hit grapple, avoid repeat damage/resources/templates, and prevent duplicate follow-up cards. Failed saves use the existing poison/paralysis effect and repeat-save tracking.
+
+- Add the first Monster Manual repeat-save batch: eight shared Trigger Library recipes covering Carrion Crawler, Chuul, Grell poison/paralysis, Doppelganger, Graveyard Revenant, Myconid Adult/Sovereign, Modron Pentadrone, Quasit and all four Gold Dragon ages. Native effects register source-specific end-turn saves with recorded DCs; success removes only the tracked effect after dice animations. Preserve stat changes, durations and separate grapples. Choice-based abilities, staged/counter effects, recurring damage and grapple escape prompts remain outside this batch.
+
 - Add Aura of Life's resistance-only Region: default the native 30-foot self Emanation to place on cast and apply its native Necrotic resistance effect to the caster and matching-disposition allies while inside. Suppress the built-in 1-HP roll; healing and maximum-HP protection remain manual. Allow effect-only Region recipes to specify their targeting without dummy activity triggers.
 
 - Apply Storm of Radiance die-count simplification at the final native damage-roll configuration step as well as pre-roll, including dialog rebuilds and imported spell copies.
@@ -63,7 +85,7 @@
 
 - Add Power Word Stun to the Creature Effect Trigger Library: the native Stunned effect prompts a Constitution save at turn end using the caster DC recorded on application. Successful saves remove only that stun after dice animations; the separate No Movement effect does not prompt saves. The book spell remains unchanged.
 
-- Show optional escape action buttons to the affected token’s owners as well as GMs. Player requests are validated and released by the active GM before routing the roll prompt.
+- Show optional escape action buttons to the affected tokenï¿½s owners as well as GMs. Player requests are validated and released by the active GM before routing the roll prompt.
 
 - Wait for action-based escape check dice animations on connected clients before removing the restraint or ending its concentration.
 

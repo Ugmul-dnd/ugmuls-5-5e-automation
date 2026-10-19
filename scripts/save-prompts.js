@@ -78,7 +78,7 @@ export async function receiveSavePrompt(packet) {
     if(globalThis.Ugmuls55eAutomationGrapple?.deferGrappleSave(message))return;
     const activity = message.getAssociatedActivity?.();
     if (activity?.type !== "save") return;
-    if (packet.action === "promptSpellSave" && (!["spell", "feat"].includes(activity.item?.type) || message.getFlag?.(MODULE_ID, "regionTriggered"))) return;
+    if (packet.action === "promptSpellSave" && (!["spell", "feat", "weapon"].includes(activity.item?.type) || message.getFlag?.(MODULE_ID, "regionTriggered"))) return;
     const ability = Array.from(activity.save.ability ?? [])[0];
     const rawDC = activity.save.dc.value;
     const dc = rawDC == null || rawDC === "" ? NaN : Number(rawDC);

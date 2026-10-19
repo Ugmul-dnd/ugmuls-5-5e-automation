@@ -1,11 +1,10 @@
-import {selectSaveUser} from "./save-prompts.js";
 const ID="ugmuls-5-5e-automation",opened=new Set();
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
-export async function promptEscapeCheck(card){
+export async function promptEscapeCheck(card,user=game.user){
  if(!authority())return;
  const link=card.getFlag(ID,"recurringTrigger");if(!["manualCheck","check"].includes(link?.phase))return;
  const effect=await fromUuid(link.effect),state=effect?.getFlag?.(ID,"recurringEffect");if(!effect||effect.disabled||state?.instance!==link.instance||card.system.outcomes?.has(card.system.targets?.[0]?.token))return;
- const token=await fromUuid(card.system.targets?.[0]?.token),user=token?.actor&&selectSaveUser(token.actor,game.users,game.users.activeGM);if(!user)return;
+ const token=await fromUuid(card.system.targets?.[0]?.token);if(!token?.actor||!user?.active||(!user.isGM&&!token.actor.testUserPermission?.(user,"OWNER")))return;
  const session={id:foundry.utils.randomID(),user:user.id,source:game.user.id};
  await card.setFlag(ID,"escapeCheckSession",session);await card.setFlag(ID,"recurringTrigger",{...link,phase:"check"});
  const packet={action:"promptEscapeCheck",card:card.id,session:session.id,user:user.id,source:game.user.id};
@@ -24,7 +23,14 @@ export async function receiveEscapeCheck(packet){
   for(const app of apps)if(app.id===dialogId||app.options?.id===dialogId)await app.close();
   const activity=card.getAssociatedActivity(),dialog={configure:true,options:{id:dialogId}};
   const positioned=globalThis.Ugmuls55eAutomationDamage?.configurePromptDialog?.("save",dialog)??dialog;
-  await actor.rollSkill({skill:"ath",ability:"str",target:state.dc},positioned,{data:{speaker:ChatMessage.getSpeaker({actor,token,scene:token.parent}),system:{...activity.messageSources,origin:card.id},flags:{[ID]:{escapeCheckResult:{card:card.id,session:packet.session}}}}});
+  const skills=state.checkSkills?.length?state.checkSkills:["ath"];
+  let skill=skills[0];
+  if(skills.length>1){
+   skill=await foundry.applications.api.DialogV2.wait({window:{title:"Escape grapple"},content:"<p>Choose the check for this escape action.</p>",rejectClose:false,buttons:skills.map(key=>({action:key,label:key==="acr"?"Dexterity (Acrobatics)":"Strength (Athletics)",callback:()=>key}))});
+   if(!skills.includes(skill))return;
+   if(effect.disabled||effect.getFlag(ID,"recurringEffect")?.instance!==link.instance||card.system.outcomes?.has(token.uuid)||card.getFlag(ID,"escapeCheckSession")?.id!==packet.session)return;
+  }
+  await actor.rollSkill({skill,ability:skill==="acr"?"dex":"str",target:state.dc,...(state.escapeDisadvantage?{disadvantage:true}:{})},positioned,{data:{speaker:ChatMessage.getSpeaker({actor,token,scene:token.parent}),system:{...activity.messageSources,origin:card.id},flags:{[ID]:{escapeCheckResult:{card:card.id,session:packet.session}}}}});
  }finally{opened.delete(packet.session);}
 }
 export function validateEscapeCheckResult(card){const link=card.getFlag?.(ID,"escapeCheckResult");if(!link)return;const session=game.messages.get(link.card)?.getFlag?.(ID,"escapeCheckSession");if(session?.id!==link.session||session.user!==game.user.id)return false;}

@@ -28,7 +28,7 @@ export function defaultSpellTargetDisplay(message,html){
     for(const {card,root}of entries){
         if(!card||targetDisplayInitialized.has(card)||!card.system?.targets?.length)continue;
         const itemType=card.system.item?.type??card.getAssociatedItem?.()?.type??card.getAssociatedActivity?.()?.item?.type;
-        if(itemType!=="spell")continue;
+        if(itemType!=="spell"&&!card.getFlag?.(MODULE_ID,"monsterAuraDamage"))continue;
         targetDisplayInitialized.add(card);
         card._targetState??={checked:new Map(),mode:""};
         card._targetState.mode="targeted";card._targetState.checked?.clear?.();

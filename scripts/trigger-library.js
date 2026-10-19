@@ -351,10 +351,795 @@ const PROMPT_ONLY_DEFAULTS={
  ...Object.fromEntries([["str","Strength","S8jxTZQbT8KKSg5V"],["dex","Dexterity","pqGQCk5wZx196HuY"],["con","Constitution","5aPQT5DlL6Igaxh4"],["int","Intelligence","EruTLG8AjsLULgHj"],["wis","Wisdom","J77AMHW5tROddZQg"],["cha","Charisma","xewLYmHBxPTEKPlU"]].map(([ability,label,effectId])=>["contagion-"+ability,{name:"Contagion ("+label+")",sourceIdentifier:"contagion",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplContagion0",effectName:"Infected ("+label+")",effectId,saveActivityId:"dnd5eactivity000"}])),
  ...Object.fromEntries([["antipathy","Frightened","aNztI08V5rN4s5mF","VlGQ41g1j0LeL8QY","Antipathy Save"],["sympathy","Charmed","pkTbvXvccMakDjyU","J6kTEeQc2cCyfppj","Sympathy Save"]].map(([key,effectName,effectId,saveActivityId,saveActivity])=>[key,{name:"Antipathy/Sympathy ("+key+")",sourceIdentifier:"antipathy-sympathy",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplAntipathyS",effectName,effectId,saveActivityId,saveActivity,promptMode:"manual",manualSaveLabel:"Confirm eligibility - Roll save",manualSaveNote:"Only roll if this creature ended its turn more than 120 feet from the spell's target. Confirm eligibility at the table; effect removal and temporary immunity remain manual."}]))
 };
-export const TRIGGER_DEFAULTS=Object.freeze({...Object.fromEntries(Object.entries(PROMPT_ONLY_DEFAULTS).map(([key,entry])=>[key,Object.freeze({enabled:true,attachment:"creature",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Save",endOnSuccess:false,manualResolution:true,...entry})])),...Object.fromEntries(Object.entries(HEALING_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(SAVE_FIRST_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(DELAYED_DAMAGE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"power-word-stun":Object.freeze({name:"Power Word Stun",enabled:true,attachment:"creature",sourceKind:"syntheticSave",sourceIdentifier:"power-word-stun",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordS",effectName:"Stunned",effectId:"o7XJceFSBTiIIPFo",event:"turnEnd",damageActivity:"",saveActivity:"End of Turn Save",saveActivityId:"rsaStunEndSave01",saveAbility:"con",damageFormula:"",endOnSuccess:true}),...Object.fromEntries(Object.entries(ESCAPE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"blink":Object.freeze({name:"Blink",enabled:true,attachment:"creature",sourceKind:"blink",effectName:"Blink — Active",event:"turnEnd",damageActivity:"",saveActivity:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplBlink00000"}),"grapple":Object.freeze({name:"Grapple",enabled:true,attachment:"creature",sourceKind:"grapple",effectName:"Grappled",event:"turnStart",promptMode:"manual",damageActivity:"",saveActivity:"Escape Grapple",endOnSuccess:true}),...Object.fromEntries(Object.entries(EVENT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(REPEAT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"searing-smite":Object.freeze({name:"Searing Smite",enabled:true,attachment:"creature",effectName:"Seared",event:"turnStart",damageActivity:"Damage",saveActivity:"Start of Turn Save",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",endOnSuccess:true}),"fear":Object.freeze({name:"Fear",enabled:true,attachment:"creature",effectName:"Fear",effectId:"ijiWLu6EJZmEJPOZ",event:"turnEnd",damageActivity:"",saveActivity:"Save",saveActivityId:"dnd5eactivity000",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",saveCondition:"gmNoLineOfSight",targetingRegionCleanup:"casterTurnEnd",endOnSuccess:true})});
+const MONSTER_DAMAGE_DEFAULTS={
+  "mm-damage-pit-fiend": {
+    "name": "Pit Fiend - Bite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "bite",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmPitFiend000000.Item.mmBite0000000000",
+    "effectName": "Poisoned",
+    "effectId": "O1edMGJIx0MF1uze",
+    "event": "turnStart",
+    "damageActivity": "Add'l Poison Damage",
+    "damageActivityId": "aa2GUeTEVLOdmfrB",
+    "damageFormula": "",
+    "saveActivity": "Repeat save",
+    "saveActivityId": "fM7YmQ4hBtRXJkMe",
+    "saveEvent": "turnEnd",
+    "endOnSuccess": true,
+    "saveAbility": "con",
+    "initialAttackId": "xWlMeXFjELfSUWX9"
+  },
+  "mm-damage-vrock": {
+    "name": "Vrock - Spores",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "spores",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmVrock000000000.Item.mmSpores00000000",
+    "effectName": "Poisoned",
+    "effectId": "DeVYxc3BdGlZNeD9",
+    "event": "turnStart",
+    "damageActivity": "Damage While Poisoned",
+    "damageActivityId": "ukZveNVmvvtwbDj0",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "voqQeTnihpy3BTFf",
+    "saveEvent": "turnEnd",
+    "endOnSuccess": true
+  },
+  "mm-damage-vine-blight": {
+    "name": "Vine Blight - Constricting Vine",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "constricting-vine",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmVineBlight0000.Item.mmConstrictingVi",
+    "effectName": "Grappled",
+    "effectId": "34pNktSSN7SVVlBY",
+    "event": "turnStart",
+    "damageActivity": "Damage: Grappled",
+    "damageActivityId": "7voODpkc7vuuouqM",
+    "damageFormula": "",
+    "saveActivity": "",
+    "endOnSuccess": false
+  },
+  "mm-damage-tree-blight": {
+    "name": "Tree Blight - Grasping Root",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "grasping-root",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmTreeBlight0000.Item.mmGraspingRoot00",
+    "effectName": "Grappled",
+    "effectId": "PGUkhbWecRqF1RUk",
+    "event": "turnStart",
+    "damageActivity": "Damage: Start of Turns",
+    "damageActivityId": "ZfTdvK7PuLzxKtZw",
+    "damageFormula": "",
+    "saveActivity": "Escape Check",
+    "escapeCheck": true,
+    "checkActivityId": "DlEX7Ca1nF3vxD6S",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "saveEvent": "turnStart",
+    "promptMode": "manual",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Athletics or Acrobatics against the originating monster’s recorded escape DC."
+  },
+  "mm-damage-shambling-mound": {
+    "name": "Shambling Mound - Engulf",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "engulf",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmShamblingMound.Item.mmEngulf00000000",
+    "effectName": "Grappled, Blinded & Restrained",
+    "effectId": "vsa7d6xWOAvWdOWM",
+    "event": "turnStart",
+    "damageActivity": "Engulfed: Damage",
+    "damageActivityId": "Exfa4q7O4SvXjGt7",
+    "damageFormula": "",
+    "saveActivity": "Escape Check",
+    "escapeCheck": true,
+    "checkActivityId": "Ps27Q3biyThByJeQ",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "saveEvent": "turnStart",
+    "promptMode": "manual",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Athletics or Acrobatics against the originating monster’s recorded escape DC."
+  },
+  "mm-damage-blob-of-annihilation": {
+    "name": "Blob of Annihilation - Engulf",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterDamage",
+    "sourceIdentifier": "engulf",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmBlobOfAnnihila.Item.mmEngulf00000000",
+    "effectName": "Total Cover, Suffocating & Restrained",
+    "effectId": "vsa7d6xWOAvWdOWM",
+    "event": "turnStart",
+    "damageActivity": "Engulfed: Damage",
+    "damageActivityId": "Exfa4q7O4SvXjGt7",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "5o0Bh8PQaojx5XMx",
+    "saveEvent": "turnEnd",
+    "endOnSuccess": true
+  }
+};
+const MONSTER_ESCAPE_DEFAULTS={
+  "mm-escape-1": {
+    "name": "Aboleth / Giant Squid / Otyugh - Tentacle",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "tentacle",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmAboleth0000000.Item.mmTentacle000000",
+    "effectName": "Grappled",
+    "effectId": "KxcWsIHohpNmagLJ",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "AXTWfIqBExpxSKly",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-2": {
+    "name": "Ankheg - Bite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "bite",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmAnkheg00000000.Item.mmBite0000000000",
+    "effectName": "Grappled",
+    "effectId": "ihvVTpfklXa7XAe2",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "A60yOG1E4jMUHpOf",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-3": {
+    "name": "Barbed Devil - Claws",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "claws",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmBarbedDevil000.Item.mmClaws000000000",
+    "effectName": "Grappled",
+    "effectId": "MpjWPflcv7Jqd7Tu",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "5UtgpODC3lrTQd5t",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-4": {
+    "name": "Bugbear Warrior - Grab",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "grab",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmBugbearWarrior.Item.mmGrab0000000000",
+    "effectName": "Grappled",
+    "effectId": "2N5R5UunQHBncwF3",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "KAoKjQKNTmMtuJG3",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-5": {
+    "name": "Chuul / Glabrezu - Pincer",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "pincer",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmChuul000000000.Item.mmPincer00000000",
+    "effectName": "Grappled",
+    "effectId": "GCED8YlF6qXTgEkd",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "uVVP0skhv3PLMfnz",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-6": {
+    "name": "Crocodile - Bite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "bite",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmCrocodile00000.Item.mmBite0000000000",
+    "effectName": "Grappled & Restrained",
+    "effectId": "DmAM7moVZNE5wb5i",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "kPgRugxvd6oDkyKw",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-7": {
+    "name": "Giant Crab - Claw",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "claw",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantCrab00000.Item.mmClaw0000000000",
+    "effectName": "Grappled",
+    "effectId": "LUQxsTZO5TCSCD5L",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "6m9rHNYKdMsKjSOj",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-8": {
+    "name": "Giant Crocodile - Bite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "bite",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantCrocodile.Item.mmBite0000000000",
+    "effectName": "Grappled & Restrained",
+    "effectId": "sBCqplORWr2DwgKU",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "3826u6DCZ7et6CJG",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-9": {
+    "name": "Giant Octopus - Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantOctopus00.Item.mmTentacles00000",
+    "effectName": "Grappled & Restrained",
+    "effectId": "GyZrmzBP0NB8oRZI",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "Vo2UIgas007G3QXv",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-10": {
+    "name": "Giant Scorpion - Claw",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "claw",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantScorpion0.Item.mmClaw0000000000",
+    "effectName": "Grappled",
+    "effectId": "4UopxSJg0E7WAHOk",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "6By7NkEmrZGMhJ0A",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-11": {
+    "name": "Grell - Paralyzing Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "paralyzing-tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGrell000000000.Item.PYIeX0xuuewqAlgZ",
+    "effectName": "Grappled",
+    "effectId": "nya2ONNV26cT8J5q",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "J3T5YZvBmAqWn4TJ",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-12": {
+    "name": "Griffon - Rend",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "rend",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGriffon0000000.Item.mmRend0000000000",
+    "effectName": "Grappled",
+    "effectId": "FqB7QZZZTiN3trAC",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "6w1Y0JvkOG2S5XeK",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-13": {
+    "name": "Mimic - Adhesive (Object Form Only)",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "adhesive",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmMimic000000000.Item.mmAdhesive000000",
+    "effectName": "Grappled",
+    "effectId": "PTmNYKeeD3d7EbJn",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "A8tsdGbbQVLbTmxk",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": true,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC. This escape check has Disadvantage."
+  },
+  "mm-escape-14": {
+    "name": "Mimic - Pseudopod",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "pseudopod",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmMimic000000000.Item.mmPseudopod00000",
+    "effectName": "Grappled",
+    "effectId": "grTPAGPf3Hftz86s",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "tKl9pgRq1J5u0OxA",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": true,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC. This escape check has Disadvantage."
+  },
+  "mm-escape-15": {
+    "name": "Roc - Talons",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "talons",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmRoc00000000000.Item.mmTalons00000000",
+    "effectName": "Grappled & Restrained",
+    "effectId": "14763NQ9RwBF1Vz8",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "GQidb2QEW4CgDtYB",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-16": {
+    "name": "Tyrannosaurus Rex - Bite",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "bite",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmTyrannosaurusR.Item.mmBite0000000000",
+    "effectName": "Grappled & Restrained",
+    "effectId": "zlY4Bf1g2pEv81sd",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "p9WTtJg6LKu7NQxF",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-17": {
+    "name": "Vampire - Grave Strike (Vampire Form Only)",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "grave-strike",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmVampire0000000.Item.mmGraveStrike000",
+    "effectName": "Grappled",
+    "effectId": "BCbp3JZoHEGQ3Nzu",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "eUp578Oy5y1HidZ9",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-18": {
+    "name": "Vampire Spawn - Claw",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "claw",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmVampireSpawn00.Item.mmClaw0000000000",
+    "effectName": "Grappled",
+    "effectId": "SVSXgb9yjhotXMza",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "f3Xl0H0C7GX0jnje",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-3-1": {
+    "name": "Mezzoloth - Claws",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "claws",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmBarbedDevil000.Item.mmClaws000000000",
+    "effectName": "Grappled and Restrained",
+    "effectId": "MpjWPflcv7Jqd7Tu",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "5UtgpODC3lrTQd5t",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-9-1": {
+    "name": "Grick / Grick Ancient - Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantOctopus00.Item.mmTentacles00000",
+    "effectName": "Grappled",
+    "effectId": "GyZrmzBP0NB8oRZI",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "Vo2UIgas007G3QXv",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  },
+  "mm-escape-9-2": {
+    "name": "Mind Flayer - Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterEscape",
+    "sourceIdentifier": "tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGiantOctopus00.Item.mmTentacles00000",
+    "effectName": "Grappled and Stunned",
+    "effectId": "GyZrmzBP0NB8oRZI",
+    "event": "turnStart",
+    "promptMode": "manual",
+    "escapeCheck": true,
+    "checkActivityId": "Vo2UIgas007G3QXv",
+    "checkSkills": [
+      "acr",
+      "ath"
+    ],
+    "escapeDisadvantage": false,
+    "saveActivity": "Escape Check",
+    "damageActivity": "",
+    "damageFormula": "",
+    "endOnSuccess": true,
+    "manualSaveLabel": "Use action — Escape grapple",
+    "manualSaveNote": "Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the originating monster’s recorded escape DC."
+  }
+};
+const MONSTER_SAVE_DEFAULTS={
+  "mm-paralyzing-tentacles": {
+    "name": "Carrion Crawler / Chuul - Paralyzing Tentacles",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "paralyzing-tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmCarrionCrawler.Item.mmParalyzingTent",
+    "effectName": "Poisoned & Paralyzed",
+    "effectId": "5ReKSrBu11ume7GP",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "p157Iqz8s0M0VilW",
+    "endOnSuccess": true
+  },
+  "mm-grell-paralyzing-tentacles": {
+    "name": "Grell - Poisoned and Paralyzed",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "paralyzing-tentacles",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGrell000000000.Item.PYIeX0xuuewqAlgZ",
+    "effectName": "Poisoned & Paralyzed",
+    "effectId": "gaQaH4IKga1Eg7gr",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "MEc8vUTPipCkqjyq",
+    "endOnSuccess": true
+  },
+  "mm-unsettling-visage": {
+    "name": "Doppelganger - Unsettling Visage",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "unsettling-visage",
+    "targetingRegionCleanup": "casterTurnEnd",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmDoppelganger00.Item.mmUnsettlingVisa",
+    "effectName": "Frightened",
+    "effectId": "t3d77s2YYM0OgsvZ",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "USxIbGZPLvfPnnoI",
+    "endOnSuccess": true
+  },
+  "mm-haunting-glare": {
+    "name": "Graveyard Revenant - Haunting Glare",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "haunting-glare",
+    "targetingRegionCleanup": "casterTurnEnd",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmGraveyardReven.Item.mmHauntingGlare0",
+    "effectName": "Paralyzed",
+    "effectId": "08YWgkXqcGlDdaDe",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "kIxd4BuhFya6117b",
+    "endOnSuccess": true
+  },
+  "mm-pacifying-spores": {
+    "name": "Myconids - Pacifying Spores",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "pacifying-spores",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmMyconidAdult00.Item.mmPacifyingSpore",
+    "effectName": "Stunned",
+    "effectId": "pYhpTUwNUgDPGu4J",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "6c9CieCQWV7XsKLy",
+    "endOnSuccess": true
+  },
+  "mm-paralysis-gas": {
+    "name": "Modron Pentadrone - Paralysis Gas",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "paralysis-gas",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmModronPentadro.Item.mmParalysisGas00",
+    "effectName": "Paralyzed",
+    "effectId": "XHzklXOxjvcl12rx",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "7A7cyFzvHi67yI5f",
+    "endOnSuccess": true
+  },
+  "mm-scare": {
+    "name": "Quasit - Scare",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "scare",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmQuasit00000000.Item.mmScare000000000",
+    "effectName": "Frightened",
+    "effectId": "u8Gu5Oo3a48vKYla",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "L6pjs2RafI3pF8b3",
+    "endOnSuccess": true
+  },
+  "mm-weakening-breath": {
+    "name": "Gold Dragons - Weakening Breath",
+    "enabled": true,
+    "attachment": "creature",
+    "sourceKind": "monsterSave",
+    "sourceIdentifier": "weakening-breath",
+    "sourceSpellUuid": "Compendium.dnd-monster-manual.actors.Actor.mmAdultGoldDrago.Item.mmWeakeningBreat",
+    "effectName": "Weakened",
+    "effectId": "wpkp78XzdLs9q2C3",
+    "event": "turnEnd",
+    "damageActivity": "",
+    "damageFormula": "",
+    "saveActivity": "Save",
+    "saveActivityId": "EGZ4bS4HpJkfNG9s",
+    "endOnSuccess": true
+  }
+};
+export const TRIGGER_DEFAULTS=Object.freeze({...Object.fromEntries(Object.entries(MONSTER_DAMAGE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(MONSTER_ESCAPE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(MONSTER_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(PROMPT_ONLY_DEFAULTS).map(([key,entry])=>[key,Object.freeze({enabled:true,attachment:"creature",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Save",endOnSuccess:false,manualResolution:true,...entry})])),...Object.fromEntries(Object.entries(HEALING_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(SAVE_FIRST_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(DELAYED_DAMAGE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"power-word-stun":Object.freeze({name:"Power Word Stun",enabled:true,attachment:"creature",sourceKind:"syntheticSave",sourceIdentifier:"power-word-stun",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplPowerWordS",effectName:"Stunned",effectId:"o7XJceFSBTiIIPFo",event:"turnEnd",damageActivity:"",saveActivity:"End of Turn Save",saveActivityId:"rsaStunEndSave01",saveAbility:"con",damageFormula:"",endOnSuccess:true}),...Object.fromEntries(Object.entries(ESCAPE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"blink":Object.freeze({name:"Blink",enabled:true,attachment:"creature",sourceKind:"blink",effectName:"Blink — Active",event:"turnEnd",damageActivity:"",saveActivity:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplBlink00000"}),"grapple":Object.freeze({name:"Grapple",enabled:true,attachment:"creature",sourceKind:"grapple",effectName:"Grappled",event:"turnStart",promptMode:"manual",damageActivity:"",saveActivity:"Escape Grapple",endOnSuccess:true}),...Object.fromEntries(Object.entries(EVENT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),...Object.fromEntries(Object.entries(REPEAT_SAVE_DEFAULTS).map(([key,entry])=>[key,Object.freeze(entry)])),"searing-smite":Object.freeze({name:"Searing Smite",enabled:true,attachment:"creature",effectName:"Seared",event:"turnStart",damageActivity:"Damage",saveActivity:"Start of Turn Save",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplSearingSmi",endOnSuccess:true}),"fear":Object.freeze({name:"Fear",enabled:true,attachment:"creature",effectName:"Fear",effectId:"ijiWLu6EJZmEJPOZ",event:"turnEnd",damageActivity:"",saveActivity:"Save",saveActivityId:"dnd5eactivity000",damageFormula:"",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplFear000000",saveCondition:"gmNoLineOfSight",targetingRegionCleanup:"casterTurnEnd",endOnSuccess:true})});
 export function triggerKeys(){return [...new Set([...Object.keys(TRIGGER_DEFAULTS),...Object.entries(game.settings.get(ID,"triggerLibraryCustoms")??{}).filter(([,entry])=>entry?.name&&entry?.sourceSpellUuid).map(([key])=>key)])];}
 export function triggerEntry(key){const custom=game.settings.get(ID,"triggerLibraryCustoms")?.[key];const base=TRIGGER_DEFAULTS[key]??custom;return base?{...base,...(TRIGGER_DEFAULTS[key]?game.settings.get(ID,"triggerLibraryOverrides")?.[key]:{}),attachment:"creature"}:null;}
-export function triggerKeyForSpell(spell,effect){const identifier=spell?.identifier??spell?.system?.identifier;const keys=triggerKeys().filter(key=>{const entry=triggerEntry(key);return (!effect||entry.effectName===effect.name)&&(identifier===key||!!entry.sourceIdentifier&&identifier===entry.sourceIdentifier||!!entry.sourceSpellUuid&&spell?.uuid===entry.sourceSpellUuid);});return keys.find(key=>!TRIGGER_DEFAULTS[key]&&triggerEntry(key).sourceSpellUuid===spell?.uuid)??keys[0];}
+export function triggerKeyForSpell(spell,effect){const identifier=spell?.identifier??spell?.system?.identifier;const keys=triggerKeys().filter(key=>{const entry=triggerEntry(key);return (!["monsterSave","monsterEscape","monsterDamage"].includes(entry.sourceKind)||["feat","weapon"].includes(spell?.type)&&Array.from(spell.system?.activities??[]).some(activity=>activity.id===(entry.sourceKind==="monsterDamage"?entry.damageActivityId:entry.sourceKind==="monsterEscape"?entry.checkActivityId:entry.saveActivityId)))&&(!effect||entry.effectName===effect.name)&&(identifier===key||!!entry.sourceIdentifier&&identifier===entry.sourceIdentifier||!!entry.sourceSpellUuid&&spell?.uuid===entry.sourceSpellUuid);});return keys.find(key=>!TRIGGER_DEFAULTS[key]&&triggerEntry(key).sourceSpellUuid===spell?.uuid)??keys[0];}
 export async function saveTriggerEntry(key,entry){validateTriggerEntry(entry);const setting=TRIGGER_DEFAULTS[key]?"triggerLibraryOverrides":"triggerLibraryCustoms";const entries=foundry.utils.deepClone(game.settings.get(ID,setting)??{});entries[key]=entry;await game.settings.set(ID,setting,entries);}
 export function validateTriggerEntry(entry){
  if(entry.sourceKind==="blink")return entry;
@@ -398,7 +1183,7 @@ export async function resolveEntrySource(entry){
  return null;
 }
 export function entrySourceOptions(item,entry){
- return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage"||entry?.damageFromSave&&a.type==="save").map(a=>({id:a.id,name:a.name})),save:entry?.sourceKind==="syntheticSave"?[{id:entry.saveActivityId,name:entry.saveActivity}]:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name}))};
+ return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage"||entry?.damageFromSave&&a.type==="save").map(a=>({id:a.id,name:a.name})),save:entry?.sourceKind==="syntheticSave"?[{id:entry.saveActivityId,name:entry.saveActivity}]:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name||"Save"}))};
 }
 const HELP={
  healing:["Recurring healing","At the configured turn event, create a fixed healing card without a roll dialog. Caster modifier is captured when the native effect is applied. Temporary HP uses native replacement rules and never stacks; normal healing respects HP caps. Auto Apply Healing controls application. Removing or disabling the effect stops future benefits."],
@@ -427,6 +1212,8 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
   const e=this.draft??=triggerEntry(this.entryKey);this.source??=await resolveEntrySource(e);
   if(e.sourceKind==="blink")return `<div style="padding:16px;display:grid;gap:12px"><h2>Blink</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable Blink automation</label><p>The initial card stays available. Roll manually on your turn, or let turn end roll automatically; only one check is allowed per turn. On 4–6, Ethereal applies after the dice finish. At turn start, return and choose your space manually.</p><p>Token visibility and movement stay under player/GM control. Ending the tracked effect clears its Ethereal effect.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   if(e.sourceKind==="recurringHealing")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)} - Recurring healing</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable recurring healing</label><p>${escape(e.effectName)} ${info("effect")}</p><label>Trigger <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>Start of target turn</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>End of target turn</option></select></label><p>${e.healingType==="temphp"?"Refresh temporary HP without stacking or reducing a higher existing amount.":"Restore HP up to the creature's maximum; initial healing is not repeated."}</p><label>Amount ${info("healing")} <select name="healingSource"><option value="casterMod" ${e.healingSource==="casterMod"?"selected":""}>Caster spellcasting modifier (recorded on application)</option><option value="fixed" ${e.healingSource==="fixed"?"selected":""}>Fixed amount</option></select></label><label>Fixed amount <input name="healingAmount" type="number" min="0" value="${Number(e.healingAmount??1)}"></label><p>Fixed turn benefits create a healing card without a roll dialog. Auto Apply Healing controls application; otherwise use Apply on the card. Existing native effect changes stay intact.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
+  if(e.sourceKind==="monsterDamage")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable recurring damage</label><p>${escape(e.effectName)} ${info("effect")}</p><p>At the affected creature’s turn start, prompt the native recurring damage. ${e.escapeCheck?"Then show an optional Athletics or Acrobatics escape action.":e.saveEvent?"At turn end, request the repeat saving throw.":"Remove the effect to stop the damage."}</p><p>Native damage, source DC and effect changes are preserved. Movement and special interactions remain manual.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
+  if(e.sourceKind==="monsterEscape")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)} — Escape grapple</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable escape prompts</label><p>${escape(e.effectName)} ${info("effect")}</p><p>Show an optional action at turn start. The player chooses Athletics or Acrobatics against the originating monster’s recorded escape DC. No check rolls automatically.</p><label>Show escape card <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>At turn start</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>At turn end</option></select></label><label><input name="escapeDisadvantage" type="checkbox" ${e.escapeDisadvantage?"checked":""}> Default escape checks to Disadvantage</label><p>Success removes this tracked grapple and its linked conditions after the dice finish. Other effects remain separate.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   if(e.sourceKind==="athleticsEscape")return `<div style="padding:16px;display:grid;gap:12px"><h2>${escape(e.name)} — Escape</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable creature escape checks</label><p>${escape(e.effectName)} ${info("effect")}</p><p>Spend an action to attempt a Strength (Athletics) check against the original caster’s recorded spell DC. The GM chooses when to open the check; it never rolls automatically.</p><label>Show escape card <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>At turn start</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>At turn end</option></select></label><p>${e.damageActivity?"Turn-start damage resolves first; the optional escape check follows. Native cast-level scaling is preserved.":"The escape check deals no damage and does not repeat the initial save."}</p><p>Success removes only this spell’s tracked restraint after dice animations. Region saves and effects remain separate.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   const choices=entrySourceOptions(this.source,e),custom=!!e.damageFormula;
   const section=(title,key,body)=>`<section style="display:grid;gap:6px"><div style="display:flex;align-items:center;gap:6px"><strong>${title}</strong>${info(key)}</div>${body}</section>`;
@@ -447,6 +1234,8 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
  readDraft(){
   const entry={...this.draft};
   if(entry.sourceKind==="recurringHealing")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value,healingSource:this.element.querySelector('[name="healingSource"]').value,healingAmount:Number(this.element.querySelector('[name="healingAmount"]').value)};
+  if(entry.sourceKind==="monsterDamage")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
+  if(entry.sourceKind==="monsterEscape")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value,escapeDisadvantage:this.element.querySelector('[name="escapeDisadvantage"]').checked};
   if(entry.sourceKind==="athleticsEscape")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value};
   if(entry.sourceKind==="blink")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
   for(const key of ["enabled","effectName","event","onDamage","damageSaveAdvantage","promptMode","damageActivity","saveActivity","saveCondition","targetingRegionCleanup","endOnSuccess"]){const input=this.element.querySelector('[name="'+key+'"]');entry[key]=input.type==="checkbox"?input.checked:input.value;}
@@ -454,7 +1243,7 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
   entry.damageFormula=this.element.querySelector('[name="damageMode"]').value==="custom"?this.element.querySelector('[name="damageFormula"]').value.trim():"";
   return this.draft=entry;
  }
- updatePreview(){if(["blink","athleticsEscape","recurringHealing"].includes(this.draft?.sourceKind))return;const e=this.readDraft();if(e.saveFirst){this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent="At turn end, request the save. After the dice finish, failure prompts damage; success removes this target's effect.";return;}this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent=(e.event==='damage'?'When the creature takes damage':('At the affected creature’s '+(e.event==='turnEnd'?'turn end':'turn start')))+(e.onDamage?' and when it takes damage':'')+', '+(e.saveFirst?'request the saving throw first, then prompt damage only on failure. ' : e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':(e.promptMode==='manual'?'show a save card for the GM to choose whether to roll. ':'request its saving throw. ')):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
+ updatePreview(){if(["blink","athleticsEscape","monsterEscape","monsterDamage","recurringHealing"].includes(this.draft?.sourceKind))return;const e=this.readDraft();if(e.saveFirst){this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent="At turn end, request the save. After the dice finish, failure prompts damage; success removes this target's effect.";return;}this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent=(e.event==='damage'?'When the creature takes damage':('At the affected creature’s '+(e.event==='turnEnd'?'turn end':'turn start')))+(e.onDamage?' and when it takes damage':'')+', '+(e.saveFirst?'request the saving throw first, then prompt damage only on failure. ' : e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':(e.promptMode==='manual'?'show a save card for the GM to choose whether to roll. ':'request its saving throw. ')):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
  async loadDroppedSpell(item){
   validateSourceSpell(item);
   const choices=entrySourceOptions(item,this.draft);if((!choices.damage.length&&!choices.save.length)||!choices.effects.length)throw Error("Choose a spell with an applied effect and a damage or save activity.");

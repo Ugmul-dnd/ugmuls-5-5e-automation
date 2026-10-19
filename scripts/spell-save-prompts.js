@@ -10,7 +10,7 @@ export async function promptCastSaves(activity, results) {
     if(message?.getFlag?.(MODULE_ID,"regionPlacementOnly"))return;
     if(["condition","skipped","manual","manualCheck","check"].includes(message?.getFlag?.(MODULE_ID,"recurringTrigger")?.phase))return;
     if (message?.getFlag?.(MODULE_ID, "targetsConfirmationPending") || message?.getFlag?.(MODULE_ID, "targetsConfirmationCanceled")) return;
-    if (activity?.type !== "save" || !["spell", "feat"].includes(activity.item?.type) || !message?.id) return;
+    if (activity?.type !== "save" || !["spell", "feat", "weapon"].includes(activity.item?.type) || !message?.id) return;
     if (message.author?.id !== game.user.id || message.getFlag?.(MODULE_ID, "regionTriggered")) return;
     // A configured turn-only feature aura is activated now, but its saves
     // belong to the Region's turn events rather than the initial use card.
@@ -52,7 +52,7 @@ export async function promptCastSaves(activity, results) {
 
 export function scheduleCastSaves(activity, results) {
     const message = results?.message;
-    if (activity?.type !== "save" || !["spell", "feat"].includes(activity.item?.type) || !message?.id ||
+    if (activity?.type !== "save" || !["spell", "feat", "weapon"].includes(activity.item?.type) || !message?.id ||
         message.author?.id !== game.user.id || message.getFlag?.(MODULE_ID, "regionTriggered")) return;
     const prior = casts.get(message.id);
     if (prior?.timer) clearTimeout(prior.timer);

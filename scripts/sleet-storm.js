@@ -6,6 +6,7 @@ function usageOf(card){
  const ref=card?.system?.origin;return typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
 }
 export function isSleetStormSave(card){
+ if(card?.type!=="usage")return false;
  const activity=card?.getAssociatedActivity?.();
  const key=activity?.item?.identifier??activity?.item?.system?.identifier;
  const name=key==="sleet-storm"?"Sleet Storm":key==="yolandes-regal-presence"?"Yolande's Regal Presence":null;

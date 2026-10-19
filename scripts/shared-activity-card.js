@@ -77,7 +77,7 @@ export function equivalentEffect(left,right) {
         JSON.stringify(left.system?.changes??left.changes??[])===JSON.stringify(right.system?.changes??right.changes??[]);
 }
 export function hasEquivalentActiveEffect(actor,effect) {
-    return Array.from(actor?.effects??[]).some(existing=>existing.disabled!==true&&existing.active!==false&&
+    return Array.from(actor?.effects??[]).some(existing=>existing.disabled!==true&&existing.active!==false&&existing.duration?.expired!==true&&
         existing.system?.expired!==true&&equivalentEffect(existing,effect));
 }
 export function regionOwnsEffect(token,effect) {

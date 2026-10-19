@@ -7,6 +7,8 @@ const pendingCards = new Set();
 
 export function automaticTargetMode(activity, config) {
     const type = activity.target?.affects?.type;
+    const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b"};
+    if(selfExcludedActivities[activity.item?.identifier??activity.item?.system?.identifier]===activity.id&&activity.id&&activity.target?.template?.type)return "excludeSelf";
     if (type === "enemy") return "hostilesOnly";
     if (type === "ally") return "friendliesOnly";
     if (type === "self") {
@@ -25,6 +27,7 @@ export function allowsAutomaticTarget(token, caster, mode) {
     if (mode === "everyone" || !mode) return true;
     if (!caster) return false;
     if (mode === "self") return token.uuid === caster.uuid;
+    if (mode === "excludeSelf") return token.uuid !== caster.uuid;
     const friendly = CONST.TOKEN_DISPOSITIONS.FRIENDLY, hostile = CONST.TOKEN_DISPOSITIONS.HOSTILE;
     if (mode === "hostilesOnly") return token.uuid !== caster.uuid &&
         token.disposition === (caster.disposition === hostile ? friendly : hostile);
@@ -33,9 +36,14 @@ export function allowsAutomaticTarget(token, caster, mode) {
     return true;
 }
 
-export function collectAreaTargets(tokens, regions, caster, mode, healing=false) {
+export function excludesMonsterAreaSource(activity) {
+    const item=activity?.item;
+    return Boolean(activity?.target?.template?.type && ((activity.actor??item?.actor)?.type==="npc" || item?.system?.type?.value==="monster"));
+}
+
+export function collectAreaTargets(tokens, regions, caster, mode, healing=false, excludeCaster=false) {
     return Array.from(tokens).filter(token => (healing?isEligibleHealingTarget(token):isEligibleTarget(token)) && token.object?.isVisible !== false &&
-        allowsAutomaticTarget(token, caster, mode) && regions.some(region => token.testInsideRegion(region)));
+        (!excludeCaster || token.uuid !== caster?.uuid) && allowsAutomaticTarget(token, caster, mode) && regions.some(region => token.testInsideRegion(region)));
 }
 
 export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
@@ -220,7 +228,7 @@ export async function confirmCastTargets(activity, usage, results) {
     const caster = origin ? await fromUuid(origin) : activity.getUsageToken?.();
     const config = getRegionSpellTable()?.[activity.item.name];
     const mode = automaticTargetMode(activity, config);
-    const targets = results.templates?.length?collectAreaTargets(canvas.tokens.placeables.map(token => token.document), results.templates, caster?.document ?? caster, mode,activity.type==="heal"):Array.from(game.user.targets,token=>token.document??token);
+    const targets = results.templates?.length?collectAreaTargets(canvas.tokens.placeables.map(token => token.document), results.templates, caster?.document ?? caster, mode,activity.type==="heal",excludesMonsterAreaSource(activity)):Array.from(game.user.targets,token=>token.document??token);
     if(!requiresTargetConfirmation(activity)) {
         canvas.tokens.setTargets(targets.map(token=>token.id));
         await finishConfirmedCast(activity,message,targets.map(describeTarget));

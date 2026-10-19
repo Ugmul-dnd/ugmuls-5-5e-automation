@@ -516,6 +516,7 @@ class RegionSpellManager
                     >
 
                         <h3>${safeName}${config.enabled === false ? " (Disabled)" : ""}</h3>
+                        ${config.monsterAura ? "<p>Monster aura: attached automatically to matching tokens. Damage triggers at the monster’s turn end, using its native radius and damage. Fire Aura asks the GM to choose targets. Azer auras pause while Incapacitated.</p>" : ""}
                         <!-- ACTIVITY TRIGGERS -->
                         <label style="display:flex;align-items:center;gap:8px;margin-top:12px;margin-left:26px;">
                             <input type="checkbox" class="rsa-hide-region" data-spell="${encodedName}"

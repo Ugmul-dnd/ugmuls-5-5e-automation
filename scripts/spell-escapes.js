@@ -39,10 +39,11 @@ export function installEscapePreparation(Type){
 export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClass??ChatMessage.implementation){
  const prototype=Type?.prototype;if(!prototype||prototype.rsaEscapeSnapshots)return;
  const getItem=prototype.getAssociatedItem,getActivity=prototype.getAssociatedActivity;
- const context=card=>{if(card.getFlag(ID,"escapeSpellData"))return card;const ref=card.system?.origin;const origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;return origin?.getFlag?.(ID,"escapeSpellData")?origin:null;};
+ const snapshot=card=>card?.getFlag?.(ID,"escapeSpellData")??card?.getFlag?.(ID,"monsterPoisonData");
+ const context=card=>{if(snapshot(card))return card;const ref=card.system?.origin;const origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;return snapshot(origin)?origin:null;};
  if(!getItem||!getActivity)return;
  prototype.getAssociatedItem=function(options={}){
-  const source=context(this),data=source?.getFlag(ID,"escapeSpellData");if(!data)return getItem.call(this,options);
+  const source=context(this),data=snapshot(source);if(!data)return getItem.call(this,options);
   const actor=source.getAssociatedActor(),scaling=options.scaled?this.system.scaling??0:0;
   let cache=snapshots.get(this);if(!cache||cache.data!==data||cache.actor!==actor){cache={data,actor,items:new Map()};snapshots.set(this,cache);}
   if(!cache.items.has(scaling)){const item=preparedItem(data,actor);cache.items.set(scaling,scaling?item.scaledClone(scaling):item);}
