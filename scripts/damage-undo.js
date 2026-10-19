@@ -185,13 +185,16 @@ export async function applyManualEffectsWithUndo(tray,apply) {
 export function captureDamageUndo(actor,damages,updates,options) {
     const message=hpApplicationMessage(options);
     if(!isDamageOrHealingCard(message))return;
+    const item=message.getAssociatedItem?.();
+    if((item?.identifier??item?.system?.identifier)==="guarded-area"&&item.actor?.token?.flags?.[MODULE_ID]?.guardian)options.rsaGuardianDamageAmount=Math.max(0,Number(damages)||0);
     options.rsaUndoBefore=Object.fromEntries(hpKeys.map(key=>[key,Number(actor.system.attributes.hp[key]??0)]));
 }
 export function damageUndoRecord(actor,options) {
     if(!options.rsaUndoBefore)return null;
     const changes=hpKeys.map(key=>({key,before:options.rsaUndoBefore[key],after:Number(actor.system.attributes.hp[key]??0)}))
         .filter(change=>Number.isFinite(change.before)&&Number.isFinite(change.after)&&change.before!==change.after);
-    return changes.length?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes}:null;
+    const guardianDamageAmount=options.rsaGuardianDamageAmount;
+    return changes.length||guardianDamageAmount>0?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
 }
 export function captureAppliedHpUndo(actor,options) {
     const record=damageUndoRecord(actor,options);

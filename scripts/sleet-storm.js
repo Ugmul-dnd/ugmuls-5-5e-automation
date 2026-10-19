@@ -7,8 +7,9 @@ function usageOf(card){
 }
 export function isSleetStormSave(card){
  const activity=card?.getAssociatedActivity?.();
- return activity?.type==="save"&&(activity.item?.identifier??activity.item?.system?.identifier)==="sleet-storm"&&
-  getRegionSpellTable()["Sleet Storm"]?.enabled!==false&&!card.getFlag?.(ID,"regionPlacementOnly")&&
+ const key=activity?.item?.identifier??activity?.item?.system?.identifier;
+ const name=key==="sleet-storm"?"Sleet Storm":key==="yolandes-regal-presence"?"Yolande's Regal Presence":null;
+ return activity?.type==="save"&&!!name&&getRegionSpellTable()[name]?.enabled!==false&&!card.getFlag?.(ID,"regionPlacementOnly")&&
   !card.getFlag?.(ID,"targetsConfirmationPending")&&!card.getFlag?.(ID,"targetsConfirmationCanceled");
 }
 export async function applySleetStorm(card,{manual=false}={}){
@@ -16,14 +17,19 @@ export async function applySleetStorm(card,{manual=false}={}){
  if(!authority()||!isSleetStormSave(usage)||running.has(usage.id))return;
  if(!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
  const done=new Set(usage.getFlag(ID,"sleetStormResolvedTargets")??[]);
+ const breaksConcentration=(usage.getAssociatedActivity?.()?.item?.identifier??usage.getAssociatedActivity?.()?.item?.system?.identifier)==="sleet-storm";
  const failed=Array.from(usage.system.targets??[]).filter(target=>usage.system.outcomes?.get(target.token)==="failure"&&!done.has(target.token));
  if(!failed.length)return;
+ if(!manual&&!breaksConcentration&&game.settings.get(ID,"autoApplyCardDamage")===true){
+  const damages=Array.from(usage.getAssociatedRolls?.("damage")??[]);
+  if(!damages.length||damages.some(damage=>failed.some(target=>damage.system.targets?.some(t=>t.token===target.token)&&!(damage.getFlag(ID,"automaticDamageTargets")??[]).includes(target.token))))return;
+ }
  running.add(usage.id);
  try{
   // Capture concentration before awaiting dice, so a later cast cannot be lost.
   const recipients=await Promise.all(failed.map(async target=>{
    const token=await fromUuid(target.token),actor=token?.actor;
-   return {target,actor,concentrations:Array.from(actor?.concentration?.effects??[])};
+   return {target,actor,concentrations:breaksConcentration?Array.from(actor?.concentration?.effects??[]):[]};
   }));
   await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);
   if(!isSleetStormSave(usage)||!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
@@ -51,12 +57,12 @@ export function renderSleetStorm(message,html){
   if(!isSleetStormSave(entry.card)||entry.card.isContentVisible===false)continue;
   const done=new Set(entry.card.getFlag(ID,"sleetStormResolvedTargets")??[]);
   if(!Array.from(entry.card.system.targets??[]).some(target=>entry.card.system.outcomes?.get(target.token)==="failure"&&!done.has(target.token)))continue;
-  const button=document.createElement("button");button.type="button";button.dataset.rsaSleetApply="";button.textContent="Apply Prone and end concentration";
+  const button=document.createElement("button");button.type="button";button.dataset.rsaSleetApply="";button.textContent=(entry.card.getAssociatedActivity?.()?.item?.identifier??entry.card.getAssociatedActivity?.()?.item?.system?.identifier)==="sleet-storm"?"Apply Prone and end concentration":"Apply Prone";
   button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await applySleetStorm(entry.card,{manual:true});await ui.chat?.updateMessage?.(entry.card);}catch(error){report(error);}finally{button.disabled=false;}});
   (entry.root.querySelector('.chat-card')??entry.root).append(button);
  }
 }
-function report(error){console.error("Sleet Storm effects",error);ui.notifications.error("Sleet Storm effects could not finish. Use the card to retry.");}
+function report(error){console.error("Area save effects",error);ui.notifications.error("Area save effects could not finish. Use the card to retry.");}
 Hooks.once("ready",()=>{
  for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>{applySleetStorm(card).catch(report);});
  Hooks.on("dnd5e.renderChatMessage",renderSleetStorm);

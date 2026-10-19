@@ -273,6 +273,9 @@ async function executeRegionEvent({
     }
 
 
+    // A summoned aura's own source token is inside its native Emanation.
+    if (targetDoc.uuid === region.flags?.[MODULE_ID]?.excludedToken) return;
+
     const targetToken =
         targetDoc.object;
 
@@ -404,7 +407,10 @@ async function executeRegionEvent({
     const casterUserId = region.flags?.[MODULE_ID]?.casterUserId;
     const casterUser = casterUserId ? game.users?.get?.(casterUserId) : null;
     const casterCanUse = casterUser?.active && spell.actor?.testUserPermission?.(casterUser, "OWNER");
-    const executor = !trigger.movementDamage && casterCanUse ? casterUser : game.users?.activeGM;
+    // Summoned guardian behaviors contain GM-only script data. Keep their
+    // activity execution on the active GM; prompt routing still selects owners.
+    const executor = region.flags?.[MODULE_ID]?.guardianToken ? game.users?.activeGM
+        : !trigger.movementDamage && casterCanUse ? casterUser : game.users?.activeGM;
     if (executor ? executor.id !== game.user.id : !game.user.isGM) return;
 
     if (
@@ -1450,7 +1456,8 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         try {
             const item = await fromUuid(itemUUID);
             if (item) {
-                const update = { [`flags.${MODULE_ID}.casterUserId`]: userId ?? game.user.id };
+                const casterUserId = (region.flags?.[MODULE_ID]?.flamingSphereToken || region.flags?.[MODULE_ID]?.guardianToken) ? region.flags[MODULE_ID].casterUserId : userId;
+                const update = { [`flags.${MODULE_ID}.casterUserId`]: casterUserId ?? userId ?? game.user.id };
                 const config = getRegionSpellTable()?.[item.name];
                 if (config?.hideRegionFromPlayers === true) update.visibility = CONST.REGION_VISIBILITY.GAMEMASTER;
                 await region.update(update);

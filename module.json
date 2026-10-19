@@ -37,7 +37,12 @@
   },
   "esmodules": [
     "scripts/region-library.js",
+    "scripts/aura-of-life.js",
     "scripts/sleet-storm.js",
+    "scripts/regal-presence.js",
+    "scripts/storm-damage.js",
+    "scripts/flaming-sphere.js",
+    "scripts/guardian-of-faith.js",
     "scripts/spell-escapes.js",
     "scripts/movement-placement.js",
     "scripts/target-use-guard.js",

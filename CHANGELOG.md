@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- Add Aura of Life's resistance-only Region: default the native 30-foot self Emanation to place on cast and apply its native Necrotic resistance effect to the caster and matching-disposition allies while inside. Suppress the built-in 1-HP roll; healing and maximum-HP protection remain manual. Allow effect-only Region recipes to specify their targeting without dummy activity triggers.
+
+- Apply Storm of Radiance die-count simplification at the final native damage-roll configuration step as well as pre-roll, including dialog rebuilds and imported spell copies.
+
+- Simplify Storm of Radiance's native damage-count expression in the roll dialog: for example, display 3d10 Radiant and 3d10 Thunder at level 6 instead of (6 - 3)d10. Preserve native cast-level damage, bonuses and damage types without editing book spells.
+
+- Change Yolande's Regal Presence to entry-only Region saves per table preference; remove end-turn triggers while preserving initial aura contact and once-per-turn limits.
+
+- Add Jallarzi's Storm of Radiance: native initial/entry/end-turn Constitution saves, once per target per turn, preserving Radiant/Thunder damage and upcast scaling. Region-managed Senses Overwhelmed applies Blinded, Deafened and Silenced while inside regardless of saves; it is excluded from card-based effect application.
+- Add Yolande's Regal Presence: default Surround Self to place its attached aura, link Region events to Emanation Save, and process initial occupants through the same once-per-turn entry/end-turn workflow. Exclude the caster; default to hostile targets. Failed saves apply Prone after dice using existing Auto Apply Saved Effects/GM manual controls and Undo. The optional push stays manual. Zone of Truth remains outside automation.
+
+- Fix player-cast Guardian of Faith Regions failing to trigger: run the summoned guardian's GM-only Region behavior on the active GM instead of assigning execution to the player caster. Existing owner save/damage prompt routing remains in use; ordinary spell execution routing is unchanged.
+
+- Fix the missing embedded-document warning when Guardian of Faith exhausts its pool: let native token attachment cleanup own attached-aura deletion, reserving module cleanup for detached remnants. Apply the same ownership rule to Flaming Sphere. Skip unchanged queued pool updates and safely resolve already-deleted guardians during Undo.
+
+- Add Guardian of Faith: attach a native 10-foot Emanation to the summoned guardian and use its Guarded Area save on enemy entry/start of turn, once per target per turn. Deduct applied damage after saves, resistances and reductions (including temporary HP and overkill) from the feature's existing 60-point pool; Undo refunds it. Exhaustion deletes only that guardian and aura; Undo of the exhausting damage restores them. No concentration handling or Consume Damage Pool activity is used.
+
+- Add Flaming Sphere automation: create a native 5-foot Emanation attached to each newly summoned sphere, with GM setup for player summons. End-turn saves use the caster's native Dexterity save, Fire damage/half on success and original slot scaling. Exclude the sphere itself; remove the Region with its token or normal concentration cleanup. Movement and ramming remain manual; no entry damage.
+
 - Add Sleet Storm Region automation: placement without an immediate save, then entry/start-turn Dexterity saves once per target per turn. Failed saves apply native Prone with Undo support and end existing concentration after Dice So Nice finishes. Respect Auto Apply Saved Effects; provide a GM card control for manual application. Standing, terrain, obscurity and extinguishing flames remain table-managed.
 
 - Fix Stinking Poison persisting for an extra turn: remove its applied effect when the affected creature finishes the application turn, bypassing the native target-end expiry grace turn. Cleanup runs only for the outgoing combatant under active GM authority.

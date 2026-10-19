@@ -96,7 +96,7 @@ export function regionOwnsEffect(token,effect) {
     return false;
 }
 export function regionEffectDispositions(config,caster) {
-    const modes=(config?.triggers??[]).filter(trigger=>trigger.enabled!==false).map(trigger=>trigger.targeting??"everyone");
+    const modes=config?.regionEffectTargeting?[config.regionEffectTargeting]:(config?.triggers??[]).filter(trigger=>trigger.enabled!==false).map(trigger=>trigger.targeting??"everyone");
     if(!modes.length||modes.includes("everyone"))return [];
     const document=caster?.document??caster;
     if(typeof document?.disposition!=="number")return null;
