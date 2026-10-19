@@ -15,7 +15,7 @@ export const CLASS_AUTOMATIONS=[
 ];
 export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
-    {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex"]},
+    {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","magicResistanceSaves","showConcentrationHud"]},
     {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
@@ -74,6 +74,7 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
                 ${group.children?`<nav class="rsa-automation-tabs" role="tablist" aria-label="Automation categories">${group.children.map(tab=>`<button type="button" role="tab" data-rsa-automation-tab="${tab.id}" aria-selected="${tab.id===page.id}" aria-controls="rsa-automation-panel"><i class="fa-solid ${tab.icon}" aria-hidden="true"></i> ${tab.name}</button>`).join("")}</nav>${page.id==="classes"?`<div class="rsa-class-filter"><label for="rsa-class-filter">Class</label><select id="rsa-class-filter" data-rsa-class-filter aria-controls="rsa-automation-panel"><option value="all" ${this.activeClass==="all"?"selected":""}>All</option>${CLASS_AUTOMATIONS.map(section=>`<option value="${escape(section.name)}" ${this.activeClass===section.name?"selected":""}>${escape(section.name)}</option>`).join("")}</select></div>`:""}<section id="rsa-automation-panel" role="tabpanel"><h3 class="rsa-automation-heading">${page.name}</h3>`:""}
                 ${page.hint?`<p>${escape(page.hint)}</p>`:""}
                 ${group.id==="regions"?'<p>Configure individual spell and feature Regions in the manager.</p><button type="button" data-rsa-manager '+(game.user.isGM?'':'disabled')+'>Open Spell and Region Manager</button>':""}
+                ${page.id==="spells"?'<p><button type="button" data-rsa-trigger-library '+(game.user.isGM?'':'disabled')+'>Creature Effect Trigger Library</button></p>':""}
                 ${!game.user.isGM?'<p>World options are managed by the GM. Client options apply to this browser.</p>':""}
                 ${rows}
                 ${group.children?"</section>":""}
@@ -100,6 +101,7 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
             const Manager=game.settings.menus.get(`${MODULE_ID}.spellManager`)?.type;
             if(Manager)new Manager().render({force:true});
         });
+        this.element.querySelector("[data-rsa-trigger-library]")?.addEventListener("click",()=>{const Manager=game.settings.menus.get(`${MODULE_ID}.triggerLibrary`)?.type;if(game.user.isGM&&Manager)new Manager().render({force:true});});
         this.element.querySelector("[data-rsa-save]").addEventListener("click",async event=>{
             if(this.saving)return;event.currentTarget.disabled=true;this.saving=true;
             try{await this.saveDraft();await this.close();}

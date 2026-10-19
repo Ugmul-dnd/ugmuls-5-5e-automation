@@ -2,6 +2,7 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 function supportsRetarget(message) {
+    if (["manualCheck","check"].includes(message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")?.phase)) return false;
     return ["usage","attack"].includes(message?.type) && (
         ["spell","feat","weapon"].includes(message.getAssociatedItem?.()?.type) ||
         message.getAssociatedActivity?.()?.type === "attack");

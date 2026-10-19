@@ -31,13 +31,15 @@ export function linkedHpCards(roll) {
 }
 export function isRollAdjustmentLocked(roll) {
     const origin=cardOrigin(roll);
+    const effectsApplied=card=>card?.getFlag?.("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||(card?.getFlag?.("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
+    if(roll?.type==="save"&&(effectsApplied(roll)||effectsApplied(origin)))return true;
     // Rider saves resolve their own effects independently of weapon HP changes.
     if(roll?.type==="save"&&(origin?.getFlag?.("ugmuls-5-5e-automation","stunningStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","grappleStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","maneuverStrike"))) {
         return origin.getFlag("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||
             (origin.getFlag("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
     }
     return linkedHpCards(roll).some(card=>!card.getFlag?.("ugmuls-5-5e-automation","masteryGrazeUndone")&&
-        (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0));
+        (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0||roll?.type==="save"&&effectsApplied(card)));
 }
 Hooks.once("ready",()=>{
     for(const event of ["createChatMessage","updateChatMessage","deleteChatMessage"])Hooks.on(event,invalidateLinkedHpIndex);
@@ -45,8 +47,9 @@ Hooks.once("ready",()=>{
         const moduleId="ugmuls-5-5e-automation";
         if(!changes.flags?.[moduleId]&&!Object.keys(changes).some(key=>key.startsWith(`flags.${moduleId}.`)))return;
         const rider=card.getFlag?.(moduleId,"stunningStrike")??card.getFlag?.(moduleId,"grappleStrike")??card.getFlag?.(moduleId,"maneuverStrike");
-        if(!isDamageOrHealingCard(card)&&!rider)return;
-        const origin=rider?card:cardOrigin(card);
+        const effectChange=["effectUndoHistory","outcomeEffectsApplied"].some(key=>Object.hasOwn(changes.flags?.[moduleId]??{},key)||Object.hasOwn(changes,`flags.${moduleId}.${key}`));
+        if(!isDamageOrHealingCard(card)&&!rider&&!effectChange)return;
+        const origin=rider||card.type==="usage"?card:cardOrigin(card);
         const related=[...(origin?.getAssociatedRolls?.("attack")??[]),...(origin?.getAssociatedRolls?.("save")??[])];
         for(const roll of related)globalThis.Ugmuls55eAutomationChatRefresh?.card(roll);
         if(origin)globalThis.Ugmuls55eAutomationChatRefresh?.card(origin);
@@ -67,6 +70,8 @@ function effectSources(effect) {
     return new Set([effect?.uuid,effect?._stats?.duplicateSource,effect?._stats?.compendiumSource].filter(Boolean));
 }
 export function equivalentEffect(left,right) {
+    const aura=effect=>effect?.getFlag?.("ugmuls-5-5e-automation","monsterFearFrightened")??effect?.flags?.["ugmuls-5-5e-automation"]?.monsterFearFrightened;
+    const leftAura=aura(left),rightAura=aura(right);if((leftAura||rightAura)&&(!leftAura||!rightAura||leftAura.source!==rightAura.source))return false;
     const sources=effectSources(left);
     if([...effectSources(right)].some(source=>sources.has(source)))return true;
     const name=effect=>effect?.name?.trim().toLocaleLowerCase();
@@ -74,7 +79,7 @@ export function equivalentEffect(left,right) {
         JSON.stringify(left.system?.changes??left.changes??[])===JSON.stringify(right.system?.changes??right.changes??[]);
 }
 export function hasEquivalentActiveEffect(actor,effect) {
-    return Array.from(actor?.effects??[]).some(existing=>existing.disabled!==true&&existing.active!==false&&
+    return Array.from(actor?.effects??[]).some(existing=>existing.disabled!==true&&existing.active!==false&&existing.duration?.expired!==true&&
         existing.system?.expired!==true&&equivalentEffect(existing,effect));
 }
 export function regionOwnsEffect(token,effect) {
@@ -93,7 +98,7 @@ export function regionOwnsEffect(token,effect) {
     return false;
 }
 export function regionEffectDispositions(config,caster) {
-    const modes=(config?.triggers??[]).filter(trigger=>trigger.enabled!==false).map(trigger=>trigger.targeting??"everyone");
+    const modes=config?.regionEffectTargeting?[config.regionEffectTargeting]:(config?.triggers??[]).filter(trigger=>trigger.enabled!==false).map(trigger=>trigger.targeting??"everyone");
     if(!modes.length||modes.includes("everyone"))return [];
     const document=caster?.document??caster;
     if(typeof document?.disposition!=="number")return null;

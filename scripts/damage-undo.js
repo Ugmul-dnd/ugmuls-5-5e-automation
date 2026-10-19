@@ -1,4 +1,5 @@
 import {createEventQueue,isDamageOrHealingCard,isHealingCard} from "./shared-activity-card.js";
+import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
 const hpKeys=["value","temp","tempmax"];
@@ -22,6 +23,7 @@ async function refreshHpUndoCard(message) {
 
 export async function applyEffectWithUndo(card,usage,effect,actor,tray) {
     return enqueue(async()=>{
+        if(regionManagesCardEffect(usage?.getAssociatedActivity?.({scaled:true}),effect))return null;
         const existing=Array.from(actor.effects??[]).find(entry=>entry._stats?.duplicateSource===effect.uuid||entry._stats?.compendiumSource===effect.uuid);
         const before=existing?existing.toObject():null;
         const applied=await tray._applyEffectToActor(effect,actor);
@@ -129,14 +131,34 @@ export async function storeReappliedEffectUndo(message,records,user=game.user) {
     await message.setFlag(MODULE_ID,"outcomeEffectsApplied",true);
     await message.setFlag(MODULE_ID,"effectApplyReopened",null);
 }
+export async function manualSaveEffectAllowed(message,effect,actor){
+    const activity=message.getAssociatedActivity?.({scaled:true});
+    if(regionManagesCardEffect(activity,effect))return {allowed:false,reason:"This effect is managed by the spell’s Region while the creature is inside it."};
+    if(activity?.type!=="save")return {allowed:true};
+    const profile=activity.effects?.find(profile=>profile.uuid===effect.uuid||profile._id===effect.id);
+    // Restrict save effects to recorded recipients and completed save outcomes.
+    // Multiple linked tokens share an Actor: one qualifying outcome is sufficient.
+    const outcomes=[];
+    for(const target of message.system?.targets??[]){
+        const token=target.token?await fromUuid(target.token):null;
+        if(token?.actor?.uuid===actor.uuid||target.actor===actor.uuid)outcomes.push(message.system.outcomes?.get(target.token));
+    }
+    if(outcomes.some(outcome=>outcome==="failure"||outcome==="success"&&profile?.onSave===true))return {allowed:true};
+    if(outcomes.some(outcome=>!["success","failure"].includes(outcome)))return {allowed:false,reason:"Saving throw is still pending. Complete the save before applying this effect."};
+    return {allowed:false,reason:outcomes.length?"Saving throw succeeded; this effect only applies on a failed save.":"This creature is not a recorded target of this save. Use Retarget before applying its effect."};
+}
 export async function applyManualEffectsWithUndo(tray,apply) {
     const message=tray.chatMessage;
     // Track the first manual application too: a retroactive save correction
     // may make an effect applicable even though this card has never been undone.
     if(!message?.uuid||typeof tray._prepareEffectData!=="function")return apply.call(tray);
     const prepare=tray._prepareEffectData;
+    const originalEffects=tray.effects;
+    if(Array.isArray(originalEffects))tray.effects=originalEffects.filter(effect=>!regionManagesCardEffect(message.getAssociatedActivity?.({scaled:true}),effect));
     const operations=[];
     tray._prepareEffectData=async function(effect,actor) {
+        const eligibility=await manualSaveEffectAllowed(message,effect,actor);
+        if(!eligibility.allowed)throw Error(eligibility.reason);
         const operation=await prepare.call(this,effect,actor);
         const before=operation.action==="update"?actor.effects.get(operation.data._id)?.toObject():null;
         operations.push({effect,actor,operation,before});
@@ -157,19 +179,22 @@ export async function applyManualEffectsWithUndo(tray,apply) {
             else if(game.user.isGM)await enqueue(()=>storeReappliedEffectUndo(message,records));
         }
         return result;
-    } finally {tray._prepareEffectData=prepare;}
+    } finally {tray._prepareEffectData=prepare;if(Array.isArray(originalEffects))tray.effects=originalEffects;}
 }
 
 export function captureDamageUndo(actor,damages,updates,options) {
     const message=hpApplicationMessage(options);
     if(!isDamageOrHealingCard(message))return;
+    const item=message.getAssociatedItem?.();
+    if((item?.identifier??item?.system?.identifier)==="guarded-area"&&item.actor?.token?.flags?.[MODULE_ID]?.guardian)options.rsaGuardianDamageAmount=Math.max(0,Number(damages)||0);
     options.rsaUndoBefore=Object.fromEntries(hpKeys.map(key=>[key,Number(actor.system.attributes.hp[key]??0)]));
 }
 export function damageUndoRecord(actor,options) {
     if(!options.rsaUndoBefore)return null;
     const changes=hpKeys.map(key=>({key,before:options.rsaUndoBefore[key],after:Number(actor.system.attributes.hp[key]??0)}))
         .filter(change=>Number.isFinite(change.before)&&Number.isFinite(change.after)&&change.before!==change.after);
-    return changes.length?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes}:null;
+    const guardianDamageAmount=options.rsaGuardianDamageAmount;
+    return changes.length||guardianDamageAmount>0?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
 }
 export function captureAppliedHpUndo(actor,options) {
     const record=damageUndoRecord(actor,options);
@@ -301,8 +326,19 @@ export function addDamageUndoButton(message,html) {
 }
 function report(err){console.error("Ugmuls 5.5e Automation | Damage undo failed:",err);ui.notifications.error("Could not undo damage. Check the console.");}
 Hooks.once("ready",()=>{
-    globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo};
+    globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo,applyConditionWithUndo};
     const prototype=customElements.get("effect-application")?.prototype;
+    if(prototype&&typeof prototype.buildEffectsList==="function"&&!prototype.rsaRegionEffectList){
+        const build=prototype.buildEffectsList;
+        prototype.buildEffectsList=function(){
+            const activity=this.chatMessage?.getAssociatedActivity?.({scaled:true});
+            this.effects=this.effects.filter(effect=>!regionManagesCardEffect(activity,effect));
+            if(!this.effects.length){this.hidden=true;this.dataset.rsaRegionEffectsHidden="";}
+            else if(Object.hasOwn(this.dataset,"rsaRegionEffectsHidden")){this.hidden=false;delete this.dataset.rsaRegionEffectsHidden;}
+            return build.apply(this,arguments);
+        };
+        prototype.rsaRegionEffectList=true;
+    }
     if(prototype&&typeof prototype._onApplyEffects==="function"&&!prototype.rsaUndoReapplication) {
         const original=prototype._onApplyEffects;
         prototype._onApplyEffects=function(){return applyManualEffectsWithUndo(this,original);};

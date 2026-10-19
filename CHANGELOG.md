@@ -1,5 +1,217 @@
 # Changelog
 
+## v0.8.0 — Spell & Monster Effect Automation
+
+### Release highlights
+
+- Built-in creature-effect and Region libraries with editable local overrides, expanded Player’s Handbook spell support and Monster Manual effects.
+- Monster repeat saves, optional grapple/escape actions, hidden auras, recurring damage, infernal wounds and swallowing with source-specific cleanup.
+- Cleave chat-card attacks and prepared Smite selection integrated into weapon damage.
+- Inactive-effect cleanup, safer save/damage corrections, animation timing and turn-processing improvements.
+
+Restart the Foundry server and reload GM/player clients after updating. Apply fresh effects or recast areas to use changed tracking and Region behaviors. Existing local library overrides remain in control. Special choices, staged effects and the documented table-managed rules remain manual.
+
+### Detailed changes
+
+- Complete the straightforward Monster Manual escape pass with 16 shared recipes across 22 missing feature variants: Constrict families, Tentacle Lash, Quick Grapple, Chain, Frog/Toad, Graveyard Revenant Suffocate, Kraken, Pincer Staff, Worm/Remorhaz/Tarrasque Bites, Water Weird and Kuo-toa net. Preserve native checks, add source-passive DC tracking for Toad/Brazen grapple gaps, and offer Vine Blight escape after damage. Keep Sticky Shield, Cataclysm choices and Brazen alternate non-grapple outcomes manual.
+
+- Add end-turn repeat saves for Harpy Luring Song, Chasme Drone, both Faerie Dragon Euphoria Breaths, Revenant Vengeful Glare and Sphinx of Valor’s Second Roar. Preserve native conditions/DCs and suppress repeat templates/damage/effect application. Share one Revenant save across its linked effects and clear only that cast after dice; make applied Harpy charm follow native concentration rather than the imported one-round expiry. Situational breaks, immunity tracking and curse eligibility remain manual.
+
+- Add recurring damage for Swarm of Stirges (victim turn end), Animated Rug of Smothering, Gulthias Blight roots and Djinni Whirlwind (victim turn start). Provide optional escape actions using native Swarm check DC or originating Rug/Blight passive Athletics DC. Add Whirlwind entry Region saves, independent end-turn repeat saves and linked restraint cleanup on exit. Preserve native damage/effects, supply missing Rug Bludgeoning damage type on helpers, and leave damage sharing and life-drain HP transfers manual.
+
+- Exclude creatures actively swallowed by a monster from that same token’s external damage/save auras. Preserve internal Swallow damage and other monsters’ aura eligibility; removing or disabling Swallow restores normal aura targeting. Support existing tracked Swallow effects.
+
+- Fix native Swallow applications missing recurring-damage tracking by carrying source-token metadata on usage copies and registering the applied effect directly, including reused effects. After dice finish, replace only the originating monster’s grapple with the native swallowed conditions; preserve other grapplers.
+
+- Add swallowed recurring damage for Behir, Purple Worm, Remorhaz and Tarrasque at monster turn start, and Kraken at the swallowed creature’s turn start. Preserve native saves, initial damage, effects and multi-type damage. Match book actor identity to distinguish shared Swallow activity IDs; retain local toggles, source-token tracking and manual regurgitation/positioning.
+
+- Fix Giant Toad and other monster Bites incorrectly starting Pit Fiend poison saves when they share the native Bite attack ID. Require the Pit Fiend’s save and recurring-damage activity signatures; also require Grell’s native poison save for its hit handoff. Verify all 109 book Bite/Paralyzing Tentacles variants.
+
+- Add Giant Toad swallowed damage at the toad’s turn end and Gelatinous Cube engulfed damage at the cube’s turn start. Preserve native effects/damage, provide the cube’s optional target-turn Athletics escape, and correct initial Engulf successful-save damage to half on temporary usage copies. Keep capacity/movement and other Swallow/Engulf variants unchanged.
+
+- Add Bearded Devil and Horned Devil infernal wounds: failed native saves apply a non-stacking one-minute wound, target-turn rolls cause direct HP loss with Apply/Undo, and optional DC 12/DC 17 Medicine treatment closes it after dice. Actual spell healing, including Regenerate and player-applied healing, also closes wounds. Preserve initial Tail damage and native resources; follow-on HP loss bypasses temporary HP/resistance and damage-trigger checks.
+
+- Add source-turn recurring damage for Stirge attachment, Invisible Stalker Vortex, Water Elemental Whelm and Barbed Devil Barbed Hide. Retain optional target-turn escapes for Vortex/Whelm. Track Stirge attachment after confirmed hits, support both directions of Barbed Hide grapple contact, preserve native damage and isolate source tokens. Disable/remove tracked effects to stop damage; movement/capacity and special interactions remain manual.
+
+- Add inactive-effect cleanup after combat and a Clear inactive effects actor-window menu action for default/Tidy sheets. Preserve disabled class/item features, passive imported stat features and active effects. Manual cleanup previews and revalidates removals; automatic cleanup waits for native combat-exit handling to finish. Add a world toggle for automatic cleanup.
+
+- Fix save-aura timing races: serialize target-turn cleanup and give new aura conditions one expiry owner, leaving older native-turn effects to native expiry. Evaluate the latest save outcome after dice complete and start immunity at the current world time so successful Stench saves reliably suppress later rolls.
+
+- Add hidden automatic Stench auras for Ghast, Ghast Gravecaller, Hezrou and Troglodyte, plus Swarm of Dretches Fetid Aura. Prompt native Constitution saves at target turn start and preserve/fallback Poisoned until the next target turn. Successful Stench saves grant one-hour monster-kind immunity; Fetid Aura grants none. Preserve own-kind exclusions, renamed compendium identity, native changes and local visibility overrides. Fetid action/reaction restrictions remain manual.
+
+- Add hidden, automatically attached Pit Fiend Fear Aura Regions. Enemies save at turn start using the source DC; failed saves offer/apply native or fallback Frightened until the target’s next turn. Successful saves grant temporary 24-hour immunity only to that source after dice finish. Respect Incapacitated sources, condition immunity and local visibility settings; preserve unrelated fear effects.
+
+- Add automatic token-attached Heat Aura, Flame Aura and Fire Aura Regions for ten Monster Manual creatures. Regions default to hidden from players and retain the Region Library visibility override. Use each monster’s native radius/damage at its own turn end, exclude the source, offer GM target choice where specified and pause Azer auras while Incapacitated. Damage cards default to their recorded targets.
+
+- Add native recurring damage for Vrock, Pit Fiend, Vine Blight, Tree Blight, Shambling Mound and Blob of Annihilation. Keep start-turn damage separate from end-turn repeat saves; show optional native escape actions for Tree Blight and Shambling Mound after damage. Add Pit Fiend confirmed-hit poison saving throws, supplying its missing Constitution ability on temporary helpers only. Preserve source damage, DCs, effects and local library overrides.
+
+- Add the first Monster Manual grapple-escape batch: native grapple effects from 24 monsters now show optional action escape cards at the affected creature's turn start. Record the originating monster's native Escape Check DC, offer Athletics/Acrobatics where allowed, and default Mimic escapes to Disadvantage. Success removes only the tracked grapple and its combined native conditions after dice; separate poison/paralysis remains. No forced action spending, movement checks, grapple-capacity counters, or swallowed/ongoing-damage mechanics are added.
+
+- Remove Unsettling Visage and Haunting Glare targeting Regions at the originating monster's turn end, preserving applied creature effects and their repeat saves.
+
+- Exclude Graveyard Revenant from its own Haunting Glare automatic area targets, matching the Unsettling Visage self-exclusion while preserving other eligible creatures.
+
+- Exclude Doppelganger from its own Unsettling Visage automatic area targets. Preserve all other eligible creatures, including creatures sharing its disposition; other areas retain their existing targeting.
+
+- Fix tracked Monster Manual effects appearing not to apply: newly applied copies now receive a fresh native effect start timestamp and clear inherited expired state, instead of retaining an imported start time of zero. Preserve source book effects, native duration/status/stat changes and external turn automation.
+
+- Prevent repeated Grell poison-save cards across hit/damage updates: store target UUIDs as values in a persistent handoff array instead of dotted flag keys, and retain a completed-handoff guard during local update races. Pending saves are reused rather than recreated.
+
+- Fix monster natural-weapon saves being excluded from save prompts and repeat-effect registration. Accept Save activities on weapon items alongside spells/features, and allow explicitly configured Monster Manual repeat recipes to resolve weapon sources. Correct Grell coverage to use its actual weapon type; remove attack-only description links and unrelated grapple effects from its temporary poison-save card.
+
+- Fix Grell's initial poison-save handoff: after a confirmed Paralyzing Tentacles hit and dice animation, create a separate native Constitution-save card for that recorded target, with prepared DC and persisted item data. Preserve the on-hit grapple, avoid repeat damage/resources/templates, and prevent duplicate follow-up cards. Failed saves use the existing poison/paralysis effect and repeat-save tracking.
+
+- Add the first Monster Manual repeat-save batch: eight shared Trigger Library recipes covering Carrion Crawler, Chuul, Grell poison/paralysis, Doppelganger, Graveyard Revenant, Myconid Adult/Sovereign, Modron Pentadrone, Quasit and all four Gold Dragon ages. Native effects register source-specific end-turn saves with recorded DCs; success removes only the tracked effect after dice animations. Preserve stat changes, durations and separate grapples. Choice-based abilities, staged/counter effects, recurring damage and grapple escape prompts remain outside this batch.
+
+- Add Aura of Life's resistance-only Region: default the native 30-foot self Emanation to place on cast and apply its native Necrotic resistance effect to the caster and matching-disposition allies while inside. Suppress the built-in 1-HP roll; healing and maximum-HP protection remain manual. Allow effect-only Region recipes to specify their targeting without dummy activity triggers.
+
+- Apply Storm of Radiance die-count simplification at the final native damage-roll configuration step as well as pre-roll, including dialog rebuilds and imported spell copies.
+
+- Simplify Storm of Radiance's native damage-count expression in the roll dialog: for example, display 3d10 Radiant and 3d10 Thunder at level 6 instead of (6 - 3)d10. Preserve native cast-level damage, bonuses and damage types without editing book spells.
+
+- Change Yolande's Regal Presence to entry-only Region saves per table preference; remove end-turn triggers while preserving initial aura contact and once-per-turn limits.
+
+- Add Jallarzi's Storm of Radiance: native initial/entry/end-turn Constitution saves, once per target per turn, preserving Radiant/Thunder damage and upcast scaling. Region-managed Senses Overwhelmed applies Blinded, Deafened and Silenced while inside regardless of saves; it is excluded from card-based effect application.
+- Add Yolande's Regal Presence: default Surround Self to place its attached aura, link Region events to Emanation Save, and process initial occupants through the same once-per-turn entry/end-turn workflow. Exclude the caster; default to hostile targets. Failed saves apply Prone after dice using existing Auto Apply Saved Effects/GM manual controls and Undo. The optional push stays manual. Zone of Truth remains outside automation.
+
+- Fix player-cast Guardian of Faith Regions failing to trigger: run the summoned guardian's GM-only Region behavior on the active GM instead of assigning execution to the player caster. Existing owner save/damage prompt routing remains in use; ordinary spell execution routing is unchanged.
+
+- Fix the missing embedded-document warning when Guardian of Faith exhausts its pool: let native token attachment cleanup own attached-aura deletion, reserving module cleanup for detached remnants. Apply the same ownership rule to Flaming Sphere. Skip unchanged queued pool updates and safely resolve already-deleted guardians during Undo.
+
+- Add Guardian of Faith: attach a native 10-foot Emanation to the summoned guardian and use its Guarded Area save on enemy entry/start of turn, once per target per turn. Deduct applied damage after saves, resistances and reductions (including temporary HP and overkill) from the feature's existing 60-point pool; Undo refunds it. Exhaustion deletes only that guardian and aura; Undo of the exhausting damage restores them. No concentration handling or Consume Damage Pool activity is used.
+
+- Add Flaming Sphere automation: create a native 5-foot Emanation attached to each newly summoned sphere, with GM setup for player summons. End-turn saves use the caster's native Dexterity save, Fire damage/half on success and original slot scaling. Exclude the sphere itself; remove the Region with its token or normal concentration cleanup. Movement and ramming remain manual; no entry damage.
+
+- Add Sleet Storm Region automation: placement without an immediate save, then entry/start-turn Dexterity saves once per target per turn. Failed saves apply native Prone with Undo support and end existing concentration after Dice So Nice finishes. Respect Auto Apply Saved Effects; provide a GM card control for manual application. Standing, terrain, obscurity and extinguishing flames remain table-managed.
+
+- Fix Stinking Poison persisting for an extra turn: remove its applied effect when the affected creature finishes the application turn, bypassing the native target-end expiry grace turn. Cleanup runs only for the outgoing combatant under active GM authority.
+
+- Add Stinking Cloud Region defaults: placement without an initial save, then Constitution saves at each creature's turn start. Preserve the native failed-save Poisoned effect and correct applied copies to expire at the affected creature's turn end. Existing owner/GM save routing, effect application settings, pending cards and Dice So Nice waits remain in use.
+
+- Add Conjure Woodland Beings Region defaults using the Spirit Guardians-style entry/end-turn workflow: native 10-foot Emanation, WIS saves for 5d8 Force/half, +1d8 per slot above 4, hostile-only default targeting, one save per target per turn and shared cards. Link the native Cast and Emanation Save activities for initial card/limiter registration. Correct this self-origin aura's initial target collection to use the configured Region targeting rather than the caster. Native Disengage remains manual; Conjure Celestial remains outside automation.
+
+- Add Wall of Thorns Region defaults: native wall/circle placement deals Piercing damage; entry/end-turn events use the native Traversal Save for Slashing damage, DEX save for half, once per target per turn. Preserve original slot scaling and grouped traversal cards without reusing placement damage rolls. Native dimensions remain unchanged; movement costs and sight blocking remain table-managed.
+
+- Add the table's Wall of Fire Region ruling: initial native DEX save/half damage, then entry/end-turn Fire damage without saves, once per target per turn. Use the spell card's placed Region unchanged; no automatic width expansion or hot-side geometry. Follow-ups preserve native slot scaling, grouped damage, resistance/application handling and wall/ring selection through temporary damage-only snapshots.
+- Keep Wall of Fire's initial save card separate from later no-save damage cards while recording initial target turn allowances. Preserve specialized trigger properties when editing Region recipes; explicit activity changes release stale activity-ID/shape links.
+
+- Add built-in damage-area Region recipes for Cloud of Daggers, Cloudkill, Insect Plague, Incendiary Cloud and Blade Barrier: native placement damage, entry/end-turn triggers, everyone targeting, once-per-turn limits and grouped cards. Preserve native damage types, saves, resistance handling and slot scaling. Existing local overrides remain authoritative.
+- Resolve new Region recipes by native activity ID and follow Blade Barrier's original wall/ring activity. Initial card-sharing and turn-limit seeding use the same resolution, avoiding an extra save after a ring cast. Name-only custom recipes remain supported. Cloud repositioning, terrain, cover and obscurity remain GM-managed.
+
+- Clear Confusion's targeting-only Region at caster turn end, preserving its creature effects, concentration and end-turn save prompts. Existing ongoing Region protections and local lifetime overrides still apply.
+
+- Add prompt-only end-turn saves for Confusion, Crown of Madness, all six Contagion native ability effects, Flesh to Stone, and Sleep. Sleep creates only its single follow-up save. Keep outcomes, save counts, condition changes, damage/waking/upkeep interactions and effect removal manual. GM Stop repeat saves pauses prompts without removing conditions; shared Contagion variants produce one save per cast/target/turn.
+- Add Antipathy/Sympathy end-turn cards with manual eligibility confirmation for the greater-than-120-foot condition. No automatic distance checks, effect removal or immunity tracking. Leave spells with action-, movement-, start-turn-, or long-interval checks manual rather than inventing turn-end saves.
+
+- Add Heroism and Regenerate creature triggers. Bravery refreshes temporary HP from the caster modifier recorded on application; Regenerating restores 1 HP at target turn start, separate from the native initial 4d8 + 15. Fixed benefits create native typed healing cards without repeated dialogs and follow Auto Apply Healing / manual Apply, preserving temporary-HP replacement and HP caps. Native immunity/stat changes and effect durations remain intact.
+- Extend buff-effect automation specifically to Heroism and Regenerate after their initial healing roll completes and dice finish. Recorded upcast recipients receive native effects through existing Undo/application handling; canceled or pending initial rolls do not leave ongoing buffs behind. Trigger Library entries support enable/disable, turn timing and caster-modifier/fixed amount overrides.
+
+- Register Weird Frightening Terrors as an explicit AC5E disadvantage source for attack rolls and ability checks while the tracked effect is active, with normal advantage cancellation. Supply native attack/check defaults and attack-dialog button selection when the rule bridge is unavailable. No saving-throw penalty is added.
+
+- Fix Weird Frightened roll recommendations with AC5E: link the applied effect's legacy origin to the actual caster while preserving native activity, message, concentration and source-effect metadata. AC5E can then enforce visible-source disadvantage normally. Reload also repairs active matching effects on world/current-scene actors.
+
+- Ensure Weird's applied Frightening Terrors effect includes the native Frightened status, retaining other statuses and changes. The condition follows the same tracked effect and ends with it; no duplicate standalone condition is created.
+
+- Default Weird's targeting-only Region to cleanup at the end of the caster's turn, like Fear. Preserve concentration, creature effects and recurring saves/damage; honor ongoing Region configurations and local lifetime overrides.
+
+- Complete Phantasmal Killer's applied Fears Manifested effect with native disadvantage defaults for all ability checks and attack rolls. Preserve existing/custom changes, avoid duplicate entries, and leave book source effects and saving throws unchanged.
+
+- Add save-first turn-end triggers for Phantasmal Killer and Weird. Failed Wisdom saves prompt recurring Psychic damage only after save dice finish: native slot-scaled Phantasmal Killer dice, or Weird's separate 5d10 repeat damage. Successful saves remove the tracked target effect after animations; Phantasmal Killer also ends its own concentration. Temporary helpers spend no resources, repeat no initial effects/Metamagic selections, and suppress cast-animation replay. Existing damage-then-save triggers remain supported.
+
+- Fix Melf's Acid Arrow initial misses: prompt damage on either outcome and keep splash damage visible after a miss or Shield. Native damage application defaults to full damage on a hit and half on a miss, retaining resistance/immunity calculations and explicit GM multipliers. Delayed acid remains hit-only.
+
+- Add one-shot Lingering Acid triggers for Melf's Acid Arrow (hits only) and Vitriolic Sphere (failed saves only). Create one delayed-damage card at the target's turn end, preserve Arrow slot scaling and Sphere's fixed 5d4, and remove only the spent effect after dice finish. Pending/canceled rolls retain that card without producing later-turn duplicates. Prevent the native turn-start expiry from deleting the delayed effect prematurely; book source items remain unchanged.
+
+- Add Power Word Stun to the Creature Effect Trigger Library: the native Stunned effect prompts a Constitution save at turn end using the caster DC recorded on application. Successful saves remove only that stun after dice animations; the separate No Movement effect does not prompt saves. The book spell remains unchanged.
+
+- Show optional escape action buttons to the affected token�s owners as well as GMs. Player requests are validated and released by the active GM before routing the roll prompt.
+
+- Wait for action-based escape check dice animations on connected clients before removing the restraint or ending its concentration.
+
+- Prepare final actor-dependent attributes on temporary escape-spell cast/card copies so initial saves and Pending retries retain a calculated save DC, including Entangle.
+
+- Add action-based Strength (Athletics) escape checks for Ensnaring Strike, Web, Evard’s Black Tentacles and Entangle, using the original caster DC. The GM chooses the action; connected owners receive a manual check dialog with GM fallback, including for NPCs. Successful checks remove only the tracked restraint after animations.
+- Add separate Region recipes for Web (entry/start-turn restraint saves), Evard’s (entry/end-turn damage and restraint saves, once per turn), and Entangle’s initial-cast area. Restrained stays a failed-save target effect, not a continuous membership effect. Web ends only its own restraint on exit/deletion; spell concentration dependencies are retained on Region-triggered applications.
+- Use temporary cast snapshots instead of modifying native items: omit burning-web damage from Web’s ordinary saves, defer Ensnaring damage to the native scaled start-turn activity, and make Evard’s damage failure-only. Web placement completes without an initial save/damage roll. Ensnaring’s successful initial save or successful escape ends its own concentration.
+
+- Treat Spike Growth and other enabled movement-only Region casts as placement without initial damage. Suppress native/confirmation damage on placement, hide the initial card’s Damage action, and commit the pending cast after successful Region placement and target/Metamagic confirmation. Concentration handoff completes without requiring a damage roll; canceled placement still refunds and cleans up.
+- Mark genuine movement-counter damage rolls separately so placement safeguards do not block them. Preserve accumulated movement, increments, targeting, and existing movement damage processing.
+
+- Include the caster’s native Half Speed effect in Spirit Guardians’ default Region recipe. Region membership controls the speed reduction independently of saves; the Region/card ownership rule prevents duplicate card application. Existing world effect overrides remain intact.
+
+- Treat effects assigned in a spell’s Region configuration as continuous Region-owned effects. Exclude those effects from automatic save/hit/buff application and manual chat-card Apply Effect controls, while preserving other effects and normal save outcomes. Match copied book effects without editing their source data. Region membership continues to control application/removal independently of damage saves; Region-only effects no longer mark a card as having applied an outcome effect.
+
+- Move the seven currently saved Region recipes into a module-owned Region library: Hunger of Hadar, Spirit Guardians, Grease, Fog Cloud, Conjure Animals, Spike Growth, and Moonbeam. Resolve module defaults with world overrides/custom entries across Region placement, conditions, targeting, save/damage prompts, and cleanup. Preserve current trigger IDs, timing, targeting, shared cards and movement behavior; portable source references point to PHB items.
+- Automatically migrate the current module’s legacy spell table on the next GM load, retaining the original table and a backup. Keep local enablement, activity/effect references, trigger IDs, conditions and custom entries; retry interrupted migrations without discarding the original configuration. The former module namespace is not reactivated.
+- Remove Add Starting Spell List from the manager: defaults are available automatically. Show Module default / Customized / Custom entry and Reset to Default for built-ins. Disable built-ins rather than delete them; custom entries remain locally editable and removable.
+
+- Add Blink automation with its original chat card available for manual checks during the caster’s turn. The active GM rolls automatically at turn end only if that turn has not already been rolled. Persist a shared turn claim to prevent duplicate player/GM clicks or turn updates from rerolling.
+- On a Blink result of 4–6, apply a source-specific Ethereal effect after dice animations. Clear it at the caster’s next turn start or when Blink ends, preserving other effects. Keep the token visible and show a reminder to choose the return space manually. A one-minute tracking effect and Trigger Automation Library toggle control the workflow without repeated spell costs.
+
+- Disable the unarmed damage dialog’s Grapple choice when that target is already actively grappled by the same attacker. Keep Prone available and clear stale duplicate selections before damage replacement or submission, avoiding wasted damage or Grappler usage.
+
+- Fix concentration replacement being rejected after selecting Break Current Concentration. Keep the chosen old effect available through native consumption validation, then defer its removal until the pending cast commits. Canceled casts preserve the old concentration and refund resources; disabling new concentration does not end the previous spell.
+
+- Add Grapple to the Trigger Automation Library. New module-created Grappled effects record their grappler’s DC and show an optional escape save card at turn start. The GM chooses whether to use the action; the target uses its better Strength/Dexterity save, with Strength on ties. Success removes only the tracked grapple after dice animations, without requiring the original temporary grapple item. Prone is excluded.
+
+- Add optional action-save cards at turn start for Otto’s Irresistible Dance. Cards wait for the GM’s choice and do not automatically prompt or roll, including for GM-run NPCs. The brief successful-save dance effect is not registered.
+- Add damage-triggered repeat saves for Dominate Beast, Dominate Person, Dominate Monster, and Tasha’s Hideous Laughter. Each positive native damage application, including damage absorbed by temporary HP, creates its own save; healing and Undo do not. Hideous Laughter also repeats at turn end and receives advantage only on its damage-triggered saves.
+- Expose damage-taken triggers, additional damage saves, damage-save advantage, and card-only prompting in the Trigger Automation Library. Coordinate player-applied damage through the active GM without duplicating socket events; preserve native effects, resources, pending routing, and animation-aware success cleanup.
+
+- Add end-of-turn repeat-save recipes for Hold Person, Hold Monster, Blinding Smite, Wrathful Smite, Slow, Blindness/Deafness, Ray of Enfeeblement, Synaptic Static, and Sunburst. Preserve native conditions and stat changes, track Blindness and Deafness separately, and exclude Brief Enfeeblement. Follow-up cards use save-only activities without repeating initial damage, spending spell resources, or replaying casting animations. Successful saves remove only their tracked effect after dice animations; library overrides remain available.
+
+- Default spell card recipient displays to Target once recorded recipients are available, including area spells, attacks, and damage cards. Correct the Selected fallback from initially empty targeting while preserving later manual mode choices and the actual recipient data.
+
+- Remove layout-forcing geometry measurements from chat result visibility checks. Determine handoff from DOM/animation state before styling cards, preserving pending-card visibility through Dice So Nice.
+- Limit feature-driven chat refreshes to mounted messages and grouped summaries. Explicit result, correction, and Undo refreshes remain available for unmounted cards.
+
+- Add Moonbeam to Region starter recipes: native Save activity on entry and turn end, once per creature per combat turn, with a shared damage card. Existing world configurations are preserved.
+
+- Disable Automated Animations recognition on temporary recurring save/eligibility helpers so Fear repeat saves do not replay casting or area animations. Original spell, effect, recurring-damage, and dice animation settings remain intact.
+
+- Add a Targeting area lifetime override to creature-trigger entries. Fear defaults to removing its targeting cone at the caster’s turn end without changing concentration, spell duration, or creature effects. Ongoing manager-configured Regions remain protected.
+
+- Hide and block retroactive save mode adjustments while effects from that workflow are applied, including save-only spells such as Fear. Undo Effect restores the controls once recorded applications are cleared.
+
+- Prevent recurring effect and rider save cards from reopening cast-time targeting/Metamagic confirmation. Repeat cards reuse persistent original-cast Metamagic without spending resources again; Careful Spell’s initial-save protection is not repeated.
+
+- Make manual Apply Effect respect each recorded target’s save outcome, including Fear. Failed saves receive failure-only effects; successful or pending saves are skipped. Explicit effects configured to apply on a successful save remain supported, with Undo preserved.
+
+- Add Fear to the built-in creature-trigger library using the installed book’s native Fear effect and Wisdom save. Repeat saves occur at the affected creature’s turn end only after GM confirmation that it cannot see the caster; success removes only that effect after animations.
+- Support save-only entries with no damage activity. Fear’s concentration, duration, and Frightened condition remain native; dropping items, Dash, and safest-route movement remain manual.
+
+- Add custom creature-trigger entries through Add New Effect, using a separate spell drag/drop or UUID picker. Keep custom entries in world storage alongside built-in recipes.
+- Enlarge View/Edit with vertical scrolling and replace its drop zone with a Choose Source button.
+
+- Add a GM-only Trigger Automation Library shortcut to the Compendium sidebar alongside the Spell and Region Manager.
+
+- Add spell drag/drop to the creature-trigger editor, with dropdowns for native effects, damage activities, and save activities. Saving throws can be omitted.
+- Default to native cast-level damage; show a custom formula only when Custom damage is selected. Add section information popups and a live workflow preview.
+
+- Display the Trigger Automation Library as a spell/effect table with status and customization indicators. View/Edit opens a separate entry window; saving or restoring defaults refreshes the list.
+
+- Preserve the recurring damage card’s source link when rolling Searing Smite damage, allowing its Constitution save to follow the completed damage roll.
+
+- Add a creature-effect Trigger Automation Library with a built-in Searing Smite entry and persistent world overrides. Existing Region configuration and native effect changes/durations remain intact.
+- Seared now schedules native, cast-level-scaled damage at the affected creature’s turn start, routes the roll to a connected caster owner with GM fallback, then prompts the Constitution save. Success removes the recorded Seared effect after dice animations; failure retains it. Turn progression remains unblocked.
+- Guard against duplicate turn updates and stale cards resolving a refreshed effect. Explicit external turn-automation changes are skipped.
+
+- Fix initial saves for Smite spells whose save and damage are separate activities, including Wrathful Smite. Keep recurring Searing/Blinding saves out of the initial hit.
+- Show the selected Smite spell as a tag on its weapon damage card, including Divine Smite.
+
+- Expand damage Configuration to a single Smite spell/resource choice drawn from prepared 2024 Smite spells. All selected Smites add their initial damage to the weapon card. Save-based Smites create a separate save-only card; effects apply on failure, or directly for no-save Smites. Slot and bonus-action costs are spent once.
+- Carry a weapon critical into the selected Smite’s initial damage without copying weapon-only critical bonus dice or making ongoing Smite damage critical. Unprepared spells, undersized/exhausted slots, and unavailable bonus actions are excluded or rechecked before casting.
+
+- Apply Cleave’s positive ability-modifier subtraction to the final constructed weapon roll, including the displayed preview and submitted result. This survives AC5E’s saved-formula restoration during dialog rebuilds and preserves weapon magic bonuses, Rage damage, and critical dice.
+
+- Fix Cleave damage opened from native card actions: apply the ability-modifier adjustment after the source link is established. Remove the positive ability contribution from the base formula while preserving weapon magic bonuses, Rage damage, and ability context for feature checks.
+- Recheck Cleave’s different-target requirement before the attack dialog, before dice evaluation, and at publication. Native card actions inherit their Cleave source/session so they cannot bypass the check.
+
+- Add Cleave to successful melee attack chat cards when the weapon’s Cleave mastery is unlocked. Select one different creature and roll a separate linked attack and damage workflow. Target distance and reach remain table decisions.
+- Share one Cleave use across weapons for each active combat turn. Canceling the prompt preserves the use; a rolled attack spends it even on a miss. Cleave cannot trigger itself or consume an additional Reaction.
+- Cleave damage excludes a positive ability modifier and retains a negative one; fresh damage choices use the second target and existing feature/resource rules. Corrections to the first attack never automatically undo the completed Cleave.
+
+
 ## v0.7.5 — Pending Cards, Concentration & Targeting
 
 - Declare Automated Conditions 5e and Dice So Nice! as required module dependencies, with installation manifests. Both must be installed and enabled; no-Dice-So-Nice damage-card updates are not a supported configuration.

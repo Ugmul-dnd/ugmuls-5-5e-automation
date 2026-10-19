@@ -6,17 +6,23 @@ Configurable spell regions and combat assistance for D&D5e in Foundry Virtual Ta
 
 ## Supported content
 
-Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** content.
+Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content.
 
 Most features rely on the spells, class features, activities, chat cards, names, identifiers, and associated Active Effects supplied by that content. Having the expected name alone may not be enough if the item's activities or effects are configured differently.
 
-Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the Player's Handbook content.
+Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
+
+## Version 0.8.0
+
+Expanded spell and monster effects, recurring damage, escape actions, hidden monster auras, infernal wounds and swallowing. See [0.8.0 release notes](RELEASE-NOTES-0.8.0.md) for highlights and updating instructions.
 
 ## Main features
 
 - **Pending casts and safe cancellation:** show spell/feature preparation immediately, keep attack cards visible through dice animation, and refund pre-roll canceled casts. Target checks respect native upcasting and partial multi-target groups.
 - **Concentration assistance:** prompt connected owners or the GM for damage-triggered concentration saves, with independent prompt and automatic-break settings. Failed checks end recorded concentration after dice animations finish.
 
+- **Creature effects and monster features:** built-in trigger recipes with local overrides, repeat saves, optional escape actions, recurring damage, wounds, swallowing and source-specific conditions. Monster auras start automatically and are hidden from players by default. Complex choices and documented special cases remain table-managed.
+- **Inactive-effect cleanup:** clear inactive applied effects after combat or from the actor window menu while preserving disabled class/item features and active effects.
 - **Spell and feature regions:** configure entry, movement, and turn triggers; target filters; region conditions and effects; self-attached emanations; and concentration cleanup.
 - **Targeting and saving throws:** confirm area targets, retarget attack cards, prompt token owners for saves, and let a GM take over a pending save. Optional automatic saves for GM-run NPCs leave player-owned NPCs manual.
 - **Damage, healing, and effects:** optional roll prompts and automatic application, with GM Undo Damage, Undo Healing, and Undo Effect controls. Applied damage locks retroactive roll adjustments until it is undone.
@@ -28,10 +34,10 @@ Some features may work with content from **D&D Beyond Importer**, but imported c
 - **Guided PC creation:** Create Player in Actors walks through level-one setup, Standard Array / point buy, native source-filtered class/background/species advancement, starting equipment or gold, class cantrips/spells and preparation, and review. Close and resume from Create Player or the PC’s Actors right-click menu; token artwork stays manual.
 - **Great Weapon feats:** Great Weapon Fighting applies a minimum of 3 to qualifying two-handed melee attack damage dice. Great Weapon Master offers proficiency-bonus damage on Heavy-weapon Attack-action hits on your turn; Hew remains manual.
 - **Battle Master maneuvers:** Precision Attack adds the current Superiority Die to missed attacks; Trip Attack, Distracting Strike, Menacing Attack, Goading Attack, Maneuvering Attack, and Pushing Attack join damage Configuration with shared resource spending, one maneuver per attack, saves/effects, and Undo support. Relentless offers a free d8 once per active combat turn, shared with Precision Attack. Parry reduces incoming single-target melee damage from its card, spending a Reaction and the current Superiority Die.
-- **Bonus damage riders:** Hex, Hunter's Mark, and Conjure Minor Elementals add eligible bonus damage to the existing damage card. Class riders include Divine Smite, Eldritch Smite, Hunter's Prey, and Frenzy. Target-dependent riders currently support single-target damage cards.
+- **Bonus damage riders:** Hex, Hunter's Mark, and Conjure Minor Elementals add eligible bonus damage to the existing damage card. Class riders include Divine Smite, Eldritch Smite, Hunter's Prey, and Frenzy. The Smite selector also offers prepared 2024 Smite spells: the selected spell adds its own damage to the weapon roll. Only Smites requiring a save create a separate save card; effects apply on failure, or directly when no save is needed. Target-dependent riders currently support single-target damage cards.
 - **Sorcerer assistance:** Innate Sorcery attack advantage, cast-time Transmuted/Heightened/Careful Spell, and Empowered/Seeking reroll actions with Sorcery Point consumption and Metamagic card tags.
 - **Multiple spell attacks:** Eldritch Blast and Scorching Ray offer a remaining-attacks window so users can choose targets between shots without casting or spending a slot again.
-- **Weapon masteries:** assistance for Graze, Sap, Slow, Topple, and Vex, with individual enable/disable options. Push, Nick, and Cleave are not automated.
+- **Weapon masteries:** assistance for Graze, Sap, Slow, Topple, Vex, and Cleave, with individual enable/disable options. Cleave offers a separate chat-card attack once per active combat turn; choose one different target manually. It shares its use across Cleave weapons and removes only a positive ability modifier from damage. Distance/reach decisions and Undo after later corrections to the original hit remain manual. Push and Nick are not automated.
 - **Interface conveniences:** compact chat cards, remembered roll-popup positions, chat scrolling improvements, and character-sheet Add Item buttons that open the matching compendium browser tab.
 
 Use the module's tabbed options interface to enable the features that suit your table. The Automations section groups options into Unique Classes, Weapon Masteries, Feats, Common, and Spells. Automatic damage and effect application are optional; manual card controls remain available.
@@ -42,7 +48,7 @@ Use the module's tabbed options interface to enable the features that suit your 
 | --- | --- |
 | Foundry Virtual Tabletop | v14; tested on build 369 |
 | Dungeons & Dragons Fifth Edition system | 6.0.5 minimum; tested with 6.0.6 |
-| Official Player's Handbook (2024) | Content used to develop and test the automations |
+| Official Player's Handbook (2024) and Monster Manual | Content used to develop and test the corresponding automations |
 | D&D Beyond Importer content | May work, but has not been tested |
 
 An **active GM must be connected** for GM-managed region effects, NPC automation, and other operations affecting actors a player does not own.
@@ -76,4 +82,18 @@ After updating, **restart Foundry and hard-refresh connected browsers** to load 
 - [Module information and features](https://ugmul-dnd.com/foundry)
 - [Report a bug](https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/issues)
 - [Changelog](CHANGELOG.md)
-- [Starter spell configurations](STARTER-SPELLS.md)
+- [Region spell library](STARTER-SPELLS.md)
+
+### Creature effect triggers
+
+The **Trigger Automation Library** starts with Searing Smite. Its Seared effect keeps the native book data and gains the missing turn-start damage/save sequence. Damage uses the original cast level, followed by a Constitution save at the recorded DC; success removes Seared after animations. The connected caster owner receives the damage prompt, with active-GM fallback. Monster saves use the existing NPC save setting. Damage application follows existing automatic/manual damage settings. Removing, disabling, or expiring Seared stops future triggers.
+
+Open **Module Options → Automations → Spells → Creature Effect Trigger Library**, or the module’s Trigger Automation Library settings menu. The library lists entries in a table. Choose **View/Edit** to open an entry in its own window. Use **Add New Effect** to create a world entry from a dropped spell or spell UUID. In View/Edit, **Choose Source** opens the same separate source picker to populate effect/activity dropdowns. Information buttons explain each section, and a preview summarizes the sequence. Native cast-level damage is the default; Custom damage reveals an optional fixed-formula override. Choose None to skip the saving throw. The GM can enable/disable the entry, choose turn start/end, match customized effect/activity names, override the damage formula, and restore defaults. World overrides survive module updates. Region recipes now use a module-owned library with local overrides; movement processing is preserved. Newly applied supported effects are registered; cast Searing Smite again to test effects created before this update.
+
+**Fear:** The built-in entry adds its conditional end-of-turn Wisdom save without damage. The active GM confirms loss of line of sight on the repeat-save card before a roll is requested; if the creature can still see the caster, skip that save. Successful saves remove that creature’s native Fear effect after animations. The caster’s concentration and other affected creatures are preserved. Dropping held objects, taking Dash, and choosing the safest route remain table decisions. Apply a fresh Fear effect after refreshing clients to register its triggers.
+
+**Targeting area lifetime:** Fear’s library entry defaults to **Remove targeting area at caster turn end**. Its cone is only a targeting aid; concentration, native duration, and creature effects continue. This uses the existing **Remove Instantaneous Areas at Turn End** option in active combat. Choose **Use spell duration** in View/Edit to disable the override. Regions configured with ongoing triggers or effects remain protected. The override is tracked when a new Region is created.
+
+### Region spell library
+
+Seven current Region recipes are included automatically. Local changes are saved as world overrides, and custom entries remain separate. The manager shows each entry’s source and offers Reset to Default for built-ins. Existing tables migrate on the next GM load with their original settings and a backup preserved. See [Region spell library](STARTER-SPELLS.md) for coverage and migration details.

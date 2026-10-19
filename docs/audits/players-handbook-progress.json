@@ -1,0 +1,288 @@
+{
+  "date": "2026-10-18",
+  "scanned": 391,
+  "originalShortlist": 73,
+  "trackedReviewSet": 74,
+  "implementedCreatureSpells": [
+    "Blink",
+    "Dominate Beast",
+    "Dominate Monster",
+    "Dominate Person",
+    "Otto's Irresistible Dance",
+    "Tasha's Hideous Laughter",
+    "Blinding Smite",
+    "Blindness/Deafness",
+    "Hold Monster",
+    "Hold Person",
+    "Ray of Enfeeblement",
+    "Slow",
+    "Sunburst",
+    "Synaptic Static",
+    "Wrathful Smite",
+    "Searing Smite",
+    "Fear"
+  ],
+  "includedRegionRecipes": [
+    "Hunger of Hadar",
+    "Spirit Guardians",
+    "Moonbeam",
+    "Grease",
+    "Spike Growth",
+    "Fog Cloud",
+    "Conjure Animals"
+  ],
+  "remaining": [
+    {
+      "name": "Ensnaring Strike",
+      "review": "Start-of-turn damage; escape uses an action/check, not an automatic repeat save.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Melf's Acid Arrow",
+      "review": "One delayed damage event after a hit, then stop.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Vitriolic Sphere",
+      "review": "One delayed damage event after an initial failed save, then stop.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Phantasmal Killer",
+      "review": "Save first; recurring damage only on failure. Success ends the effect.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Weird",
+      "review": "Save first; repeat damage differs from initial damage.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Heroism",
+      "review": "Refresh temporary HP at turn start; needs healing support and no stacking.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Regenerate",
+      "review": "Turn-start healing must be separate from initial healing.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Power Word Stun",
+      "review": "No native save activity: requires a dedicated repeat-save helper.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Contagion",
+      "review": "Track three successes/failures and preserve chosen ability penalty.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Flesh to Stone",
+      "review": "Track counters and transition to Petrified.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Sleep",
+      "review": "One repeat save, then change Incapacitated to Unconscious on failure; waking/damage can end it.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Confusion",
+      "review": "Repeat save plus a separate start-of-turn behavior roll.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Crown of Madness",
+      "review": "Caster upkeep and forced action choices remain decisions.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Bestow Curse",
+      "review": "Only the action-denial option needs a turn-start save; success does not end the curse.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Compulsion",
+      "review": "Repeat save follows compelled movement.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Compelled Duel",
+      "review": "Conditional ending events need dedicated checks.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Eyebite",
+      "review": "Requires outcome-specific review.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Antipathy/Sympathy",
+      "review": "Requires outcome-specific review.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Befuddlement",
+      "review": "Long-interval save, outside combat-turn timing.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Phantasmal Force",
+      "review": "Conditional damage needs GM judgment.",
+      "category": "Additional creature-trigger behavior"
+    },
+    {
+      "name": "Blade Barrier",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Cloud of Daggers",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Cloudkill",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Conjure Celestial",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Conjure Woodland Beings",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Control Water",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Cordon of Arrows",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Evard's Black Tentacles",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Flaming Sphere",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Forbiddance",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Guardian of Faith",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Incendiary Cloud",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Insect Plague",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Jallarzi's Storm of Radiance",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Stinking Cloud",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Wall of Thorns",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Yolande's Regal Presence",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Zone of Truth",
+      "review": "Review activity mapping, area timing, targets and limits through existing region setup.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Web",
+      "review": "Do not confuse restraint saves with burning-web damage.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Wall of Fire",
+      "review": "One-sided wall geometry; recurring damage has no save.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Wall of Ice",
+      "review": "Traversal damage applies to the frigid air remaining after a section breaks.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Sleet Storm",
+      "review": "Entry/start-of-turn save can cause Prone and loss of concentration.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Gust of Wind",
+      "review": "Turn-end save and forced movement; direction can change.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Aura of Life",
+      "review": "Turn-start healing only for eligible allies at zero HP.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Aura of Vitality",
+      "review": "Caster-turn healing requires choosing a creature.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Conjure Elemental",
+      "review": "Inspect summoned actor activities, not only the spell item.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Prismatic Wall",
+      "review": "Layer-specific conditions and counters.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Storm of Vengeance",
+      "review": "Round-dependent phases and target selection.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Tsunami",
+      "review": "Changing area and damage across turns.",
+      "category": "Region or aura review"
+    },
+    {
+      "name": "Earthquake",
+      "review": "Terrain events and GM choices.",
+      "category": "Region or aura review"
+    }
+  ],
+  "additionalReview": "Entangle; expand screening for action-based escape checks",
+  "liveWorldSettingsInspected": false
+}

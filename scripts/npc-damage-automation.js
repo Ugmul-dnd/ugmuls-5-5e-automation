@@ -1,4 +1,5 @@
 import {createEventQueue,isEligibleTarget,hasEquivalentActiveEffect,regionOwnsEffect,isDamageOrHealingCard,isHealingCard,isEligibleHealingTarget} from "./shared-activity-card.js";
+import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
 const queued=new Set();
@@ -71,7 +72,7 @@ export async function readyDamageTargets(message) {
     }
     if(activity?.type==="attack"&&!isHealingCard(message)&&!message.getFlag(MODULE_ID,"masteryGraze")) {
         const attack=attackForDamage(message);if(!attack)return null;
-        const hits=new Set((attack.system.evaluatedTargets??[]).filter(target=>target.isMiss===false).map(target=>target.token));
+        const hits=new Set((attack.system.evaluatedTargets??[]).filter(target=>target.isMiss===false||target.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)).map(target=>target.token));
         return remaining(targets.filter(target=>hits.has(target.token)));
     }
     return remaining(targets);
@@ -151,7 +152,7 @@ export async function waitForDamageAnimation(message,extraAnimation) {
 export async function waitForWorkflowAnimations(message) {
     const origin=originOf(message);
     const usage=origin??message;
-    const rolls=[...(message.type==="usage"?[...(message.getAssociatedRolls?.("damage")??[]),...(message.getAssociatedRolls?.("healing")??[])]:[message]),...(usage.getAssociatedRolls?.("save")??[])];
+    const rolls=[...(message.type==="usage"?[...(message.getAssociatedRolls?.("damage")??[]),...(message.getAssociatedRolls?.("healing")??[])]:[message]),...(usage.getAssociatedRolls?.("save")??[]),...(usage.getAssociatedRolls?.("check")??[])];
     const stunning=game.messages.get(message.getFlag?.(MODULE_ID,"stunningStrikeSave"));
     rolls.push(...(stunning?.getAssociatedRolls?.("save")??[]));
     const grapple=game.messages.get(message.getFlag?.(MODULE_ID,"grappleSave"));
@@ -178,6 +179,7 @@ export async function applyOutcomeEffects(card) {
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;
+    if(usage.getFlag?.(MODULE_ID,"smiteSave"))return globalThis.Ugmuls55eAutomationSmite?.resolveSmiteSave(usage);
     if(usage.getFlag?.(MODULE_ID,"grappleStrike"))return globalThis.Ugmuls55eAutomationGrapple?.applyGrappleOutcome(usage);
     if(usage.getFlag?.(MODULE_ID,"stunningStrike"))return globalThis.Ugmuls55eAutomationStunning?.applyStunningOutcome(usage);
     if(usage.getFlag?.(MODULE_ID,"maneuverStrike"))return globalThis.Ugmuls55eAutomationBattleMaster?.applyTripOutcome(usage);
@@ -185,7 +187,7 @@ export async function applyOutcomeEffects(card) {
     const saving=activity?.type==="save";
     const setting=saving?"autoApplySavedEffects":"autoApplyHitEffects";
     if((!saving&&card.type!=="attack")||game.settings.get(MODULE_ID,setting)!==true)return;
-    const effects=await activity?.getApplicableEffects?.()??[];
+    const effects=(await activity?.getApplicableEffects?.()??[]).filter(effect=>!regionManagesCardEffect(activity,effect));
     if(!effects.length)return;
     const prior=new Set(card.getFlag(MODULE_ID,"automaticEffectApplications")??[]);
     const targets=[];

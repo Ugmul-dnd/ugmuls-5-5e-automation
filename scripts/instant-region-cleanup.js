@@ -1,6 +1,11 @@
+import {getRegionSpellTable} from "./region-library.js";
+import {triggerEntry,triggerKeyForSpell} from "./trigger-library.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 
 export function shouldCleanInstantRegion(item, config, activity = null) {
+    if(!["spell","feat"].includes(item?.type)||config?.triggers?.length||config?.regionEffects?.length||config?.regionConditions?.length)return false;
+    const entry=triggerEntry(triggerKeyForSpell(item));
+    if(entry?.enabled!==false&&entry?.targetingRegionCleanup==="casterTurnEnd")return true;
     const duration = item?.type === "feat" || activity?.duration?.override
         ? activity?.duration ?? item?.system?.duration : item?.system?.duration;
     return ["spell", "feat"].includes(item?.type) && duration?.units === "inst" && !duration.concentration &&
@@ -21,7 +26,7 @@ export async function trackInstantRegion(region) {
     const item = await fromUuid(itemUUID);
     const activityUUID = region.flags?.dnd5e?.activity;
     const activity = activityUUID ? await fromUuid(activityUUID) : null;
-    const config = item ? game.settings.get(MODULE_ID, "spellTable")?.[item.name] : null;
+    const config = item ? getRegionSpellTable()?.[item.name] : null;
     if (!shouldCleanInstantRegion(item, config, activity)) return;
     const matchesCaster = combat => combat.started &&
         combat.combatants.some(combatant => combatant.token?.uuid === casterTokenUuid);
@@ -51,12 +56,12 @@ export async function cleanupInstantRegions(combat, changes, options = {}) {
             // A configuration may have been added after casting. Preserve it.
             const item = await fromUuid(marker.itemUUID);
             const activity = marker.activityUUID ? await fromUuid(marker.activityUUID) : null;
-            const config = item ? game.settings.get(MODULE_ID, "spellTable")?.[item.name] : null;
+            const config = item ? getRegionSpellTable()?.[item.name] : null;
             if (shouldCleanInstantRegion(item, config, activity)) ids.push(region.id);
         }
         if (ids.length) {
             await scene.deleteEmbeddedDocuments("Region", ids);
-            console.log(`Ugmuls 5.5e Automation | Removed ${ids.length} instantaneous spell Region(s) after the caster's turn.`);
+            console.log(`Ugmuls 5.5e Automation | Removed ${ids.length} targeting Region(s) after the caster's turn.`);
         }
     }
 }
@@ -68,7 +73,7 @@ function reportError(err) {
 
 Hooks.once("init", () => game.settings.register(MODULE_ID, "cleanupTargetingRegions", {
     name: "Remove Instantaneous Areas at Turn End",
-    hint: "Remove new instantaneous spell/Feature targeting Regions when their user's turn ends. Manager-configured ongoing areas are preserved. Turning this off stops automatic deletion.",
+    hint: "Remove new instantaneous spell/Feature targeting Regions when their user's turn ends. Trigger Library entries can also override targeting-only areas, such as Fear, without changing spell duration or concentration. Manager-configured ongoing areas are preserved. Turning this off stops automatic deletion.",
     scope: "world", config: true, type: Boolean, default: true
 }));
 

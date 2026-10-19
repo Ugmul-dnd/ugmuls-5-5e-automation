@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import { describeTarget, isEligibleTarget, isEligibleHealingTarget } from "./shared-activity-card.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const DIAGNOSTIC_REVISION = "2026-10-08-confirmation-3";
@@ -6,9 +7,17 @@ const pendingCards = new Set();
 
 export function automaticTargetMode(activity, config) {
     const type = activity.target?.affects?.type;
+    const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b"};
+    if(selfExcludedActivities[activity.item?.identifier??activity.item?.system?.identifier]===activity.id&&activity.id&&activity.target?.template?.type)return "excludeSelf";
     if (type === "enemy") return "hostilesOnly";
     if (type === "ally") return "friendliesOnly";
-    if (type === "self") return "self";
+    if (type === "self") {
+        if(config?.enabled!==false&&config?.targetSelfEmanation===true&&activity.target?.template?.type){
+            const modes=new Set((config.triggers??[]).filter(trigger=>trigger.activityId===activity.id||trigger.initialActivityIds?.includes(activity.id)||trigger.activity===activity.name).map(trigger=>trigger.targeting));
+            if(modes.size===1)return [...modes][0];
+        }
+        return "self";
+    }
     const modes = new Set((config?.enabled === false ? [] : config?.triggers ?? [])
         .filter(trigger => trigger.activity === activity.name).map(trigger => trigger.targeting));
     return modes.size === 1 ? [...modes][0] : "everyone";
@@ -18,6 +27,7 @@ export function allowsAutomaticTarget(token, caster, mode) {
     if (mode === "everyone" || !mode) return true;
     if (!caster) return false;
     if (mode === "self") return token.uuid === caster.uuid;
+    if (mode === "excludeSelf") return token.uuid !== caster.uuid;
     const friendly = CONST.TOKEN_DISPOSITIONS.FRIENDLY, hostile = CONST.TOKEN_DISPOSITIONS.HOSTILE;
     if (mode === "hostilesOnly") return token.uuid !== caster.uuid &&
         token.disposition === (caster.disposition === hostile ? friendly : hostile);
@@ -26,9 +36,14 @@ export function allowsAutomaticTarget(token, caster, mode) {
     return true;
 }
 
-export function collectAreaTargets(tokens, regions, caster, mode, healing=false) {
+export function excludesMonsterAreaSource(activity) {
+    const item=activity?.item;
+    return Boolean(activity?.target?.template?.type && ((activity.actor??item?.actor)?.type==="npc" || item?.system?.type?.value==="monster"));
+}
+
+export function collectAreaTargets(tokens, regions, caster, mode, healing=false, excludeCaster=false) {
     return Array.from(tokens).filter(token => (healing?isEligibleHealingTarget(token):isEligibleTarget(token)) && token.object?.isVisible !== false &&
-        allowsAutomaticTarget(token, caster, mode) && regions.some(region => token.testInsideRegion(region)));
+        (!excludeCaster || token.uuid !== caster?.uuid) && allowsAutomaticTarget(token, caster, mode) && regions.some(region => token.testInsideRegion(region)));
 }
 
 export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
@@ -164,7 +179,9 @@ export function requiresTargetConfirmation(activity) {
         (activity.target?.affects?.choice===true||globalThis.Ugmuls55eAutomationMetamagic?.needsMetamagic(activity)===true);
 }
 
+function isCastFollowup(message){const flags=message?.data?.flags?.[MODULE_ID]??{};return flags.regionTriggered||flags.riderTriggered||flags.recurringTrigger||message?.getFlag?.(MODULE_ID,"regionTriggered")||message?.getFlag?.(MODULE_ID,"riderTriggered")||message?.getFlag?.(MODULE_ID,"recurringTrigger");}
 export function prepareAreaConfirmation(activity, usage, dialog, message) {
+    if(isCastFollowup(message))return;
     if (["spell", "feat"].includes(activity.item?.type)) {
         console.info("Ugmuls 5.5e Automation | Area targeting pre-use", JSON.stringify({
             revision: DIAGNOSTIC_REVISION, user: game.user.id, activity: activity.name,
@@ -184,6 +201,7 @@ export function prepareAreaConfirmation(activity, usage, dialog, message) {
 
 export async function confirmCastTargets(activity, usage, results) {
     const message = results?.message;
+    if(isCastFollowup(message))return;
     console.info("Ugmuls 5.5e Automation | Area targeting post-use", JSON.stringify({
         revision: DIAGNOSTIC_REVISION, user: game.user.id, activity: activity.name,
         card: message?.id ?? null, author: message?.author?.id ?? null,
@@ -208,9 +226,9 @@ export async function confirmCastTargets(activity, usage, results) {
     await new Promise(resolve => setTimeout(resolve, 0)); // Let Region geometry finish preparation.
     const origin = results.templates?.[0]?.flags?.dnd5e?.origin;
     const caster = origin ? await fromUuid(origin) : activity.getUsageToken?.();
-    const config = game.settings.get(MODULE_ID, "spellTable")?.[activity.item.name];
+    const config = getRegionSpellTable()?.[activity.item.name];
     const mode = automaticTargetMode(activity, config);
-    const targets = results.templates?.length?collectAreaTargets(canvas.tokens.placeables.map(token => token.document), results.templates, caster?.document ?? caster, mode,activity.type==="heal"):Array.from(game.user.targets,token=>token.document??token);
+    const targets = results.templates?.length?collectAreaTargets(canvas.tokens.placeables.map(token => token.document), results.templates, caster?.document ?? caster, mode,activity.type==="heal",excludesMonsterAreaSource(activity)):Array.from(game.user.targets,token=>token.document??token);
     if(!requiresTargetConfirmation(activity)) {
         canvas.tokens.setTargets(targets.map(token=>token.id));
         await finishConfirmedCast(activity,message,targets.map(describeTarget));
@@ -243,17 +261,19 @@ export async function finishConfirmedCast(activity, message, targets) {
     const eligible = [],tokens=[];
     for (const descriptor of targets) {
         const token = await fromUuid(descriptor.token);
+        if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}
     }
     targets = eligible;
     if(activity.target?.affects?.choice!==true)globalThis.canvas?.tokens?.setTargets?.(tokens.map(token=>token.id));
     if (message._targetState) { message._targetState.mode = "targeted"; message._targetState.checked?.clear?.(); }
     await message.update({ "system.targets": targets });
-    for(const target of targets){const token=await fromUuid(target.token);if(token)await globalThis.Ugmuls55eAutomationMetamagic?.carefulSave(message,token);}
+    if(!message.getFlag?.(MODULE_ID,"regionPlacementOnly"))for(const target of targets){const token=await fromUuid(target.token);if(token)await globalThis.Ugmuls55eAutomationMetamagic?.carefulSave(message,token);}
     await message.update({ [`flags.${MODULE_ID}.targetsConfirmationPending`]: false,
         [`flags.${MODULE_ID}.targetsConfirmationCanceled`]: false });
     pendingCards.delete(message.id);
     Hooks.callAll("ugmuls55eAutomation.targetsConfirmed", message);
+    if(message.getFlag?.(MODULE_ID,"regionPlacementOnly"))return;
     if(activity.type==="attack"&&message.getFlag?.(MODULE_ID,"resumeAreaDamage")!==false&&targets.length){
         const scaled=message.getAssociatedActivity?.({scaled:true})??activity;
         // Notify the existing multi-shot helper before the first attack opens.

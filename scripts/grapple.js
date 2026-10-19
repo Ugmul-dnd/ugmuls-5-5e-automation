@@ -37,8 +37,11 @@ export function grappleDC(actor){
 export function grapplerUsed(actor){
     const current=stamp();return !!current&&(reserved.has(actor?.uuid)||Array.from(actor?.effects??[]).some(effect=>active(effect)&&effect.getFlag?.(ID,"grapplerTurn")===current));
 }
-export function keepsGrappleDamage(app){return grapplerEnabled()&&selections.get(app)==="grapple"&&!!grapplerFeature(actorFor(app))&&!grapplerUsed(actorFor(app));}
+export function grappledBy(actor,target){return !!actor?.uuid&&Array.from(target?.effects??[]).some(effect=>active(effect)&&effect.getFlag?.(ID,"grappleCaster")===actor.uuid&&effect.getFlag?.(ID,"grappleMode")==="grapple");}
+function clearDuplicateGrapple(app){if(!pending.has(app)&&!cardFor(app)?.getFlag(ID,"grappleSave")&&selections.get(app)==="grapple"&&grappledBy(actorFor(app),stunningTarget(app)?.actor))selections.set(app,"no");}
+export function keepsGrappleDamage(app){clearDuplicateGrapple(app);return grapplerEnabled()&&selections.get(app)==="grapple"&&!!grapplerFeature(actorFor(app))&&!grapplerUsed(actorFor(app));}
 export function replacesGrappleDamage(app){
+    clearDuplicateGrapple(app);
     if(pending.has(app))return pending.get(app).noDamage;
     if(cardFor(app)?.getFlag(ID,"grappleSave"))return cardFor(app).getFlag(ID,"grappleNoDamage")===true;
     return enabled()&&unarmedAction(app)&&["grapple","prone"].includes(selections.get(app))&&!keepsGrappleDamage(app);
@@ -47,11 +50,12 @@ export function addGrappleChoice(app){
     if(!enabled()||!unarmedAction(app)||app.element.querySelector('[data-rsa-grapple]'))return;
     const linked=cardFor(app)?.getFlag(ID,"grappleSave"),actor=actorFor(app);
     if(!selections.has(app))selections.set(app,linked?cardFor(app).getFlag(ID,"grappleMode"):"no");
-    const target=stunningTarget(app),disabled=!target||!!linked;
+    const target=stunningTarget(app),disabled=!target||!!linked,alreadyGrappled=grappledBy(actor,target?.actor);
+    if(!linked&&alreadyGrappled&&selections.get(app)==="grapple")selections.set(app,"no");
     const group=globalThis.Ugmuls55eAutomationDamage.addDamageChoice(app,{key:"grapple",label:"Grapple / Prone",disabled});
     if(!group)return;group.dataset.rsaGrapple="";
     const select=document.createElement("select");select.setAttribute("aria-label","Grapple / Prone");select.disabled=disabled;
-    for(const [value,text] of [["no","No"],["grapple","Grapple"],["prone","Prone"]]){const option=document.createElement("option");option.value=value;option.textContent=text;select.append(option);}
+    for(const [value,text] of [["no","No"],["grapple","Grapple"],["prone","Prone"]]){const option=document.createElement("option");option.value=value;option.disabled=value==="grapple"&&alreadyGrappled;option.textContent=option.disabled?"Grapple — already grappled by you":text;select.append(option);}
     select.value=selections.get(app);select.addEventListener("change",event=>{event.stopPropagation();selections.set(app,select.value);app.rebuild();});group.querySelector("select").replaceWith(select);
     const info=document.createElement("i");info.className="fas fa-circle-info";info.style.marginLeft="0.3em";
     info.dataset.tooltip=`The target saves with its higher Strength or Dexterity save (Strength on a tie), against DC ${grappleDC(actor)}. Failure applies Grappled or Prone. These options replace damage. ${grapplerEnabled()?"Grappler allows damage plus Grapple once on your turn; it never adds damage to Prone.":"Grappler feat automation is disabled, so Grapple replaces damage."} Grappling requires a free hand and a target no more than one size larger than you.`;
@@ -59,6 +63,7 @@ export function addGrappleChoice(app){
     if(grapplerEnabled()&&grapplerFeature(actor)){const note=document.createElement("p");note.className="hint";note.textContent=grapplerUsed(actor)?"Grappler already used: further Grapple / Prone attempts replace damage.":"Grappler available: Grapple keeps damage once this turn.";group.append(note);}
 }
 export function finalizeGrapple(app,rolls,{preview=false}={}){
+    clearDuplicateGrapple(app);
     if(!enabled()||!unarmedAction(app)||!["grapple","prone"].includes(selections.get(app)))return rolls;
     const existing=cardFor(app)?.getFlag(ID,"grappleSave"),entry=pending.get(app);
     const noDamage=entry?.noDamage??replacesGrappleDamage(app);
@@ -79,7 +84,7 @@ export function grappleItemData(actor,target,mode,img){
     const status=foundry.utils.deepClone(CONFIG.statusEffects?.[condition]??{});
     delete status.id;delete status._id;
     const effect={...status,_id:effectId,name:mode==="prone"?"Prone":"Grappled",img:status.img??img,disabled:false,transfer:false,statuses:[condition],
-        flags:{...status.flags,...(mode==="grapple"?{dnd5e:{...status.flags?.dnd5e,isTemporary:true}}:{}),[ID]:{grappleCaster:actor.uuid,grappleMode:mode}}};
+        flags:{...status.flags,...(mode==="grapple"?{dnd5e:{...status.flags?.dnd5e,isTemporary:true}}:{}),[ID]:{grappleCaster:actor.uuid,grappleMode:mode,...(mode==="grapple"?{grappleEscapeDC:grappleDC(actor)}:{})}}};
     return {_id:foundry.utils.randomID(),name:mode==="prone"?"Unarmed Strike — Prone":"Unarmed Strike — Grapple",type:"feat",img,
         system:{identifier:"rsa-unarmed-"+mode,activation:{type:"special"},activities:{[activityId]:{_id:activityId,name:mode==="prone"?"Prone Save":"Grapple Save",type:"save",
             activation:{type:"special",override:true},target:{affects:{type:"creature",count:"1",choice:false}},damage:{onSave:"none",parts:[]},
@@ -167,7 +172,7 @@ export async function applyGrappleOutcome(usage,{manual=false}={}){
         };
         const effects=Array.from(usage.getAssociatedItem()?.effects??[]);
         for(const effect of effects){
-            const alreadyGrappled=link.mode==="grapple"&&Array.from(actor.effects??[]).some(existing=>active(existing)&&existing.getFlag?.(ID,"grappleCaster")===link.casterActor&&existing.getFlag?.(ID,"grappleMode")==="grapple");
+            const alreadyGrappled=link.mode==="grapple"&&grappledBy({uuid:link.casterActor},actor);
             if(alreadyGrappled||link.mode!=="grapple"&&(hasEquivalentActiveEffect(actor,effect)||regionOwnsEffect(token,effect)))continue;
             const undo=globalThis.Ugmuls55eAutomationEffectUndo;
             if(undo)await undo.apply(usage,usage,effect,actor,tray);else await tray._applyEffectToActor(effect,actor);
@@ -217,7 +222,7 @@ export async function resetGrappler(combat,changes={},ending=false){
     }
 }
 export function grapplerAdvantage(actor,target){
-    return grapplerEnabled()&&!!grapplerFeature(actor)&&Array.from(target?.effects??[]).some(effect=>active(effect)&&effect.getFlag?.(ID,"grappleCaster")===actor.uuid&&effect.getFlag?.(ID,"grappleMode")==="grapple");
+    return grapplerEnabled()&&!!grapplerFeature(actor)&&grappledBy(actor,target);
 }
 let conditionBridge=false;
 export function registerGrapplerConditions(api=globalThis.ac5e?.usageRules){
@@ -241,7 +246,7 @@ Hooks.once("init",()=>{
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerGrapplerConditions(usageRules));
 Hooks.once("ready",()=>{
     registerGrapplerConditions();Hooks.on("dnd5e.preRollAttackV2",grapplerAttackDefaults);
-    globalThis.Ugmuls55eAutomationGrapple={addGrappleChoice,finalizeGrapple,replacesGrappleDamage,commitGrapple,grappleSaveReady,applyGrappleOutcome,deferGrappleSave};
+    globalThis.Ugmuls55eAutomationGrapple={grappleDC,bestGrappleSave,addGrappleChoice,finalizeGrapple,replacesGrappleDamage,commitGrapple,grappleSaveReady,applyGrappleOutcome,deferGrappleSave};
     Hooks.on("dnd5e.renderChatMessage",renderGrapple);
     for(const event of ["createChatMessage","updateChatMessage","renderChatMessageHTML"])Hooks.on(event,schedule);
     Hooks.on("updateCombat",(combat,changes)=>resetGrappler(combat,changes).catch(report));Hooks.on("deleteCombat",combat=>resetGrappler(combat,{},true).catch(report));

@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import {describeTarget} from "./shared-activity-card.js";
 import {selectSaveUser} from "./save-prompts.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
@@ -39,9 +40,10 @@ export function configurePromptDialog(kind, dialog = {}) {
             get rolls() {
                 const rolls=super.rolls;
                 if(!this._rsaPreview)return rolls;
-                const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,rolls,{preview:true})??rolls;
+                const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
+                const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave,{preview:true})??cleave;
                 if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
-                const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,rolls,{preview:true})??rolls;
+                const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple,{preview:true})??grapple;
                 const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,savage)??savage;
                 const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,riders,{preview:true})??riders;
                 const prey=globalThis.Ugmuls55eAutomationPrey?.finalizePrey(this,sneak,{preview:true})??sneak;
@@ -68,7 +70,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind==="damage"&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)===false)return [];
                 const rolls=super._finalizeRolls(action);
                 if(kind === "damage") {
-                    const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,rolls)??rolls;
+                    const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
+                    const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave)??cleave;
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                     const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple)??grapple;
                     const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,weaponRolls)??weaponRolls;
@@ -94,6 +97,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.prepareRecklessButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationWeird?.prepareWeirdButtons(this,prepared);
                 return prepared;
             }
             _onRender(context,options) {
@@ -194,7 +198,7 @@ export function configurePromptDialog(kind, dialog = {}) {
             window:{...dialog.options?.window,frame:true,positioned:true}}};
 }
 export function turnOnlyAura(activity) {
-    const config = game.settings.get(MODULE_ID, "spellTable")?.[activity.item?.name];
+    const config = getRegionSpellTable()?.[activity.item?.name];
     const triggers = config?.enabled === false ? [] : (config?.triggers ?? []).filter(t => t.activity === activity.name);
     return activity.item?.type === "feat" && activity.target?.template?.type && triggers.length &&
         triggers.every(t => t.events?.length && t.events.every(e => ["tokenTurnStart", "tokenTurnEnd"].includes(e)));
@@ -253,7 +257,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     try {
         if (attack) {
             await waitForAttackAnimation(attack);
-            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false)) return;
+            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
         }
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
@@ -354,7 +358,7 @@ Hooks.once("ready", () => {
         const attack = Array.from(game.messages).reverse().find(message =>
             message.author?.id === game.user.id && message.type === "attack" &&
             message.getAssociatedActivity?.()?.uuid === activity.uuid && message.rolls?.[0]?.total === rolls[0].total);
-        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false)) return;
+        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
         const origin = attack.system.origin;
         const card = typeof origin === "string" ? game.messages.get(origin) : origin;
         if (card) promptDamage(activity,card,"attack",attack).catch(report);

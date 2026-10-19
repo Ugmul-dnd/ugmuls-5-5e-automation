@@ -11,6 +11,10 @@ export const STARTER_SPELLS = {
         triggers: [{ name: "Entry and end-turn save", activity: "Cast and Save", events: ["tokenEnter", "tokenTurnEnd"],
             targeting: "hostilesOnly", oncePerTurn: true, shareCardPerTurn: true }], regionEffects: []
     },
+    "Moonbeam": {
+        triggers: [{ name: "Entry and end-turn save", activity: "Save", events: ["tokenEnter", "tokenTurnEnd"],
+            targeting: "everyone", oncePerTurn: true, shareCardPerTurn: true }], regionEffects: []
+    },
     "Grease": {
         triggers: [{ name: "Entry and end-turn save", activity: "Save", events: ["tokenEnter", "tokenTurnEnd"], targeting: "everyone" }],
         regionEffects: []

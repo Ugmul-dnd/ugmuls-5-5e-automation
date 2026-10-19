@@ -1,4 +1,5 @@
 import {hasEquivalentActiveEffect,regionOwnsEffect} from "./shared-activity-card.js";
+import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const completed=new Set();
 const pending=new Set();
@@ -15,9 +16,10 @@ export function isBardicInspireActivity(activity) {
         activity.roll?.prompt!==true&&(!activity.roll?.formula||/^@scale\.bard\.inspiration(?:\.die)?$/.test(activity.roll.formula.trim()));
 }
 
+export function healingBuffActivity(activity){return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
 export function eligibleBuffActivity(activity) {
     // Utility activities have no attack/save or damage/healing roll to resolve.
-    return activity?.type === "utility" && ["spell","feat"].includes(activity.item?.type) &&
+    return (activity?.type === "utility"||healingBuffActivity(activity)) && ["spell","feat"].includes(activity.item?.type) &&
         !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)) && !activity.target?.template?.type;
 }
 
@@ -27,7 +29,9 @@ export async function applyBuffEffects(message) {
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     const activity=message.getAssociatedActivity?.({scaled:true});
     if (!eligibleBuffActivity(activity)) return;
-    const effects=await activity.getApplicableEffects?.() ?? [];
+    const healingBuff=healingBuffActivity(activity);
+    if(healingBuff&&!Array.from(message.getAssociatedRolls?.("healing")??[]).some(card=>card.rolls?.length&&!card.getFlag?.(MODULE_ID,"pendingDamage")))return;
+    const effects=(await activity.getApplicableEffects?.() ?? []).filter(effect=>!regionManagesCardEffect(activity,effect));
     if (!effects.length) return;
     const caster=message.getAssociatedActor?.();
     const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity);
@@ -52,7 +56,7 @@ export async function applyBuffEffects(message) {
             // Do not infer a no-save offensive effect as a buff. Self, explicit
             // allies, explicitly selected willing creatures, and friendly-disposition recipients are eligible.
             if(inspire&&actor.uuid===caster?.uuid)continue;
-            if (mark || inspire || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
+            if (healingBuff || mark || inspire || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
                 (type === "creature" && casterDisposition!=null && token && token.disposition === casterDisposition)) actors.set(actor.uuid,actor);
         }
     }
@@ -63,6 +67,7 @@ export async function applyBuffEffects(message) {
     if (completed.has(message.id) || pending.has(message.id)) return;
     pending.add(message.id);
     try {
+        if(healingBuff){await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);if(message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;}
         // Reuse D&D5e's effect tray preparation: concentration dependencies,
         // activity overrides, scaling, duration, and refreshing existing buffs.
         const tray=document.createElement("effect-application");
@@ -110,7 +115,7 @@ async function requestBuffs(message) {
 
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"autoApplyBuffEffects",{
     name:"Effect Automation: Automatically Apply Buffs",
-    hint:"Apply configured effects from non-rolling Utility spells/features to Self, Allies, selected Willing Creatures, or friendly targeted creatures. Hunter's Mark also applies to its single marked target. Save and attack effects use their separate GM NPC & Damage options.",
+    hint:"Apply configured effects from non-rolling Utility spells/features to Self, Allies, selected Willing Creatures, or friendly targeted creatures. Hunter's Mark also applies to its single marked target. Heroism and Regenerate apply their effects after initial healing rolls complete. Save and attack effects use their separate GM NPC & Damage options.",
     scope:"world",config:true,type:Boolean,default:true
 }));
 Hooks.once("ready",()=>{
@@ -119,6 +124,11 @@ Hooks.once("ready",()=>{
         if (eligibleBuffActivity(activity)) setTimeout(()=>requestBuffs(results?.message).catch(report),0);
     });
     Hooks.on("ugmuls55eAutomation.targetsConfirmed",message=>requestBuffs(message).catch(report));
+    for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>{
+        if(card.type!=="healing"||!card.rolls?.length||card.getFlag?.(MODULE_ID,"pendingDamage"))return;
+        const ref=card.system?.origin,message=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
+        if(healingBuffActivity(message?.getAssociatedActivity?.()))setTimeout(()=>requestBuffs(message).catch(report),0);
+    });
     Hooks.on("deleteChatMessage",message=>completed.delete(message.id));
     game.socket.on(`module.${MODULE_ID}`,packet=>{
         if (packet?.action !== "applyBuffEffects" || !game.user.isGM || packet.gmId !== game.user.id || game.users.activeGM?.id !== game.user.id) return;

@@ -1,44 +1,37 @@
-# Starting Spell List
+# Region Spell Library
 
-These configuration recipes are based on **Ugmul's Foundry Player's Handbook
-spell setup**, exported from the working module configuration on October 7,
-2026. They include activity names and automation settings only. All starter
-recipes have an empty Region Effects list; custom effects from the original
-world setup have been removed. They do
-not contain or grant access to Player's Handbook spell text, activities, effect
-data, artwork, or compendiums. The precise handbook edition was not recorded in
-the saved settings; verify timing against your installed spell version.
+The seven saved Region recipes now ship as module defaults. Open **Manage Spells and Regions**; no starter-list import is required. New module defaults match the current saved enabled states. Review activity names against your installed items before using the recipes in a new world.
 
-## Load and use
+| Spell | Saved activity triggers | Targeting / behavior |
+| --- | --- | --- |
+| Hunger of Hadar | Start of Turn Damage; End of Turn Save | Everyone |
+| Spirit Guardians | Cast and Save on entry / turn end | Hostiles Only; once per turn; shared card; native Half Speed Region effect |
+| Grease | Save on entry / turn end | Everyone |
+| Fog Cloud | Use on entry | Everyone; scene vision setup remains separate |
+| Conjure Animals | Save on entry / turn end | Hostiles Only; once per turn |
+| Spike Growth | Damage on movement in / within / out | Everyone; movement accumulation in 5 scene-unit increments |
+| Moonbeam | Save on entry / turn end | Everyone; once per turn; shared card |
 
-1. Open **Manage Region Spells** and click **Add Starting Spell List**.
-2. Missing spells are added disabled; existing spell configurations are preserved.
-3. Have the corresponding spell on an actor in your world. The casting activity
-   must create its D&D5e Region.
-4. Review trigger activities against the spell item. Names must match
-   exactly; edit triggers if your activities have different names.
-5. Enable each reviewed spell and test a fresh cast.
+## Defaults and local changes
 
-The module does not create or modify spell items. The handbook package alone may
-not reproduce Ugmul's customized activity names. Prepare missing activities on
-your own items. Region Effects can be added manually if desired; none are
-preloaded. Enable only the recipes you have checked.
+The module owns the base recipes. World changes are saved as overrides; custom spells/features are stored separately. **Reset to Default** removes a built-in entry's local overrides. **Disable** keeps its configuration while stopping it from running. Bulk removal disables module entries and deletes custom entries. Changed trigger/effect arrays override those arrays as a whole; unchanged fields can inherit future module updates.
 
-| Spell | Activity triggers | Targeting | Additional setup |
-| --- | --- | --- | --- |
-| Hunger of Hadar | `Start of Turn Damage` on turn start; `End of Turn Save` on turn end | Everyone | No Region Effects preloaded |
-| Spirit Guardians | `Cast and Save` on entry and turn end | Hostiles Only | Once Per Turn and Shared Activity Card enabled |
-| Grease | `Save` on entry and turn end | Everyone | No Region Effect in the saved configuration |
-| Spike Growth | `Damage`, accumulated movement damage | Everyone | 5 scene units per increment; prepare a Damage activity with 2d4 piercing on a feet-based scene |
-| Fog Cloud | `Use` on entry | Everyone | No Region Effects preloaded |
-| Conjure Animals | `Save` on entry and turn end | Hostiles Only | Once Per Turn enabled |
+Defaults contain configuration only, with portable PHB source references. They do not create, change, or distribute spell text, activities, artwork, or compendiums. Existing spell activities and Region creation are still required. Names must match your items; some recipes came from customized activities. Spirit Guardians includes its native Half Speed effect by name, resolved from the actual caster’s spell. The other six defaults have no preloaded Region Effects. Existing native book effects remain available for local configuration.
 
-Recipes preserve the saved timing and targeting, rather than claiming complete
-rules automation. Hostiles Only compares dispositions, including neutral tokens
-with a different disposition. Native Region Effects do not inherit trigger
-targeting. Vision and obscuration still require the appropriate scene/system
-setup. Spike Growth uses the module's simplified whole-step movement model.
+## Existing worlds
 
-No source-world actor/item/effect UUIDs are bundled. Loading the list preserves
-existing spell configurations, including effects you already configured. To
-remove effects from an earlier import, delete those effect entries in the manager.
+On the next load with an active GM, the current module's saved spell table migrates into overrides and custom entries. The original table remains untouched and a separate backup is retained. Local enablement, trigger IDs, movement increments, targeting, shared cards, source/effect UUIDs and Region conditions are preserved. The migration-complete marker is written last; partial failures retain the legacy table as the runtime fallback and can retry on reload.
+
+The older table under the former region-spell-automation module namespace is not imported or reactivated. Existing Regions are not rewritten or recreated. No world database was edited directly during development; migration runs through Foundry settings on load.
+
+## Validation
+
+After refreshing all clients, confirm the manager lists all seven defaults and preserves your existing changes. Check Spike Growth movement accumulation, Moonbeam/Spirit Guardians shared cards, Hunger of Hadar's two activities, and any local effects/conditions. Test Disable and Reset on an expendable configuration before changing a customized entry you want to keep.
+
+## Region effects and chat cards
+
+Effects assigned under a spell’s **Region Effects** are owned by the Region. They apply according to Region membership and targeting, independently of the spell’s damage save, and are excluded from that spell’s automatic save/hit/buff effects and manual chat-card Apply Effect controls. Other effects on the spell keep their ordinary card behavior. For example, assigning Spirit Guardians’ speed reduction to its Region prevents the damage/save card from applying a separate lasting copy. Native book items are not edited. Removing the Region assignment or disabling the Region configuration restores ordinary card eligibility. Existing duplicate effects are not automatically removed; test a fresh cast and verify that leaving the area removes its Region-managed effect.
+
+## Movement-only casting
+
+Spike Growth’s placement does not roll damage. The initial cast completes after successful Region placement and any target/Metamagic confirmation, including its concentration handoff. Its cast card describes the placed area; damage comes from the existing movement counter and Roll Pending Damage control. The initial Damage button is hidden and guarded. Canceling placement still refunds the pending cast. This behavior is determined by enabled movement-only Region triggers rather than a special spell-name check; mixed trigger configurations retain their initial-roll behavior.

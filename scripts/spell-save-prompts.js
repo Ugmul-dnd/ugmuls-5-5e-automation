@@ -1,3 +1,4 @@
+import {getRegionSpellTable} from "./region-library.js";
 import { sendSavePrompt, isEligibleTarget } from "./save-prompts.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const casts = new Map();
@@ -6,12 +7,14 @@ const sentTargets = new Map();
 export async function promptCastSaves(activity, results) {
     if (game.settings.get(MODULE_ID, "promptForSaveOnSpellCasts") !== true) return;
     const message = results?.message;
+    if(message?.getFlag?.(MODULE_ID,"regionPlacementOnly"))return;
+    if(["condition","skipped","manual","manualCheck","check"].includes(message?.getFlag?.(MODULE_ID,"recurringTrigger")?.phase))return;
     if (message?.getFlag?.(MODULE_ID, "targetsConfirmationPending") || message?.getFlag?.(MODULE_ID, "targetsConfirmationCanceled")) return;
-    if (activity?.type !== "save" || !["spell", "feat"].includes(activity.item?.type) || !message?.id) return;
+    if (activity?.type !== "save" || !["spell", "feat", "weapon"].includes(activity.item?.type) || !message?.id) return;
     if (message.author?.id !== game.user.id || message.getFlag?.(MODULE_ID, "regionTriggered")) return;
     // A configured turn-only feature aura is activated now, but its saves
     // belong to the Region's turn events rather than the initial use card.
-    const config = game.settings.get(MODULE_ID, "spellTable")?.[activity.item.name];
+    const config = getRegionSpellTable()?.[activity.item.name];
     const matching = config?.enabled === false ? [] : (config?.triggers ?? []).filter(trigger => trigger.activity === activity.name);
     if (activity.item.type === "feat" && activity.target?.template?.type && matching.length &&
         matching.every(trigger => trigger.events?.length && trigger.events.every(event =>
@@ -49,7 +52,7 @@ export async function promptCastSaves(activity, results) {
 
 export function scheduleCastSaves(activity, results) {
     const message = results?.message;
-    if (activity?.type !== "save" || !["spell", "feat"].includes(activity.item?.type) || !message?.id ||
+    if (activity?.type !== "save" || !["spell", "feat", "weapon"].includes(activity.item?.type) || !message?.id ||
         message.author?.id !== game.user.id || message.getFlag?.(MODULE_ID, "regionTriggered")) return;
     const prior = casts.get(message.id);
     if (prior?.timer) clearTimeout(prior.timer);

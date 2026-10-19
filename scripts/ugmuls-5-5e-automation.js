@@ -1,6 +1,12 @@
+import "./monster-swallow.js";
+import "./infernal-wounds.js";
+import "./monster-source-turn-damage.js";
+import "./inactive-effect-cleanup.js";
+import "./monster-auras.js";
+import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
-// v0.7.0
+// v0.8.0
 // Foundry VTT v14 / D&D5e 6.0.5+ (tested with 6.0.6)
 //
 // Features:
@@ -36,7 +42,7 @@ const oncePerTurnHistory =
 
 
 console.log(
-    "Ugmuls 5.5e Automation | v0.7.0 JS loaded"
+    "Ugmuls 5.5e Automation | v0.8.0 JS loaded"
 );
 
 
@@ -272,6 +278,9 @@ async function executeRegionEvent({
     }
 
 
+    // A summoned aura's own source token is inside its native Emanation.
+    if (targetDoc.uuid === region.flags?.[MODULE_ID]?.excludedToken) return;
+
     const targetToken =
         targetDoc.object;
 
@@ -342,10 +351,7 @@ async function executeRegionEvent({
     // --------------------------------------------------------
 
     const spellTable =
-        game.settings.get(
-            MODULE_ID,
-            SETTING_KEY
-        ) ?? {};
+        getRegionSpellTable() ?? {};
 
 
     const config =
@@ -406,7 +412,10 @@ async function executeRegionEvent({
     const casterUserId = region.flags?.[MODULE_ID]?.casterUserId;
     const casterUser = casterUserId ? game.users?.get?.(casterUserId) : null;
     const casterCanUse = casterUser?.active && spell.actor?.testUserPermission?.(casterUser, "OWNER");
-    const executor = !trigger.movementDamage && casterCanUse ? casterUser : game.users?.activeGM;
+    // Summoned guardian behaviors contain GM-only script data. Keep their
+    // activity execution on the active GM; prompt routing still selects owners.
+    const executor = region.flags?.[MODULE_ID]?.guardianToken ? game.users?.activeGM
+        : !trigger.movementDamage && casterCanUse ? casterUser : game.users?.activeGM;
     if (executor ? executor.id !== game.user.id : !game.user.isGM) return;
 
     if (
@@ -523,12 +532,7 @@ async function executeRegionEvent({
     // ACTIVITY
     // --------------------------------------------------------
 
-    const activity =
-        spell.system.activities.find(
-            entry =>
-                entry.name ===
-                trigger.activity
-        );
+    const activity = resolveRegionTriggerActivity(trigger,spell,region);
 
 
     if (!activity) {
@@ -656,8 +660,13 @@ async function executeRegionEvent({
         // EXECUTE ORIGINAL ACTIVITY
         // ----------------------------------------------------
 
-        const results = await activity.use(
+        const damageData=trigger.damageOnly?buildRegionDamageSpellData(activity):null;
+        const triggerItem=damageData?new CONFIG.Item.documentClass(damageData,{parent:activity.actor??spell.actor}):null;
+        triggerItem?.prepareFinalAttributes?.();
+        const triggerActivity=triggerItem?.system.activities.get(activity.id)??activity;
+        const results = await triggerActivity.use(
             {
+                ...((damageData||trigger.preserveCastScaling)?{scaling:Math.max(0,Number(castLevel)-Number(spell.system.level))}:{}),
                 consume:
                     false,
 
@@ -687,7 +696,7 @@ async function executeRegionEvent({
             {
                 data: {
                     system: { targets: [describeTarget(targetDoc)] },
-                    flags: { [MODULE_ID]: { regionTriggered: true,
+                    flags: { ...(damageData?{dnd5e:{item:{data:damageData}}}:{}), [MODULE_ID]: { regionTriggered: true,sourceRegion:region.uuid,
                         ...(() => {
                             const origin=game.messages.get(region.getFlag?.(MODULE_ID,"metamagicOrigin"));
                             const meta=origin?.getFlag?.(MODULE_ID,"metamagic"),transmuted=origin?.getFlag?.(MODULE_ID,"transmutedSpell");
@@ -796,7 +805,7 @@ Hooks.once("ready", () => {
         const itemUUID = region.flags?.dnd5e?.item;
         if (!itemUUID) return;
         const item = fromUuidSync(itemUUID, { strict: false });
-        const config = item ? game.settings.get(MODULE_ID, SETTING_KEY)?.[item.name] : null;
+        const config = item ? getRegionSpellTable()?.[item.name] : null;
         if (config?.hideRegionFromPlayers === true) {
             region.updateSource({ visibility: CONST.REGION_VISIBILITY.GAMEMASTER });
         }
@@ -808,19 +817,19 @@ Hooks.once("ready", () => {
     Hooks.on("dnd5e.postUseActivity", (activity, usage, results) => {
         const spell = activity?.item;
         const message = results?.message;
-        if (!spell || !message?.id || !results?.templates?.length) return;
-        const config = game.settings.get(MODULE_ID, SETTING_KEY)?.[spell.name];
+        if (!spell || !message?.id || !results?.templates?.length || message.getFlag?.(MODULE_ID,"regionPlacementOnly")) return;
+        const config = getRegionSpellTable()?.[spell.name];
         if (!config || config.enabled === false) return;
         const event = { data: { combat: game.combat, round: game.combat?.round, turn: game.combat?.turn } };
         const registrations = [];
         const sharedCardKeys = [];
         for (const trigger of config.triggers ?? []) {
-            if (!trigger.shareCardPerTurn || trigger.movementDamage || trigger.activity !== activity.name) continue;
+            if (!trigger.shareCardPerTurn || trigger.movementDamage) continue;
             for (const region of results.templates) {
+                if(resolveRegionTriggerActivity(trigger,spell,region)?.id!==activity.id&&!trigger.initialActivityIds?.includes(activity.id))continue;
                 const key = getSharedCardKey(trigger, spell, region, event, game.combat);
                 if (!key) continue;
-                sharedCardHistory.set(key, message.id);
-                sharedCardKeys.push(key);
+                if(trigger.shareInitialCard!==false){sharedCardHistory.set(key, message.id);sharedCardKeys.push(key);}
                 registrations.push(trigger);
             }
         }
@@ -828,7 +837,7 @@ Hooks.once("ready", () => {
         // The hook does not await us, so register the card synchronously above;
         // serialize its metadata and limiter updates with later Region events.
         enqueueRegionEvent(async () => {
-            await message.update({
+            if(sharedCardKeys.length)await message.update({
                 [`flags.${MODULE_ID}.sharedCardPerTurn`]: true,
                 [`flags.${MODULE_ID}.sharedCardKeys`]: sharedCardKeys
             });
@@ -868,7 +877,7 @@ Hooks.once("ready", () => {
         }).catch(err => console.error("Ugmuls 5.5e Automation | Confirmed target registration failed:", err));
     });
 
-    console.log("Ugmuls 5.5e Automation | Installing v0.7.0 Region hook");
+    console.log("Ugmuls 5.5e Automation | Installing v0.8.0 Region hook");
 
 
     // ========================================================
@@ -929,10 +938,7 @@ Hooks.once("ready", () => {
             // ------------------------------------------------
 
             const spellTable =
-                game.settings.get(
-                    MODULE_ID,
-                    SETTING_KEY
-                ) ?? {};
+                getRegionSpellTable() ?? {};
 
 
             const config =
@@ -1455,8 +1461,9 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         try {
             const item = await fromUuid(itemUUID);
             if (item) {
-                const update = { [`flags.${MODULE_ID}.casterUserId`]: userId ?? game.user.id };
-                const config = game.settings.get(MODULE_ID, SETTING_KEY)?.[item.name];
+                const casterUserId = (region.flags?.[MODULE_ID]?.flamingSphereToken || region.flags?.[MODULE_ID]?.guardianToken) ? region.flags[MODULE_ID].casterUserId : userId;
+                const update = { [`flags.${MODULE_ID}.casterUserId`]: casterUserId ?? userId ?? game.user.id };
+                const config = getRegionSpellTable()?.[item.name];
                 if (config?.hideRegionFromPlayers === true) update.visibility = CONST.REGION_VISIBILITY.GAMEMASTER;
                 await region.update(update);
                 await attachSpellRegions({ item }, [region]);
@@ -1467,6 +1474,6 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         }
     });
     console.log(
-        "Ugmuls 5.5e Automation | v0.7.0 Ready"
+        "Ugmuls 5.5e Automation | v0.8.0 Ready"
     );
 });
