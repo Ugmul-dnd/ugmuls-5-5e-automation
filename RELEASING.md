@@ -1,18 +1,18 @@
 # Releasing Ugmuls 5.5e Automation
 
-Prepared release: **v0.7.5**. Changes are in `CHANGELOG.md` and `RELEASE-NOTES-0.7.5.md`.
+Prepared release: **v0.8.0**. Changes are in `CHANGELOG.md` and `RELEASE-NOTES-0.8.0.md`.
 
-The notes and assets are prepared for v0.7.5. Merge and publish when ready.
-Compatibility: Foundry VTT 14 and D&D5e 6.0.6. All 63 local regression test files pass.
+The notes and assets are prepared for v0.8.0. Merge and publish when ready.
+Compatibility: Foundry VTT 14 and D&D5e 6.0.6. All 106 local regression test files pass.
 
 Tests and build tooling are local-only and ignored by Git. Restore your local
 tooling before running the commands below if those folders are absent.
 
 1. Run available local regression checks (`node tests/<name>.test.mjs`), then `./tools/build-release.ps1`. Local tests/tools are ignored and excluded from the ZIP.
 2. Commit release changes on the development branch, merge into main, and push main.
-3. Create a GitHub release from main with the exact tag **v0.7.5** (lowercase v).
-4. Use the title **Ugmuls 5.5e Automation v0.7.5** and the contents of
-   `RELEASE-NOTES-0.7.5.md` as the release description.
+3. Create a GitHub release from main with the exact tag **v0.8.0** (lowercase v).
+4. Use the title **Ugmuls 5.5e Automation v0.8.0** and the contents of
+   `RELEASE-NOTES-0.8.0.md` as the release description.
 5. Attach **both** `dist/module.json` and `dist/ugmuls-5-5e-automation.zip`.
    The generated dist folder is intentionally ignored by Git; upload assets manually.
 6. Publish the release, then test installation/update in a separate Foundry data directory.
@@ -27,6 +27,3 @@ including capitalization. GitHub's automatic source archives are not the module 
 For future releases, update `module.json` version and its pinned download URL,
 update tested compatibility and notes, run tests, and rebuild the matching assets.
 
-## Working changes after the prepared release
-
-Cleave is an unreleased working change documented in CHANGELOG.md. The prepared v0.7.5 assets in dist have not been rebuilt with Cleave. Assign the next release version and update the build script and release notes before packaging these working changes.

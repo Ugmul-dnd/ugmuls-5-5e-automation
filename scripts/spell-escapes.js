@@ -39,7 +39,7 @@ export function installEscapePreparation(Type){
 export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClass??ChatMessage.implementation){
  const prototype=Type?.prototype;if(!prototype||prototype.rsaEscapeSnapshots)return;
  const getItem=prototype.getAssociatedItem,getActivity=prototype.getAssociatedActivity;
- const snapshot=card=>card?.getFlag?.(ID,"escapeSpellData")??card?.getFlag?.(ID,"monsterPoisonData");
+ const snapshot=card=>card?.getFlag?.(ID,"escapeSpellData")??card?.getFlag?.(ID,"monsterPoisonData")??card?.getFlag?.(ID,"activityOverrideData");
  const context=card=>{if(snapshot(card))return card;const ref=card.system?.origin;const origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;return snapshot(origin)?origin:null;};
  if(!getItem||!getActivity)return;
  prototype.getAssociatedItem=function(options={}){
@@ -58,13 +58,13 @@ export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClas
 export function initialEnsnaringAdvantage(message,actor){return identifier(message?.getAssociatedItem?.())==="ensnaring-strike"&&["lg","huge","grg"].includes(actor?.system?.traits?.size);}
 export async function clearWebRestraints(region,actor){
  if(!authority()||!actor)return;
- for(const effect of Array.from(actor.effects??[])){const state=effect.getFlag?.(ID,"recurringEffect");if(state?.key==="web"&&state.region===region.uuid)await effect.delete();}
+ for(const effect of Array.from(actor.effects??[])){const state=effect.getFlag?.(ID,"recurringEffect");if(["web","mm-damage-whirlwind"].includes(state?.key)&&state.region===region.uuid)await effect.delete();}
 }
 async function attachWebExit(region){
- if(!authority()||!triggerEntry("web")?.enabled)return;
- const item=region.flags?.dnd5e?.item?await fromUuid(region.flags.dnd5e.item):null;if(identifier(item)!=="web")return;
+ if(!authority())return;
+ const item=region.flags?.dnd5e?.item?await fromUuid(region.flags.dnd5e.item):null;const kind=identifier(item);if(!["web","create-whirlwind"].includes(kind)||!triggerEntry(kind==="web"?"web":"mm-damage-whirlwind")?.enabled)return;
  if(Array.from(region.behaviors??[]).some(b=>b.getFlag?.(ID,"webEscapeExit")))return;
- await region.createEmbeddedDocuments("RegionBehavior",[{name:"Web — end restraint on exit",type:"executeScript",flags:{[ID]:{webEscapeExit:true}},system:{events:["tokenExit"],source:'await globalThis.Ugmuls55eAutomationSpellEscapes.webExit(region, event.data.token?.actor);'}}]);
+ await region.createEmbeddedDocuments("RegionBehavior",[{name:(kind==="web"?"Web":"Whirlwind")+" — end restraint on exit",type:"executeScript",flags:{[ID]:{webEscapeExit:true}},system:{events:["tokenExit"],source:'await globalThis.Ugmuls55eAutomationSpellEscapes.webExit(region, event.data.token?.actor);'}}]);
 }
 const ending=new Set();
 export async function finishSuccessfulEnsnaringCast(card){

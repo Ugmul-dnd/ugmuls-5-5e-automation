@@ -1,6 +1,45 @@
 # Changelog
 
-## Unreleased
+## v0.8.0 — Spell & Monster Effect Automation
+
+### Release highlights
+
+- Built-in creature-effect and Region libraries with editable local overrides, expanded Player’s Handbook spell support and Monster Manual effects.
+- Monster repeat saves, optional grapple/escape actions, hidden auras, recurring damage, infernal wounds and swallowing with source-specific cleanup.
+- Cleave chat-card attacks and prepared Smite selection integrated into weapon damage.
+- Inactive-effect cleanup, safer save/damage corrections, animation timing and turn-processing improvements.
+
+Restart the Foundry server and reload GM/player clients after updating. Apply fresh effects or recast areas to use changed tracking and Region behaviors. Existing local library overrides remain in control. Special choices, staged effects and the documented table-managed rules remain manual.
+
+### Detailed changes
+
+- Complete the straightforward Monster Manual escape pass with 16 shared recipes across 22 missing feature variants: Constrict families, Tentacle Lash, Quick Grapple, Chain, Frog/Toad, Graveyard Revenant Suffocate, Kraken, Pincer Staff, Worm/Remorhaz/Tarrasque Bites, Water Weird and Kuo-toa net. Preserve native checks, add source-passive DC tracking for Toad/Brazen grapple gaps, and offer Vine Blight escape after damage. Keep Sticky Shield, Cataclysm choices and Brazen alternate non-grapple outcomes manual.
+
+- Add end-turn repeat saves for Harpy Luring Song, Chasme Drone, both Faerie Dragon Euphoria Breaths, Revenant Vengeful Glare and Sphinx of Valor’s Second Roar. Preserve native conditions/DCs and suppress repeat templates/damage/effect application. Share one Revenant save across its linked effects and clear only that cast after dice; make applied Harpy charm follow native concentration rather than the imported one-round expiry. Situational breaks, immunity tracking and curse eligibility remain manual.
+
+- Add recurring damage for Swarm of Stirges (victim turn end), Animated Rug of Smothering, Gulthias Blight roots and Djinni Whirlwind (victim turn start). Provide optional escape actions using native Swarm check DC or originating Rug/Blight passive Athletics DC. Add Whirlwind entry Region saves, independent end-turn repeat saves and linked restraint cleanup on exit. Preserve native damage/effects, supply missing Rug Bludgeoning damage type on helpers, and leave damage sharing and life-drain HP transfers manual.
+
+- Exclude creatures actively swallowed by a monster from that same token’s external damage/save auras. Preserve internal Swallow damage and other monsters’ aura eligibility; removing or disabling Swallow restores normal aura targeting. Support existing tracked Swallow effects.
+
+- Fix native Swallow applications missing recurring-damage tracking by carrying source-token metadata on usage copies and registering the applied effect directly, including reused effects. After dice finish, replace only the originating monster’s grapple with the native swallowed conditions; preserve other grapplers.
+
+- Add swallowed recurring damage for Behir, Purple Worm, Remorhaz and Tarrasque at monster turn start, and Kraken at the swallowed creature’s turn start. Preserve native saves, initial damage, effects and multi-type damage. Match book actor identity to distinguish shared Swallow activity IDs; retain local toggles, source-token tracking and manual regurgitation/positioning.
+
+- Fix Giant Toad and other monster Bites incorrectly starting Pit Fiend poison saves when they share the native Bite attack ID. Require the Pit Fiend’s save and recurring-damage activity signatures; also require Grell’s native poison save for its hit handoff. Verify all 109 book Bite/Paralyzing Tentacles variants.
+
+- Add Giant Toad swallowed damage at the toad’s turn end and Gelatinous Cube engulfed damage at the cube’s turn start. Preserve native effects/damage, provide the cube’s optional target-turn Athletics escape, and correct initial Engulf successful-save damage to half on temporary usage copies. Keep capacity/movement and other Swallow/Engulf variants unchanged.
+
+- Add Bearded Devil and Horned Devil infernal wounds: failed native saves apply a non-stacking one-minute wound, target-turn rolls cause direct HP loss with Apply/Undo, and optional DC 12/DC 17 Medicine treatment closes it after dice. Actual spell healing, including Regenerate and player-applied healing, also closes wounds. Preserve initial Tail damage and native resources; follow-on HP loss bypasses temporary HP/resistance and damage-trigger checks.
+
+- Add source-turn recurring damage for Stirge attachment, Invisible Stalker Vortex, Water Elemental Whelm and Barbed Devil Barbed Hide. Retain optional target-turn escapes for Vortex/Whelm. Track Stirge attachment after confirmed hits, support both directions of Barbed Hide grapple contact, preserve native damage and isolate source tokens. Disable/remove tracked effects to stop damage; movement/capacity and special interactions remain manual.
+
+- Add inactive-effect cleanup after combat and a Clear inactive effects actor-window menu action for default/Tidy sheets. Preserve disabled class/item features, passive imported stat features and active effects. Manual cleanup previews and revalidates removals; automatic cleanup waits for native combat-exit handling to finish. Add a world toggle for automatic cleanup.
+
+- Fix save-aura timing races: serialize target-turn cleanup and give new aura conditions one expiry owner, leaving older native-turn effects to native expiry. Evaluate the latest save outcome after dice complete and start immunity at the current world time so successful Stench saves reliably suppress later rolls.
+
+- Add hidden automatic Stench auras for Ghast, Ghast Gravecaller, Hezrou and Troglodyte, plus Swarm of Dretches Fetid Aura. Prompt native Constitution saves at target turn start and preserve/fallback Poisoned until the next target turn. Successful Stench saves grant one-hour monster-kind immunity; Fetid Aura grants none. Preserve own-kind exclusions, renamed compendium identity, native changes and local visibility overrides. Fetid action/reaction restrictions remain manual.
+
+- Add hidden, automatically attached Pit Fiend Fear Aura Regions. Enemies save at turn start using the source DC; failed saves offer/apply native or fallback Frightened until the target’s next turn. Successful saves grant temporary 24-hour immunity only to that source after dice finish. Respect Incapacitated sources, condition immunity and local visibility settings; preserve unrelated fear effects.
 
 - Add automatic token-attached Heat Aura, Flame Aura and Fire Aura Regions for ten Monster Manual creatures. Regions default to hidden from players and retain the Region Library visibility override. Use each monster’s native radius/damage at its own turn end, exclude the source, offer GM target choice where specified and pause Azer auras while Incapacitated. Damage cards default to their recorded targets.
 

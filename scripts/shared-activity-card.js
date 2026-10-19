@@ -70,6 +70,8 @@ function effectSources(effect) {
     return new Set([effect?.uuid,effect?._stats?.duplicateSource,effect?._stats?.compendiumSource].filter(Boolean));
 }
 export function equivalentEffect(left,right) {
+    const aura=effect=>effect?.getFlag?.("ugmuls-5-5e-automation","monsterFearFrightened")??effect?.flags?.["ugmuls-5-5e-automation"]?.monsterFearFrightened;
+    const leftAura=aura(left),rightAura=aura(right);if((leftAura||rightAura)&&(!leftAura||!rightAura||leftAura.source!==rightAura.source))return false;
     const sources=effectSources(left);
     if([...effectSources(right)].some(source=>sources.has(source)))return true;
     const name=effect=>effect?.name?.trim().toLocaleLowerCase();

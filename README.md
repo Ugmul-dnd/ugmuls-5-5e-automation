@@ -6,17 +6,23 @@ Configurable spell regions and combat assistance for D&D5e in Foundry Virtual Ta
 
 ## Supported content
 
-Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** content.
+Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content.
 
 Most features rely on the spells, class features, activities, chat cards, names, identifiers, and associated Active Effects supplied by that content. Having the expected name alone may not be enough if the item's activities or effects are configured differently.
 
-Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the Player's Handbook content.
+Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
+
+## Version 0.8.0
+
+Expanded spell and monster effects, recurring damage, escape actions, hidden monster auras, infernal wounds and swallowing. See [0.8.0 release notes](RELEASE-NOTES-0.8.0.md) for highlights and updating instructions.
 
 ## Main features
 
 - **Pending casts and safe cancellation:** show spell/feature preparation immediately, keep attack cards visible through dice animation, and refund pre-roll canceled casts. Target checks respect native upcasting and partial multi-target groups.
 - **Concentration assistance:** prompt connected owners or the GM for damage-triggered concentration saves, with independent prompt and automatic-break settings. Failed checks end recorded concentration after dice animations finish.
 
+- **Creature effects and monster features:** built-in trigger recipes with local overrides, repeat saves, optional escape actions, recurring damage, wounds, swallowing and source-specific conditions. Monster auras start automatically and are hidden from players by default. Complex choices and documented special cases remain table-managed.
+- **Inactive-effect cleanup:** clear inactive applied effects after combat or from the actor window menu while preserving disabled class/item features and active effects.
 - **Spell and feature regions:** configure entry, movement, and turn triggers; target filters; region conditions and effects; self-attached emanations; and concentration cleanup.
 - **Targeting and saving throws:** confirm area targets, retarget attack cards, prompt token owners for saves, and let a GM take over a pending save. Optional automatic saves for GM-run NPCs leave player-owned NPCs manual.
 - **Damage, healing, and effects:** optional roll prompts and automatic application, with GM Undo Damage, Undo Healing, and Undo Effect controls. Applied damage locks retroactive roll adjustments until it is undone.
@@ -42,7 +48,7 @@ Use the module's tabbed options interface to enable the features that suit your 
 | --- | --- |
 | Foundry Virtual Tabletop | v14; tested on build 369 |
 | Dungeons & Dragons Fifth Edition system | 6.0.5 minimum; tested with 6.0.6 |
-| Official Player's Handbook (2024) | Content used to develop and test the automations |
+| Official Player's Handbook (2024) and Monster Manual | Content used to develop and test the corresponding automations |
 | D&D Beyond Importer content | May work, but has not been tested |
 
 An **active GM must be connected** for GM-managed region effects, NPC automation, and other operations affecting actors a player does not own.

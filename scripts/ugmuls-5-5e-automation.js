@@ -1,8 +1,12 @@
+import "./monster-swallow.js";
+import "./infernal-wounds.js";
+import "./monster-source-turn-damage.js";
+import "./inactive-effect-cleanup.js";
 import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
-// v0.7.0
+// v0.8.0
 // Foundry VTT v14 / D&D5e 6.0.5+ (tested with 6.0.6)
 //
 // Features:
@@ -38,7 +42,7 @@ const oncePerTurnHistory =
 
 
 console.log(
-    "Ugmuls 5.5e Automation | v0.7.0 JS loaded"
+    "Ugmuls 5.5e Automation | v0.8.0 JS loaded"
 );
 
 
@@ -873,7 +877,7 @@ Hooks.once("ready", () => {
         }).catch(err => console.error("Ugmuls 5.5e Automation | Confirmed target registration failed:", err));
     });
 
-    console.log("Ugmuls 5.5e Automation | Installing v0.7.0 Region hook");
+    console.log("Ugmuls 5.5e Automation | Installing v0.8.0 Region hook");
 
 
     // ========================================================
@@ -1470,6 +1474,6 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         }
     });
     console.log(
-        "Ugmuls 5.5e Automation | v0.7.0 Ready"
+        "Ugmuls 5.5e Automation | v0.8.0 Ready"
     );
 });

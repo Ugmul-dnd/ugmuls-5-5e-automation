@@ -16,9 +16,11 @@ export async function registerRecurringEffect(effect,{spell,level,sourceCard}={}
  if(entry.oneShot&&sourceCard&&!delayedTargetQualifies(sourceCard,effect.parent,entry))return;
  const save=Array.from(spell.system.activities??[]).find(a=>a.type==="save"&&(a.id===entry.saveActivityId||a.name===entry.saveActivity));
  const check=(entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?Array.from(spell.system.activities??[]).find(a=>a.type==="check"&&a.id===entry.checkActivityId):null;
- const dc=entry.saveActivity?Number((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?check?.check?.dc?.value:entry.sourceKind==="syntheticSave"?spell.actor?.system?.attributes?.spell?.dc:save?.save?.dc?.value):null;if(entry.saveActivity&&(!Number.isFinite(dc)||dc<=0))throw Error(entry.name+" needs a configured save DC.");
+ const dc=entry.saveActivity?Number((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?(entry.escapePassiveSkill?spell.actor?.system?.skills?.[entry.escapePassiveSkill]?.passive:check?.check?.dc?.value):entry.sourceKind==="syntheticSave"?spell.actor?.system?.attributes?.spell?.dc:save?.save?.dc?.value):null;if(entry.saveActivity&&(!Number.isFinite(dc)||dc<=0))throw Error(entry.name+" needs a configured save DC.");
+ const sourceToken=sourceCard?.getAssociatedToken?.()??spell.actor?.token;
+ const sourceTokenUuid=(sourceToken?.document??sourceToken)?.uuid;
  const healing=entry.sourceKind==="recurringHealing"?{healingAmount:recurringHealingAmount(spell,entry)}:{};
- await effect.setFlag(ID,"recurringEffect",{...healing,...((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?{checkSkills:entry.checkSkills,escapeDisadvantage:entry.escapeDisadvantage===true}:{}),instance:foundry.utils.randomID(),key,spell:spell.uuid,caster:spell.actor?.uuid??spell.parent?.uuid,level:Number(level??spell.system.level??0),dc,sourceCard:sourceCard?.uuid??effect.system?.origin?.message,region:sourceCard?.getFlag?.(ID,"sourceRegion"),concentration:effect.system?.origin?.effect});
+ await effect.setFlag(ID,"recurringEffect",{...healing,...(sourceTokenUuid?{sourceToken:sourceTokenUuid}:{}),...((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?{checkSkills:entry.checkSkills,escapeDisadvantage:entry.escapeDisadvantage===true}:{}),instance:foundry.utils.randomID(),key,spell:spell.uuid,caster:spell.actor?.uuid??spell.parent?.uuid,level:Number(level??spell.system.level??0),dc,sourceCard:sourceCard?.uuid??effect.system?.origin?.message,region:sourceCard?.getFlag?.(ID,"sourceRegion"),concentration:effect.system?.origin?.effect});
  if((entry.oneShot||entry.singleSave)&&previous)await effect.unsetFlag(ID,"recurringOneShotCard");
  if(entry.manualResolution&&previous)await effect.unsetFlag(ID,"recurringPaused");
  if(entry.oneShot&&effect.duration?.value!=null)await effect.update({duration:{value:null,units:"seconds",expiry:null,expired:false}});
@@ -66,7 +68,7 @@ export function prepareMonsterRepeatEffect(effect){
  // Imported book effects can carry start.time=0 and expired=true. A newly
  // applied copy needs its own clock; never alter the source effect or duration.
  const start=CONFIG.ActiveEffect.documentClass.getEffectStart();
- effect.updateSource({start,"duration.expired":false});
+ effect.updateSource({start,"duration.expired":false,...(entry.durationUntilConcentration?{duration:{value:null,units:"seconds",expiry:null,expired:false},["flags.dnd5e.isTemporary"]:true}:{})});
 }
 export function prepareDelayedEffect(effect){
  const activity=effect.system?.origin?.activity?globalThis.fromUuidSync?.(effect.system.origin.activity,{strict:false}):null;
@@ -109,6 +111,7 @@ export function buildRecurringItem(spell,entry,record,phase){
   selected.flags??={};selected.flags.autoanimations=quietAnimation(selected.flags.autoanimations);
  }
  if(phase==="damage"&&(entry.saveFirst||entry.sourceKind==="monsterDamage")){const quiet={version:5,isEnabled:false,isCustomized:false,killAnim:true};data.flags??={};data.flags.autoanimations=quiet;selected.flags??={};selected.flags.autoanimations=quiet;}
+ if(phase==="damage"&&entry.damageTypesFallback)for(const part of selected.damage.parts??[])if(!part.types?.length)part.types=[...entry.damageTypesFallback];
  if(phase==="damage"&&entry.damageFormula){selected.damage.parts=[{custom:{enabled:true,formula:entry.damageFormula},types:selected.damage.parts[0]?.types??["fire"],scaling:{mode:""}}];}
  return {data,id};
 }
@@ -139,6 +142,7 @@ export function buildEscapeCheckItem(spell,entry,record){
 }
 async function createRecurringCard(effect,token,record,stamp,phase){
  const entry=triggerEntry(record.key);if(!entry?.enabled||!active(effect))return;
+ if(entry.requiresLivingSource){const source=record.sourceToken?await fromUuid(record.sourceToken,{strict:false}):null;if(!source?.actor||source.parent?.id!==token.parent?.id||source.combatant?.defeated||source.actor.statuses?.has("dead")||Number.isFinite(source.actor.system?.attributes?.hp?.value)&&source.actor.system.attributes.hp.value<=0)return;}
  const spell=entry.sourceKind==="grapple"?{actor:await fromUuid(record.caster),system:{level:0}}:await fromUuid(record.spell);if(!spell?.actor)throw Error("The recurring effect’s source caster or spell is unavailable.");
  const {data,id}=entry.sourceKind==="recurringHealing"?buildRecurringHealingItem(spell,entry,record):entry.sourceKind==="grapple"?buildGrappleEscapeItem(token.actor,record):entry.escapeCheck&&phase!=="damage"?buildEscapeCheckItem(spell,entry,record):buildRecurringItem(spell,entry,record,phase),item=new CONFIG.Item.documentClass(data,{parent:spell.actor});
  if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
@@ -157,7 +161,7 @@ async function createRecurringCard(effect,token,record,stamp,phase){
  }
  return result.message;
 }
-function manualSaveGroup(record,entry){return entry?.manualResolution?String(record.sourceCard??record.spell)+":"+(entry.sourceIdentifier??record.key):null;}
+function manualSaveGroup(record,entry){return entry?.saveGroup?String(record.sourceCard??record.spell)+":"+String(record.sourceToken??record.caster)+":"+entry.saveGroup:entry?.manualResolution?String(record.sourceCard??record.spell)+":"+(entry.sourceIdentifier??record.key):null;}
 export async function processRecurringTurn(combat,changes){
  if(!authority()||!combat.started||!combat.combatant||!("turn" in changes||"round" in changes||changes.started===true))return;
  const incoming=combat.combatant,prior=combat.previous;
@@ -268,7 +272,7 @@ export async function advanceRecurringCard(card){
    const damage=await createRecurringCard(effect,token,record,link.stamp,"damage");if(damage)await usage.setFlag(ID,"recurringDamageCard",damage.id);
   }finally{running.delete(usage.id);}
  }else if(["save","manual","manualCheck","check"].includes(link.phase)&&usage.system.outcomes?.get(usage.system.targets?.[0]?.token)==="success"&&triggerEntry(record.key)?.endOnSuccess){
-  running.add(usage.id);try{await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);if(active(effect)&&effect.getFlag(ID,"recurringEffect")?.instance===link.instance){const entry=triggerEntry(record.key);await effect.delete();if(entry?.endConcentrationOnEscape&&record.concentration){const concentration=await fromUuid(record.concentration);if(concentration?.parent?.uuid===record.caster)await concentration.parent.endConcentration(concentration);}}}finally{running.delete(usage.id);}
+  running.add(usage.id);try{await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);if(active(effect)&&effect.getFlag(ID,"recurringEffect")?.instance===link.instance){const entry=triggerEntry(record.key),group=manualSaveGroup(record,entry),linked=entry?.saveGroup?Array.from(effect.parent?.effects??[]).filter(e=>{const state=e.getFlag?.(ID,"recurringEffect");return active(e)&&state&&manualSaveGroup(state,triggerEntry(state.key))===group;}):[];if(!linked.includes(effect))linked.unshift(effect);for(const ending of linked)if(active(ending))await ending.delete();if(entry?.endConcentrationOnEscape&&record.concentration){const concentration=await fromUuid(record.concentration);if(concentration?.parent?.uuid===record.caster)await concentration.parent.endConcentration(concentration);}}}finally{running.delete(usage.id);}
  }
 }
 export async function resolveRecurringCondition(card,eligible){
