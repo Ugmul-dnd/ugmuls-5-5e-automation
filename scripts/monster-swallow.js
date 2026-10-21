@@ -5,7 +5,8 @@ const get=(effect,key)=>effect?.getFlag?.(ID,key)??effect?.flags?.[ID]?.[key];
 const active=effect=>effect&&!effect.disabled&&effect.active!==false&&!effect.duration?.expired;
 async function resolve(ref){try{return ref?await fromUuid(ref,{strict:false}):null;}catch{return null;}}
 export function prepareSwallowData(item,activity){
- const identifier=item?.identifier??item?.system?.identifier,cube=identifier==="engulf",key=cube?"mm-source-gelatinous-cube":triggerKeyForSpell(item),entry=triggerEntry(key);
+ const identifier=item?.identifier??item?.system?.identifier;if(!["swallow","engulf"].includes(identifier))return null;
+ const cube=identifier==="engulf",key=cube?"mm-source-gelatinous-cube":triggerKeyForSpell(item),entry=triggerEntry(key);
  if(!entry?.enabled||!["feat","weapon"].includes(item?.type)||!(identifier==="swallow"&&["0A0cIyRNbphDR82L","YorssyWMumAsvzx3"].includes(activity.id)||cube&&activity.id==="5o0Bh8PQaojx5XMx"))return null;
  const data=item.toObject(),selected=data.system.activities[activity.id];if(!data.system.activities[entry.damageActivityId]||!(entry.requiredActivityIds??[]).every(id=>data.system.activities[id]))return null;
  const effect=data.effects.find(e=>e._id===entry.effectId);if(!effect)throw Error(entry.name+" needs its native swallowed/engulfed effect.");

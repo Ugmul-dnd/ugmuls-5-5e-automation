@@ -1,5 +1,33 @@
 # Changelog
 
+## Unreleased — 0.8.1 development
+
+- Restore the Genie shielding chooser for an owning player when D&D5e omits its native effects tray under player-effect/target visibility rules. Add only this owned feature’s choices without changing world permissions. Remove Retarget from Elemental Shielding cards and reject retarget operations for the choice-only feature.
+
+- Let an owning player change Elemental Shielding directly, including from a GM-authored card, without depending on a GM socket request. Exempt the choice-only feature from target-use guards; preserve current user targets while the GM updates aura recipients.
+
+- Make Genie Aura of Elemental Shielding a manual self-selection card. Clicking one native resistance replaces earlier choices, disables old transferred options and updates the unified aura from the actual applied selection. Exclude the feature from automatic buff application, prevent Shift/multi-effect application, preserve unrelated resistances, and remove the automatic Cold default.
+
+- Fix unified Paladin aura movement repeatedly rewriting its attached region. Compare the prepared attachment TokenDocument by ID, preserving native region animation and avoiding redundant updates when crossing allies.
+
+- Show the granting Paladin as the source of unified aura buffs and lingering Alacrity. Repair existing owned buffs during synchronization, and update the source when the chosen Protection provider changes.
+
+- Add unified passive Paladin auras: one attached, invisible-by-default emanation follows native/level-based range and combines Protection, Courage, Devotion, Warding, Glory Alacrity and Genie Elemental Shielding. Use the source Paladin’s Charisma (minimum +1), avoid overlapping Protection stacking, pause while Incapacitated, and preserve native self effects and existing conditions. Add actor-window controls for source enable/visibility, Genie resistance and preferred Protection source. Batch committed movement checks, avoid writes when benefits remain unchanged, and decline duplicate Aura Effects emitters. Temporary oath powers and Channel Divinity remain separate.
+
+- Add optional Arcane Firearm to Artificer spell damage configuration. Confirm casting through the firearm, add a typed 1d8 bonus to one damage roll, and persist one use per cast across linked attacks/damage cards. Choose a damage type for mixed-damage spells; spend no charges and do not double the separately rolled bonus on critical hits. Exclude cannon/weapon attacks and other classes’ spells.
+
+- Add opt-in destructive Arcane Jolt to confirmed-hit damage configuration. Use native Force damage scaling and critical policy; spend one Artificer feature use and share one use per turn across the Artificer and their natively linked Steel Defender. Require a magic weapon for the Artificer, preserve existing save/effect ordering, and leave restorative energy manual.
+
+- Default recorded-target displays to Targeted for monster area features such as Hell Hound Fire Breath, including their save and damage cards. Preserve later manual mode changes and recorded recipients.
+
+- Add Artificer Flash of Genius buttons to failed ability checks and saving throws. Add Intelligence (minimum +1) to the original roll, spend a native feature use even when the result still fails, and reserve the Reaction during tracked combat. Support self-use and visible recipients within 30 feet, player-to-GM routing, unknown-DC failure confirmation, and existing Apply/Undo locks.
+
+- Repair Revenant Vengeful Glare copies missing their Frightened effect/profile. Initial save usage supplies a one-minute failed-save Frightened fallback on a temporary copy and persists the corrected card snapshot, enabling the existing repeat save. Preserve existing native effects and resources; do not invent unconditional curse paralysis or reapply effects on repeat-save helpers.
+
+- Reduce repeated temporary-item reconstruction across module-owned save/effect helper cards, including linked roll results. Share prepared helpers per source card and scaling, invalidate on card and relevant actor/item/effect updates, and preserve native live-item and explicit corrected-snapshot precedence. Skip unrelated activities before escape/Swallow recipe lookups. Keep resource spending, damage confirmation, save ordering, animation waits and effect application flows unchanged.
+
+- Add native multi-select to the class-filtered Add Spell compendium browser on standard and Tidy character sheets. Select several spells and confirm once to add them without drag/drop. Preserve editable class filters, source effects and native casting-method handling; skip already-owned spells and duplicate book copies. New leveled spells start unprepared. Cancel/close adds nothing, and concurrent confirmation cannot create duplicates. Full-list class spell loading and inventory browsing retain their existing behavior.
+
 ## v0.8.0 — Spell & Monster Effect Automation
 
 ### Release highlights

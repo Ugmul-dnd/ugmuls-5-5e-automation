@@ -1,6 +1,7 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ flash:{setting:"flashOfGeniusAutomation",types:["save","check"],feature:"flash-of-genius",all:true},
  bardic:{setting:"bardicInspirationAutomation",types:["attack","save","check"],own:true,effect:/^inspired$/i},
  cutting:{setting:"cuttingWordsAutomation",types:["attack","damage"],feature:"cutting-words",all:true},
  valor:{setting:"combatInspirationAutomation",types:["attack","damage"],effect:/^inspired$/i,incoming:true},
@@ -23,7 +24,7 @@ export function requestFeatureRefresh(key,doc){
  const rule=rules[key];if(!rule||game.settings.get(ID,rule.setting)!==true)return;
  const actor=actorOf(doc),actors=actor?[actor]:doc?Array.from(doc.combatants??[],c=>c.actor).filter(Boolean):[...Array.from(game.actors??[]),...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor)].filter(Boolean);
  // Token movement can change Cutting Words range, including movement of an enemy.
- if(key==="cutting"&&doc?.documentName==="Token")actors.push(...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor).filter(Boolean));
+ if(["cutting","flash"].includes(key)&&doc?.documentName==="Token")actors.push(...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor).filter(Boolean));
  for(const actor of actors)if(relevant(actor,rule,doc))pending.set(key+":"+actor.uuid,{rule,actor});
  if(pending.size)schedule();
 }

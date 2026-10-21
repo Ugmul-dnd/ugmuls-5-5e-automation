@@ -52,7 +52,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                 const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal,{preview:true})??brutal;
                 const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy,{preview:true})??frenzy;
-                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,divineFury,{preview:true})??divineFury;
+                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury,{preview:true})??divineFury;
+                const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt,{preview:true})??jolt;
+                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm,{preview:true})??firearm;
                 const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver,{preview:true})??maneuver;
                 const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,valor,{preview:true})??valor;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
@@ -82,7 +84,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                     const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal)??brutal;
                     const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy)??frenzy;
-                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,divineFury)??divineFury;
+                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury)??divineFury;
+                    const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt)??jolt;
+                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm)??firearm;
                     const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver)??maneuver;
                     const stunning=globalThis.Ugmuls55eAutomationStunning?.finalizeStunning(this,valor)??valor;
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
@@ -122,6 +126,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationEldritch?.addEldritchChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFrenzy?.addFrenzyChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDivineFury?.addDivineFuryChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBattleMaster?.addManeuverChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationValor?.addValorOffenseChoice(this);
@@ -157,9 +163,13 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,options);
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,options);
                         await globalThis.Ugmuls55eAutomationBrutal?.commitBrutalEffects(this,options);
+                        await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,options);
+                        await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,{});
+                        await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,{});
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,{});
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,{});
                         await globalThis.Ugmuls55eAutomationGrapple?.commitGrapple(this,{});

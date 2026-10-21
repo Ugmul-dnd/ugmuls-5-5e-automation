@@ -1,5 +1,5 @@
 import {triggerEntry} from "./trigger-library.js";
-const ID="ugmuls-5-5e-automation",wrapped=new WeakSet(),snapshots=new WeakMap();
+const ID="ugmuls-5-5e-automation",wrapped=new WeakSet(),snapshots=new WeakMap(),actorRevisions=new WeakMap();
 const identifiers=new Set(["web","entangle","evards-black-tentacles","ensnaring-strike"]);
 const identifier=item=>item?.identifier??item?.system?.identifier;
 // Actor-owned temporary items need the final preparation normally run by their actor.
@@ -36,22 +36,36 @@ export function installEscapePreparation(Type){
   return use.call(item.system.activities.get(this.id),usage,dialog,{...message,data:{...message.data,system:{...message.data?.system,...(concentration?{concentration:concentration.id}:{})},flags}});
  };
 }
+export function invalidateHelperCard(card){if(card)snapshots.delete(card);}
+export function invalidateHelperActor(doc){const actor=doc?.documentName==="Actor"?doc:doc?.actor??(doc?.parent?.documentName==="Actor"?doc.parent:null);if(actor)actorRevisions.set(actor,(actorRevisions.get(actor)??0)+1);}
 export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClass??ChatMessage.implementation){
  const prototype=Type?.prototype;if(!prototype||prototype.rsaEscapeSnapshots)return;
  const getItem=prototype.getAssociatedItem,getActivity=prototype.getAssociatedActivity;
- const snapshot=card=>card?.getFlag?.(ID,"escapeSpellData")??card?.getFlag?.(ID,"monsterPoisonData")??card?.getFlag?.(ID,"activityOverrideData");
- const context=card=>{if(snapshot(card))return card;const ref=card.system?.origin;const origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;return snapshot(origin)?origin:null;};
  if(!getItem||!getActivity)return;
- prototype.getAssociatedItem=function(options={}){
-  const source=context(this),data=snapshot(source);if(!data)return getItem.call(this,options);
-  const actor=source.getAssociatedActor(),scaling=options.scaled?this.system.scaling??0:0;
-  let cache=snapshots.get(this);if(!cache||cache.data!==data||cache.actor!==actor){cache={data,actor,items:new Map()};snapshots.set(this,cache);}
-  if(!cache.items.has(scaling)){const item=preparedItem(data,actor);cache.items.set(scaling,scaling?item.scaledClone(scaling):item);}
+ const snapshot=card=>card?.getFlag?.(ID,"escapeSpellData")??card?.getFlag?.(ID,"monsterPoisonData")??card?.getFlag?.(ID,"activityOverrideData");
+ const origin=card=>{const ref=card?.system?.origin;return typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;};
+ const live=uuid=>uuid&&globalThis.fromUuidSync?.(uuid,{strict:false});
+ const context=card=>{
+  const parent=origin(card),explicit=snapshot(card)?card:snapshot(parent)?parent:null;if(explicit)return {source:explicit,data:snapshot(explicit),override:true};
+  // Real actor items retain the system's native resolution and cloning behavior.
+  if(live(card.system?.item?.uuid??card.getFlag?.("dnd5e","item.uuid")))return null;
+  for(const source of [card,parent]){if(!source?.getFlag?.(ID,"riderTriggered"))continue;const id=source.system?.item?.id??source.getFlag("dnd5e","item.id"),data=source.system?.deltas?.deleted?.find(item=>item._id===id)??source.getFlag("dnd5e","item.data");if(data)return {source,data,override:false};}
+  return null;
+ };
+ const cached=(card,info,options)=>{
+  const {source,data}=info,actor=source.getAssociatedActor?.();if(!actor)return;
+  const scaling=options.scaled?card.system.scaling??0:0,revision=actorRevisions.get(actor)??0,stamp=actor._stats?.modifiedTime;
+  let cache=snapshots.get(source);if(!cache||cache.data!==data||cache.actor!==actor||cache.revision!==revision||cache.stamp!==stamp){cache={data,actor,revision,stamp,items:new Map()};snapshots.set(source,cache);}
+  if(!cache.items.has(scaling)){
+   // Clone before preparation so callers cannot mutate the persisted card snapshot.
+   const item=preparedItem(foundry.utils.deepClone?foundry.utils.deepClone(data):structuredClone(data),actor);cache.items.set(scaling,scaling?item.scaledClone(scaling):item);
+  }
   return cache.items.get(scaling);
  };
+ prototype.getAssociatedItem=function(options={}){const info=context(this);return info?cached(this,info,options):getItem.call(this,options);};
  prototype.getAssociatedActivity=function(options={}){
-  if(!context(this))return getActivity.call(this,options);
-  const id=this.system.activity?.id??this.getFlag("dnd5e","activity.id");return this.getAssociatedItem(options)?.system.activities.get(id);
+  const info=context(this);if(!info||!info.override&&live(this.system.activity?.uuid??this.getFlag?.("dnd5e","activity.uuid")))return getActivity.call(this,options);
+  const id=this.system.activity?.id??this.getFlag("dnd5e","activity.id");return cached(this,info,options)?.system.activities.get(id);
  };
  prototype.rsaEscapeSnapshots=true;
 }
@@ -78,6 +92,9 @@ Hooks.once("ready",()=>{
  globalThis.Ugmuls55eAutomationSpellEscapes={initialSaveAdvantage:initialEnsnaringAdvantage,webExit:clearWebRestraints};
  for(const type of Object.values(CONFIG.DND5E.activityTypes))installEscapePreparation(type.documentClass);
  installEscapeCardSnapshots();
+ for(const event of ["updateChatMessage","deleteChatMessage"])Hooks.on(event,invalidateHelperCard);
+ for(const type of ["Actor","Item","ActiveEffect"])for(const event of ["create","update","delete"])Hooks.on(event+type,invalidateHelperActor);
+ Hooks.on("updateToken",(token,changes)=>{if(changes.delta||changes.actorData||changes.actorId)invalidateHelperActor(token.actor);});
  Hooks.on("createRegion",region=>attachWebExit(region).catch(report));
  Hooks.on("updateChatMessage",card=>finishSuccessfulEnsnaringCast(card).catch(report));
  Hooks.on("deleteRegion",region=>{if(!authority())return;const actors=new Map([...Array.from(game.actors??[]),...Array.from(region.parent?.tokens??[],t=>t.actor).filter(Boolean)].map(a=>[a.uuid,a]));for(const actor of actors.values())clearWebRestraints(region,actor).catch(report);});

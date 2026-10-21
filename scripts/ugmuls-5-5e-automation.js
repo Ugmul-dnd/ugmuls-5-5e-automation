@@ -1,3 +1,9 @@
+import "./genie-shielding.js";
+import "./paladin-auras.js";
+import "./arcane-firearm.js";
+import "./arcane-jolt.js";
+import "./flash-of-genius.js";
+import "./revenant-glare.js";
 import "./monster-swallow.js";
 import "./infernal-wounds.js";
 import "./monster-source-turn-damage.js";

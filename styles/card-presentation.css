@@ -37,6 +37,8 @@
     margin-top: 4px;
 }
 .rsa-attack-actions button { width: auto; flex: 0 0 auto; }
+.rsa-flash-actions button { display: inline-flex; align-items: center; gap: 4px; max-width: 100%; white-space: normal; }
+.rsa-flash-actions button > img { width: 20px; height: 20px; min-width: 20px; max-width: 20px; max-height: 20px; flex: 0 0 20px; object-fit: contain; border: 0; margin: 0; }
 .rsa-attack-actions { width: 100%; align-self: stretch; flex-wrap: wrap; }
 .rsa-action-colors .chat-card > .icon-row:has(> ul.pills) > ul.pills {
     align-items: center;

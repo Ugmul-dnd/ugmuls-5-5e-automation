@@ -2,6 +2,8 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 function supportsRetarget(message) {
+    const item=message?.getAssociatedItem?.()??message?.getAssociatedActivity?.()?.item;
+    if(item?.type==="feat"&&((item.identifier??item.system?.identifier)==="aura-of-elemental-shielding"||/^aura of elemental shielding$/i.test(item.name??"")))return false;
     if (["manualCheck","check"].includes(message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")?.phase)) return false;
     return ["usage","attack"].includes(message?.type) && (
         ["spell","feat","weapon"].includes(message.getAssociatedItem?.()?.type) ||
