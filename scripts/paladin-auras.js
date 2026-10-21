@@ -91,7 +91,7 @@ function sameLevels(a, b) { return JSON.stringify([...a].sort()) === JSON.string
 function regionNeedsUpdate(region, data) {
     const old = region.shapes?.[0], next = data.shapes[0];
     return region.name !== data.name || region.visibility !== data.visibility || (region.attachment?.token?.id ?? region.attachment?.token) !== data.attachment.token ||
-        Number(old?.radius) !== Number(next.radius) || old?.type !== "emanation" ||
+        Number(old?.radius) !== Number(next.radius) || old?.type !== "emanation" || old?.gridBased !== true ||
         ["width", "height", "shape"].some(key => old?.base?.[key] !== next.base[key]) || !sameLevels(region.levels ?? [], data.levels ?? []);
 }
 export async function ensurePaladinRegion(scene, profile) {
@@ -103,7 +103,7 @@ export async function ensurePaladinRegion(scene, profile) {
     if (!levels.length && globalThis.canvas?.scene === scene && canvas.level?.id) levels.push(canvas.level.id);
     const meters = /^(m|meters?|metres?)$/i.test(String(scene.grid.units ?? "ft")), sceneRadius = meters ? radius * .3048 : radius;
     const data = {name:"Paladin Aura — " + token.name, color:game.user.color,
-        shapes:[{type:"emanation", radius:sceneRadius * scale, base:{type:"token", x:token.x, y:token.y, width:token.width, height:token.height, shape:token.shape, rotation:0}}],
+        shapes:[{type:"emanation", gridBased:true, radius:sceneRadius * scale, base:{type:"token", x:token.x, y:token.y, width:token.width, height:token.height, shape:token.shape, rotation:0}}],
         attachment:{token:token.id}, levels, restriction:{enabled:true, type:"move"},
         visibility:flag(actor, "paladinAuraVisible") === true ? CONST.REGION_VISIBILITY.ALWAYS : CONST.REGION_VISIBILITY.GAMEMASTER,
         highlightMode:"coverage", flags:{[ID]:{paladinAura:{token:token.uuid, actor:actor.uuid, item:profile.feature.uuid}}}};

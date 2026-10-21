@@ -77,7 +77,7 @@ export function installSelfEmanationPlacement(Placement) {
         if (!token || game.settings.get(MODULE_ID,"autoAttachSelfEmanations") !== true) return original.call(this,config);
         const scale=canvas.scene.grid.size/canvas.scene.grid.distance;
         return Promise.resolve(config.shapes.map(shape=>({
-            type:"emanation",radius:shape.size*scale,token:token.id,
+            type:"emanation",gridBased:true,radius:shape.size*scale,token:token.id,
             base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}
         })));
     };

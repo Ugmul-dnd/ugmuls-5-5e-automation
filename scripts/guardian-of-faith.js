@@ -24,7 +24,7 @@ export async function createGuardianRegion(token,options={},userId){
   const levels=Array.from(token.levels??[]);if(!levels.length&&canvas.scene===scene&&canvas.level?.id)levels.push(canvas.level.id);
   await scene.createEmbeddedDocuments("Region",[{
    name:"Guardian of Faith - Emanation",color:creator.color,
-   shapes:[{type:"emanation",radius:10*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],
+   shapes:[{type:"emanation",gridBased:true,radius:10*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],
    attachment:{token:token.id},...(levels.length?{levels}:{}),restriction:{enabled:true,type:"move"},visibility:CONST.REGION_VISIBILITY.ALWAYS,highlightMode:"coverage",
    flags:{dnd5e:{item:feature.uuid,activity:save.uuid,origin:token.uuid,spellLevel:Number(spell.system?.level)||4},[ID]:{guardianToken:token.uuid,excludedToken:token.uuid,casterUserId:link.userId??creator.id}}
   }]);

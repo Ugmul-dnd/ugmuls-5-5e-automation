@@ -8,7 +8,7 @@ Reload GM/player clients. **Unified Paladin Auras** is enabled by default under 
 
 Disable old Paladin emitters configured in Aura Effects before testing. The module detects active matching Aura Effects emitters, warns the GM, and declines to create a replacement for that Paladin to prevent duplicate bonuses. It does not uninstall Aura Effects, disable it globally, or delete its effects/regions. Unrelated auras can continue to use it.
 
-The region is GM-only by default and no visual animation is created. The actor-window **Paladin aura** menu is available on standard and Tidy sheets. It lets an owner enable/disable this source, show the region to players, view Genie resistance, or choose a preferred overlapping Protection source. Source disable stops the replacement; native self effects return to their original behavior.
+The region is GM-only by default, uses Grid Shaped emanation coverage, and creates no visual animation. Existing module-owned emanations are updated once after the GM reloads, using the scene grid’s distance rules. The actor-window **Paladin aura** menu is available on standard and Tidy sheets. It lets an owner enable/disable this source, show the region to players, view Genie resistance, or choose a preferred overlapping Protection source. Source disable stops the replacement; native self effects return to their original behavior.
 
 ## Passive benefits
 

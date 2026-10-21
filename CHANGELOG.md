@@ -2,6 +2,8 @@
 
 ## Unreleased — 0.8.1 development
 
+- Default all generated Paladin, monster, Flaming Sphere, Guardian of Faith and self-attached spell emanations to Grid Shaped so their footprint follows the scene grid’s distance rules. Migrate existing module-owned emanations once while preserving position, radius and attachment. Leave circles, cones and unrelated regions unchanged.
+
 - Restore the Genie shielding chooser for an owning player when D&D5e omits its native effects tray under player-effect/target visibility rules. Add only this owned feature’s choices without changing world permissions. Remove Retarget from Elemental Shielding cards and reject retarget operations for the choice-only feature.
 
 - Let an owning player change Elemental Shielding directly, including from a GM-authored card, without depending on a GM socket request. Exempt the choice-only feature from target-use guards; preserve current user targets while the GM updates aura recipients.
