@@ -105,7 +105,7 @@ export async function ensurePaladinRegion(scene, profile) {
     const data = {name:"Paladin Aura — " + token.name, color:game.user.color,
         shapes:[{type:"emanation", gridBased:true, radius:sceneRadius * scale, base:{type:"token", x:token.x, y:token.y, width:token.width, height:token.height, shape:token.shape, rotation:0}}],
         attachment:{token:token.id}, levels, restriction:{enabled:true, type:"move"},
-        visibility:flag(actor, "paladinAuraVisible") === true ? CONST.REGION_VISIBILITY.ALWAYS : CONST.REGION_VISIBILITY.GAMEMASTER,
+        visibility:CONST.REGION_VISIBILITY.LAYER_UNLOCKED,
         highlightMode:"coverage", flags:{[ID]:{paladinAura:{token:token.uuid, actor:actor.uuid, item:profile.feature.uuid}}}};
     if (regions.length > 1) await scene.deleteEmbeddedDocuments("Region", regions.slice(1).map(r => r.id));
     if (region) { if (regionNeedsUpdate(region, data)) await region.update(data); return region; }
@@ -256,13 +256,13 @@ async function auraDialog(actor) {
     const escape = foundry.utils.escapeHTML, source = !!auraFeature(actor, "aura-of-protection"), genie = !!auraFeature(actor,"aura-of-elemental-shielding");
     const sourceActors = [...new Map(values(globalThis.canvas?.scene?.tokens).filter(t=>auraProfile(t)).map(t=>[t.actor.uuid,t.actor])).values()];
     const choice = await foundry.applications.api.DialogV2.wait({window:{title:"Paladin aura — " + actor.name},position:{width:460},rejectClose:false,
-        content:(source ? '<div class="form-group"><label>Enable this Paladin’s aura</label><input type="checkbox" name="enabled" '+(flag(actor,"paladinAuraDisabled")!==true?'checked':'')+'></div><div class="form-group"><label>Show aura region to players</label><input type="checkbox" name="visible" '+(flag(actor,"paladinAuraVisible")===true?'checked':'')+'></div>' : '') +
+        content:(source ? '<div class="form-group"><label>Enable this Paladin’s aura</label><input type="checkbox" name="enabled" '+(flag(actor,"paladinAuraDisabled")!==true?'checked':'')+'></div>' : '') +
         (genie ? '<p>Elemental Shielding: '+escape(auraElement(actor) ?? 'not selected')+'. Change it by clicking a resistance on the Aura of Elemental Shielding feature card.</p>' : '') +
         '<div class="form-group"><label>Preferred Aura of Protection</label><select name="preferred"><option value="">Highest available bonus</option>'+sourceActors.map(a=>'<option value="'+escape(a.uuid)+'" '+(flag(actor,"paladinAuraPreferred")===a.uuid?'selected':'')+'>'+escape(a.name)+'</option>').join('')+'</select></div><p>Protection bonuses do not stack. Other aura benefits are combined. Visual animations are not created.</p>',
         buttons:[{action:"save",label:"Save",callback:(_event,button)=>Object.fromEntries(new FormData(button.form))},{action:"cancel",label:"Cancel",callback:()=>null}]});
     if (!choice) return;
     const updates = {["flags."+ID+".paladinAuraPreferred"]:choice.preferred ?? ""};
-    if (source) {updates["flags."+ID+".paladinAuraDisabled"] = choice.enabled !== "on"; updates["flags."+ID+".paladinAuraVisible"] = choice.visible === "on";}
+    if (source) {updates["flags."+ID+".paladinAuraDisabled"] = choice.enabled !== "on";}
     if (genie && elementalTypes.includes(choice.element)) updates["flags."+ID+".paladinAuraElement"] = choice.element;
     await actor.update(updates);
 }
@@ -270,7 +270,7 @@ function menuActor(app) { const actor=app.actor??app.document??app.object; retur
 export function addAuraMenu(app,controls) { const actor=menuActor(app);if(!actor||controls.some(c=>c.action==="rsaPaladinAura"))return;controls.push({action:"rsaPaladinAura",label:"Paladin aura",icon:"fa-solid fa-shield-halved",ownership:"OWNER",onClick:()=>auraDialog(actor).catch(report)}); }
 function report(error) {console.error("Unified Paladin aura",error);ui.notifications.error("Could not update the Paladin aura. Check the console.");}
 Hooks.once("init",()=>{
-    game.settings.register(ID,"paladinAuraAutomation",{name:"Unified Paladin Auras",hint:"Create one attached, invisible-by-default aura per Paladin. Combine Protection, Courage and supported oath benefits, expand with Paladin level, and pause while Incapacitated. Choose Genie resistance on its feature card; set overlapping Protection preference from the actor-window Paladin aura menu. Disable old Aura Effects Paladin emitters first.",scope:"world",config:true,type:Boolean,default:true});
+    game.settings.register(ID,"paladinAuraAutomation",{name:"Unified Paladin Auras",hint:"Create one attached, Regions-layer-only aura per Paladin. Combine Protection, Courage and supported oath benefits, expand with Paladin level, and pause while Incapacitated. Choose Genie resistance on its feature card; set overlapping Protection preference from the actor-window Paladin aura menu. Disable old Aura Effects Paladin emitters first.",scope:"world",config:true,type:Boolean,default:true});
     installAuraSuppression();
 });
 Hooks.once("ready",()=>{

@@ -58,7 +58,8 @@ async function request(card,actor,index,button){button.disabled=true;try{
  }catch(error){report(error);}finally{button.disabled=!flashCandidates(card,game.user,index).some(e=>e.actor.uuid===actor.uuid);}}
 export function renderFlashOfGenius(message,html){
  const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;const entries=[{card:message,root}];for(const node of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(node.dataset.messageId);if(card&&!node.hidden)entries.push({card,root:node});}
- for(const entry of entries){entry.root.querySelectorAll(':scope > .rsa-flash-actions').forEach(n=>n.remove());if(entry.card.isContentVisible===false)continue;
+ for(const entry of entries){
+
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-flash-actions";
   for(const [index]of(entry.card.rolls??[]).entries())for(const candidate of flashCandidates(entry.card,game.user,index)){
    const button=document.createElement("button");button.type="button";const image=document.createElement("img");image.src=candidate.feature.img??"icons/svg/d20.svg";image.alt="";button.append(image,document.createTextNode("Flash of Genius +"+candidate.bonus+" — "+candidate.actor.name+(entry.card.rolls.length>1?" · Roll "+(index+1):"")));button.dataset.tooltip="Add Intelligence (minimum +1) to this failed check/save without rerolling. Spend one feature use and, during tracked combat, your Reaction. Confirm visibility to the recipient.";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();request(entry.card,candidate.actor,index,button);});controls.append(button);
@@ -66,7 +67,7 @@ export function renderFlashOfGenius(message,html){
   for(const record of Object.values(entry.card.getFlag?.(ID,"flashOfGenius")??{})){const label=document.createElement("span");label.textContent="Flash of Genius: +"+record.total+" ("+record.name+")";controls.append(label);}if(controls.childNodes.length)entry.root.append(controls);
  }
 }
-function refresh(doc){globalThis.Ugmuls55eAutomationChatRefresh?.request("flash",doc);}
+function refresh(doc,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("flash",doc,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"flashOfGeniusAutomation",{name:"Flash of Genius Assistance",hint:"Offer an owned Artificer’s Flash of Genius on failed ability checks and saving throws for self or visible creatures within 30 feet. Add Intelligence (minimum +1), spend one native feature use and track the Reaction in combat. Unknown DCs require failure confirmation; applied damage/effects must be undone first.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
  Hooks.on("dnd5e.renderChatMessage",renderFlashOfGenius);for(const event of ["createItem","updateItem","deleteItem","createActiveEffect","updateActiveEffect","deleteActiveEffect","updateCombat","updateToken"])Hooks.on(event,refresh);

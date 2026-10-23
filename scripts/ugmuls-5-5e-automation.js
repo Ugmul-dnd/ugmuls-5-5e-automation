@@ -1,3 +1,4 @@
+import "./genie-elemental-smite.js";
 import "./aura-grid.js";
 import "./genie-shielding.js";
 import "./paladin-auras.js";

@@ -20,11 +20,12 @@ function relevant(actor,rule,doc){
  return true;
 }
 function schedule(){if(timer===null&&!running)timer=setTimeout(()=>{timer=null;flushChatRefresh().catch(error=>console.error("Chat refresh",error));},32);}
-export function requestFeatureRefresh(key,doc){
+export function requestFeatureRefresh(key,doc,changes){
  const rule=rules[key];if(!rule||game.settings.get(ID,rule.setting)!==true)return;
+ // Position, visibility and region membership never refresh historical reaction cards.
+ // Synthetic actor/resource changes still use the normal state-update path.
+ if(doc?.documentName==="Token"&&(!changes||!["delta","actorData","actorId"].some(key=>key in changes)))return;
  const actor=actorOf(doc),actors=actor?[actor]:doc?Array.from(doc.combatants??[],c=>c.actor).filter(Boolean):[...Array.from(game.actors??[]),...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor)].filter(Boolean);
- // Token movement can change Cutting Words range, including movement of an enemy.
- if(["cutting","flash"].includes(key)&&doc?.documentName==="Token")actors.push(...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor).filter(Boolean));
  for(const actor of actors)if(relevant(actor,rule,doc))pending.set(key+":"+actor.uuid,{rule,actor});
  if(pending.size)schedule();
 }

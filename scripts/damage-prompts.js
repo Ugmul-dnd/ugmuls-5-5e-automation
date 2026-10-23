@@ -251,6 +251,31 @@ export function promptPublishedAttack(attack){
     const usage=typeof reference==="string"?game.messages.get(reference.replace(/^ChatMessage\./,"")):reference;
     if(usage)return promptDamage(attack.getAssociatedActivity?.(),usage,"attack",attack);
 }
+// Seed the automatic prompt once from its exact confirmed attack. Dialog choices
+// and AC5e no-critical conditions remain free to change the result afterwards.
+export function preserveRollSpeaker(config,message){
+ const activity=config.subject,actor=activity?.actor??activity?.item?.actor;if(!actor)return;
+ const scene=globalThis.canvas?.scene;if(!scene)return;
+ const matches=token=>token?.actor&&(token.actor===actor||token.actor.uuid&&token.actor.uuid===actor.uuid)&&token.parent?.id===scene.id;
+ const resolve=speaker=>speaker?.token&&(!speaker.scene||speaker.scene===scene.id)?scene.tokens?.get?.(speaker.token):null;
+ const current=config.speaker,recorded=message?.data?.speaker;
+ let token=[resolve(current),resolve(recorded)].find(matches);
+ if(!token){const usage=activity.getUsageToken?.();token=usage?.document??usage;if(!matches(token))token=null;}
+ if(!token){const own=actor.token?.document??actor.token;if(matches(own))token=own;}
+ if(!token){const active=Array.from(actor.getActiveTokens?.(false,true)??[],t=>t.document??t).filter(matches);if(active.length===1)token=active[0];}
+ if(!token)return;
+ config.speaker={...recorded,...current,scene:scene.id,token:token.id,actor:actor.id};
+ if(message){message.data??={};message.data.speaker={...recorded,...config.speaker};}
+}
+export function recommendAttackCritical(config,dialog,attack){
+ if(attack?.rolls?.[0]?.isCritical!==true||config.critical?.allow===false)return;
+ config.isCritical=true;dialog.options={...dialog.options,defaultButton:"critical"};
+ for(const roll of config.rolls??[]){roll.options??={};roll.options.isCritical=true;}
+ if(game.modules?.get?.("automated-conditions-5e")?.active){
+  const seed=options=>{options["automated-conditions-5e"]={...options["automated-conditions-5e"],baseCritical:true};};
+  config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
+ }
+}
 export async function promptDamage(activity, message, kind = "save", attack = null) {
     const setting = kind === "attack" ? "promptDamageOnHit" : "promptDamageOnSave";
     if (game.settings.get(MODULE_ID, setting) !== true || !activity?.damage?.parts?.length || !message?.id) return;
@@ -283,6 +308,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (typeof activity.onChatAction === "function") {
             const hook = Hooks.on("dnd5e.preRollDamageV2", (config, dialog, damageMessage) => {
                 if (config.subject?.uuid !== activity.uuid) return;
+                recommendAttackCritical(config,dialog,attack);
                 Object.assign(dialog, configurePromptDialog("damage",dialog));
                 if (damageMessage) {
                     damageMessage.data ??= {};damageMessage.data.system ??= {};
@@ -331,6 +357,7 @@ Hooks.once("ready", () => {
     Hooks.on("createChatMessage",card=>{setTimeout(()=>promptPublishedAttack(card)?.catch(report),0);});
     Hooks.on("updateChatMessage",card=>{setTimeout(()=>promptPublishedAttack(card)?.catch(report),0);});
     Hooks.on("dnd5e.preRollDamageV2",linkDamageAttack);
+    Hooks.on("dnd5e.preRollDamageV2",(config,_dialog,message)=>preserveRollSpeaker(config,message));
     Hooks.on("updateChatMessage",promptRegionDamage);
     // Heal activities already open their native roll after use. Reuse that
     // dialog rather than opening a second one, with recorded/self targets.
@@ -354,7 +381,8 @@ Hooks.once("ready", () => {
             if(document?.actor&&document.uuid)message.data.system.targets=[describeTarget(document)];
         }
     });
-    Hooks.on("dnd5e.preRollAttackV2", (config, dialog) => {
+    Hooks.on("dnd5e.preRollAttackV2", (config, dialog, message) => {
+        preserveRollSpeaker(config,message);
         const configure = dialog.configure;
         Object.assign(dialog, configurePromptDialog("attack",dialog));
         if (configure === false) dialog.configure = false;

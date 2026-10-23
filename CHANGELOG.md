@@ -2,6 +2,24 @@
 
 ## Unreleased — 0.8.1 development
 
+- Sync Efreeti’s Fury’s enemy-only secondary-target picker with map targets. Hover highlights the token; selecting in the picker or targeting an eligible enemy on the map updates the other view. Remove dialog hooks/highlights on close. If no other visible enemy is within 30 feet, skip the picker and roll damage against the original target.
+
+- Open Efreeti’s Fury damage configuration automatically after its Channel Divinity choice, retain both targets and temporary activity data in the pending-card workflow, and offer Normal/Critical with the original hit’s critical state recommended.
+
+- Fix Dao’s Crush failing Foundry document validation because its temporary application activity ID exceeded 16 characters. Validate helper Item/Activity ID lengths in regression coverage; preserve the original escape-check activity.
+
+- Preserve verified source-token speaker context in attack and damage roll configuration. Avoid AC5e’s tokenless-Actor fallback treating an Activity as an Actor; keep legitimate tokenless rolls unchanged and never substitute another creature’s selected token.
+
+- Preserve confirmed critical hits when automatically opening weapon/spell attack damage configuration. Seed the exact attack’s critical state and AC5e damage baseline so the dialog recommends Critical Hit instead of Normal; retain manual Normal selection and no-critical condition handling.
+
+- Add Oath of the Noble Genies Elemental Smite choices to Divine Smite damage cards. Spend one Channel Divinity use per cast; apply Dao’s Crush immediately with optional Athletics/Acrobatics escape prompts, use native Djinni defenses through the end of the Paladin’s next turn, select Efreeti’s second target, and select Marid’s additional targets for native Strength saves. Teleports and forced movement remain manual.
+
+- Stop token movement, visibility and region membership changes from scanning or redrawing historical reaction cards. Evaluate reaction options when cards render for an action and validate eligibility again when clicked. Preserve resource, effect, turn, result and Undo refreshes, synthetic actor updates and existing save/damage order.
+
+- Show Paladin aura outlines only while the Regions layer is active. Update existing attached auras on synchronization and remove the old always-visible toggle; mechanical coverage remains active during normal play.
+
+- Aura setup guidance: Recommend Grid Shaped emanations for auras. Set the scene grid size/spacing and distance per square to match the map so aura ranges and affected squares are measured correctly. Current testing uses alternating 1–2–1 diagonal movement; other diagonal-distance rules have not yet been verified.
+
 - Default all generated Paladin, monster, Flaming Sphere, Guardian of Faith and self-attached spell emanations to Grid Shaped so their footprint follows the scene grid’s distance rules. Migrate existing module-owned emanations once while preserving position, radius and attachment. Leave circles, cones and unrelated regions unchanged.
 
 - Restore the Genie shielding chooser for an owning player when D&D5e omits its native effects tray under player-effect/target visibility rules. Add only this owned feature’s choices without changing world permissions. Remove Retarget from Elemental Shielding cards and reject retarget operations for the choice-only feature.

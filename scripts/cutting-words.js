@@ -80,6 +80,7 @@ export function renderCuttingWords(message,html){
     const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;
     const entries=[{card:message,root}];for(const summary of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(summary.dataset.messageId);if(card&&!summary.hidden)entries.push({card,root:summary});}
     for(const entry of entries){
+
         entry.root.querySelectorAll(':scope > .rsa-cutting-actions').forEach(node=>node.remove());if(entry.card.isContentVisible===false)continue;
         const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-cutting-actions";
         for(const[index,roll]of (entry.card.rolls??[]).entries()){
@@ -100,7 +101,7 @@ export function renderCuttingWords(message,html){
         if(controls.childNodes.length)entry.root.append(controls);
     }
 }
-function refresh(document){globalThis.Ugmuls55eAutomationChatRefresh?.request("cutting",document);}
+function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("cutting",document,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"cuttingWordsAutomation",{name:"Cutting Words Assistance",hint:"Offer eligible Lore Bards a Reaction button on enemy attack hits and damage rolls within 60 feet. Spend one current Bardic Inspiration die and subtract it from the existing roll. Visibility must be confirmed by the user.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
     Hooks.on("dnd5e.renderChatMessage",renderCuttingWords);

@@ -108,7 +108,7 @@ export function renderFocus(message,html){
         if(controls.childNodes.length)entry.root.append(controls);
     }
 }
-function refresh(document){globalThis.Ugmuls55eAutomationChatRefresh?.request("focus",document);}
+function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("focus",document,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"fanaticalFocusAutomation",{name:"Fanatical Focus Assistance",hint:"Once per active Rage, offer a failed-save reroll with the current Rage Damage bonus. Preserve other bonuses, reroll exactly one d20 without advantage/disadvantage, and require the new result. Extending the same Rage does not refresh this use.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
     Hooks.on("preCreateChatMessage",card=>{if(card.type!=="save")return;const rage=focusRage(actorFor(card));if(rage)card.updateSource({["flags."+ID+".focusSaveRage"]:focusSession(rage)});});

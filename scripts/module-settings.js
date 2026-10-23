@@ -7,7 +7,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Druid",keys:[]},
     {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation"]},
     {name:"Monk",keys:["stunningStrikeAutomation"]},
-    {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation"]},
+    {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation"]},
     {name:"Ranger",keys:["huntersPreyAutomation"]},
     {name:"Rogue",keys:["sneakAttackAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},

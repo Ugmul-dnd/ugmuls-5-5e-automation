@@ -160,7 +160,7 @@ export async function commitSmite(app,options) {
             if(spell)markers.push(spell);
         }
         app.message.data.flags??={};app.message.data.flags[ID]??={};
-        app.message.data.flags[ID].selectedSmite={name:entry.spell.name??"Divine Smite",spell:entry.spell.uuid,level:choice.level};
+        app.message.data.flags[ID].selectedSmite={name:entry.spell.name??"Divine Smite",spell:entry.spell.uuid,level:choice.level,identifier:identifier(entry.spell),actor:actor.uuid,userId:game.user.id};
         if(entry.spell!==smiteSpell(actor)){
             const context=attackContext(app),id=foundry.utils.randomID();
             const request={id,userId:game.user.id,actor:actor.uuid,spell:entry.spell.uuid,level:choice.level,targets:foundry.utils.deepClone(context.targets)};
