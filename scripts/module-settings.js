@@ -9,7 +9,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Monk",keys:["stunningStrikeAutomation"]},
     {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation","elementalRebukeAutomation","sacredWeaponAutomation","holyNimbusAutomation","vowOfEnmityAutomation","avengingAngelAutomation"]},
     {name:"Ranger",keys:["huntersPreyAutomation"]},
-    {name:"Rogue",keys:["sneakAttackAutomation"]},
+    {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},
     {name:"Warlock",keys:["eldritchSmiteAutomation"]},
     {name:"Wizard",keys:[]}
@@ -18,7 +18,7 @@ export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
-    {id:"common",name:"Common",icon:"fa-gears",keys:["reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","magicResistanceSaves","showConcentrationHud"]},
+    {id:"common",name:"Common",icon:"fa-gears",keys:["reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
     {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[

@@ -88,8 +88,17 @@ async function registerNativeEffect(effect){
  if(effect.getFlag?.(ID,"grappleMode")==="grapple")return registerGrappleEscape(effect);
  const activity=effect.system?.origin?.activity?await fromUuid(effect.system.origin.activity):null;
  const source=effect._stats?.duplicateSource?await fromUuid(effect._stats.duplicateSource):null;
- const spell=activity?.item??source?.parent;if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  const sourceCard=originRef?await fromUuid(originRef):null;
+ let spell=activity?.item??source?.parent;
+ // Cunning Strike used disposable item IDs in earlier cards. Resolve their Poison
+ // from the recorded card's owned Rogue feature, never persist a temporary UUID.
+ const cunning=sourceCard?.getFlag?.(ID,"cunningStrikeSave");
+ if(["poison","knock-out"].includes(cunning?.choice)){
+  const identifier=cunning.choice==="knock-out"?"devious-strikes":"cunning-strike";
+  const actor=sourceCard.getAssociatedActor?.(),owned=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier&&(!cunning.sourceFeature||item.uuid===cunning.sourceFeature));
+  if(owned)spell=owned;
+ }
+ if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  await registerRecurringEffect(effect,{spell,level:effect.getFlag?.("dnd5e","spellLevel")??sourceCard?.system?.level,sourceCard});
 }
 export function buildRecurringItem(spell,entry,record,phase){
@@ -110,6 +119,7 @@ export function buildRecurringItem(spell,entry,record,phase){
   data.flags??={};data.flags.autoanimations=quietAnimation(data.flags.autoanimations);
   selected.flags??={};selected.flags.autoanimations=quietAnimation(selected.flags.autoanimations);
  }
+ if(phase!=="damage"&&entry.sourceIdentifier==="cunning-strike"&&entry.saveActivityId==="n64fvJMT9fPUy7DH")globalThis.Ugmuls55eAutomationEnvenom?.prepareEnvenomPoison(data,id,spell.actor);
  if(phase==="damage"&&(entry.saveFirst||entry.sourceKind==="monsterDamage")){const quiet={version:5,isEnabled:false,isCustomized:false,killAnim:true};data.flags??={};data.flags.autoanimations=quiet;selected.flags??={};selected.flags.autoanimations=quiet;}
  if(phase==="damage"&&entry.damageTypesFallback)for(const part of selected.damage.parts??[])if(!part.types?.length)part.types=[...entry.damageTypesFallback];
  if(phase==="damage"&&entry.damageFormula){selected.damage.parts=[{custom:{enabled:true,formula:entry.damageFormula},types:selected.damage.parts[0]?.types??["fire"],scaling:{mode:""}}];}
@@ -154,7 +164,7 @@ async function createRecurringCard(effect,token,record,stamp,phase){
  // Reuse persistent casting choices. Careful Spell's initial-save protection
  // must not turn into automatic success on later repeat saves.
  const inherited={...(originalMeta?{metamagic:{...originalMeta,careful:[]}}:{}),...(conversion?{transmutedSpell:conversion}:{})};
- const result=await item.system.activities.get(id).use({consume:false,scaling:Math.max(0,record.level-Number(spell.system.level??0)),concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:[descriptor]},flags:{dnd5e:{item:{data}},[ID]:{...inherited,riderTriggered:true,recurringTrigger:link,...(entry.sourceKind==="monsterDamage"&&entry.saveAbility?{monsterPoisonData:data}:{})}}}});
+ const result=await item.system.activities.get(id).use({consume:false,scaling:Math.max(0,record.level-Number(spell.system.level??0)),concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:[descriptor]},flags:{dnd5e:{item:{data}},[ID]:{...inherited,riderTriggered:true,recurringTrigger:link,...(data.flags?.[ID]?.envenomPoison?{envenomPoison:data.flags[ID].envenomPoison,activityOverrideData:data}:{}),...(entry.sourceKind==="monsterDamage"&&entry.saveAbility?{monsterPoisonData:data}:{})}}}});
  if(!result?.message)throw Error("Recurring "+phase+" card was not created.");
  if(phase==="healing"&&active(effect)&&effect.getFlag(ID,"recurringEffect")?.instance===record.instance){
   await item.system.activities.get(id).rollDamage({isCritical:false},{configure:false},{data:{system:{origin:result.message.id,targets:[descriptor]},flags:{[ID]:{riderTriggered:true,recurringTrigger:link}}}});

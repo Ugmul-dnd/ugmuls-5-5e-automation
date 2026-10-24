@@ -1796,6 +1796,8 @@ const MONSTER_ESCAPE_DEFAULTS={
   }
 };
 const MONSTER_SAVE_DEFAULTS={
+"devious-strikes-knock-out":{name:"Devious Strikes — Knock Out",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"devious-strikes",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbrgeDeviousStr",effectName:"Devious Strikes: Knocked Out",effectId:"C2IGgt4PnRMxZVey",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Knock Out",saveActivityId:"3eq7lcmpkJJBU2KO",saveAbility:"con",endOnSuccess:true},
+"cunning-strike-poison":{name:"Cunning Strike — Poison",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"cunning-strike",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbrgeCunningStr",effectName:"Cunning Strike: Poisoned",effectId:"RazTM6biKVtNtjEW",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Poison",saveActivityId:"n64fvJMT9fPUy7DH",saveAbility:"con",endOnSuccess:true},
 "natures-wrath":{name:"Nature’s Wrath",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"natures-wrath",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbpdnNaturesWra",effectName:"Nature's Wrath",effectId:"EeHl1k3tizvxbdLY",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Save",saveActivityId:"SuusUi5JLqtcqLyj",saveAbility:"str",endOnSuccess:true},
 "mm-repeat-drone":{
   "name": "Chasme - Drone",

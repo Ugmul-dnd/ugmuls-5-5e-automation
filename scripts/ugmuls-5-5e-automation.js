@@ -1,3 +1,9 @@
+import "./death-strike.js";
+import "./envenom-weapons.js";
+import "./assassinate.js";
+import "./evasion.js";
+import "./uncanny-dodge.js";
+import "./cunning-strike.js";
 import "./avenging-angel.js";
 import "./vow-of-enmity.js";
 import "./holy-nimbus.js";

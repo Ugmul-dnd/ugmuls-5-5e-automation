@@ -279,7 +279,12 @@ export function recommendAttackCritical(config,dialog,attack){
   config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
  }
 }
+function failedEnvenomSave(message){
+ const outcomes=(message.system.targets??[]).map(t=>message.system.outcomes?.get(t.token));
+ return outcomes.length>0&&outcomes.every(outcome=>["success","failure"].includes(outcome))&&outcomes.includes("failure");
+}
 export function damagePromptRecipient(activity,message,region=false){
+ if(message.getFlag?.(MODULE_ID,"envenomPoison"))return selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM)??message.author;
  const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave");
  if(rebuke){const user=game.users.get?.(rebuke.userId),actor=activity.actor??activity.item?.actor;
   if(user?.active&&(user.isGM||actor?.testUserPermission?.(user,"OWNER")))return user;
@@ -298,6 +303,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     // Empty areas wait for their first recorded trigger, without consuming the prompt guard.
     if(kind === "save" && !message.system?.targets?.length)return;
     if(message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&(message.system.targets??[]).some(target=>!["success","failure"].includes(message.system.outcomes?.get(target.token))))return;
+    if(kind==="save"&&message.getFlag?.(MODULE_ID,"envenomPoison")&&!failedEnvenomSave(message))return;
     const key = `${kind}:${attack?.id ?? message.id}`;
     if (opened.has(key) || queued.has(key)) return;
     queued.add(key);
@@ -305,6 +311,11 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (attack) {
             await waitForAttackAnimation(attack);
             if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
+        }
+        if(message.getFlag?.(MODULE_ID,"envenomPoison")){
+            if(game.user.isGM)await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
+            else await Promise.all(Array.from(message.getAssociatedRolls?.("save")??[],roll=>waitForAttackAnimation(roll)));
+            if(!failedEnvenomSave(message))return;
         }
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
@@ -315,6 +326,10 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         opened.add(key);
         const {ability, ammunitionItem: ammunition, mode: attackMode} = attack?.system ?? {};
         const isCritical = attack?.rolls?.[0]?.isCritical === true;
+        if(message.getFlag?.(MODULE_ID,"envenomPoison")&&globalThis.Ugmuls55eAutomationEnvenom?.rollEnvenomDamage){
+            await globalThis.Ugmuls55eAutomationEnvenom.rollEnvenomDamage(activity,message,{dialog:configurePromptDialog("damage",{configure:true})});
+            return;
+        }
         // onChatAction applies the usage card's consumption and upcast scaling
         // and invokes the same native damage action as its Damage button.
         if (typeof activity.onChatAction === "function") {
@@ -363,8 +378,8 @@ Hooks.once("ready", () => {
     // damage dialog is routed to a connected owner of the casting actor.
     const promptRegionDamage=card=>{
         const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
-        const message=card.type==="usage"?card:origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")?origin:null;
-        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")))return;
+        const message=card.type==="usage"?card:(origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")||origin?.getFlag?.(MODULE_ID,"envenomPoison"))?origin:null;
+        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&!message.getFlag?.(MODULE_ID,"envenomPoison")))return;
         setTimeout(()=>promptDamage(message.getAssociatedActivity?.({scaled:true}),message).catch(report),0);
     };
     Hooks.on("createChatMessage",promptRegionDamage);

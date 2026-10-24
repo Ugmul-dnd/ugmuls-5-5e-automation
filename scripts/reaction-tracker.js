@@ -37,8 +37,9 @@ export async function recordReactionUse(activity,usage,results) {
         const data={name:"Reaction - used",img:"icons/svg/clockwork.svg",disabled:false,transfer:false,
             duration:{rounds:1,expiry:"sourceStart"},start:CONFIG.ActiveEffect.documentClass.getEffectStart(),
             system:{changes:[],origin:{actor:actor.uuid}},flags:{[ID]:{reactionUsed:true,reactionUsage:message.id}}};
-        if(globalThis.Ugmuls55eAutomationResources?.reuseMarker)await globalThis.Ugmuls55eAutomationResources.reuseMarker(actor,data,"reactionUsed");
-        else await actor.createEmbeddedDocuments("ActiveEffect",[data]);
+        // Return only a newly reserved marker, so simultaneous features cannot claim the same Reaction.
+        if(globalThis.Ugmuls55eAutomationResources?.reuseMarker)return await globalThis.Ugmuls55eAutomationResources.reuseMarker(actor,data,"reactionUsed");
+        return (await actor.createEmbeddedDocuments("ActiveEffect",[data]))?.[0]??null;
     } finally {creating.delete(actor.uuid);}
 }
 

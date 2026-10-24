@@ -48,6 +48,7 @@ export async function readyDamageTargets(message) {
     if(globalThis.Ugmuls55eAutomationBattleMaster?.maneuverSaveReady(message)===false)return waiting(message,"Waiting for the maneuver saving throw.");
     if(globalThis.Ugmuls55eAutomationGrapple?.grappleSaveReady(message)===false)return waiting(message,"Waiting for the Grapple / Prone saving throw.");
     if(globalThis.Ugmuls55eAutomationStunning?.stunningSaveReady(message)===false)return waiting(message,"Waiting for the Stunning Strike saving throw.");
+    if(globalThis.Ugmuls55eAutomationDeathStrike?.ready(message)===false)return waiting(message,"Waiting for the Death Strike saving throw.");
     if(isManual(message))return waiting(message,"Manual card interaction stopped this workflow.");
     if(message.getFlag(MODULE_ID,"damageUndoHistory")?.length&&!message.getFlag(MODULE_ID,"automaticDamageDone"))return waiting(message,"HP changes were already applied manually.");
     const origin=originOf(message);
@@ -266,7 +267,7 @@ async function receiveAnimationRequest(packet) {
 }
 function scheduleRiderDamage(message) {
     const usage=message?.type==="usage"?message:originOf(message);
-    const link=usage?.getFlag?.(MODULE_ID,"grappleStrike")??usage?.getFlag?.(MODULE_ID,"stunningStrike")??usage?.getFlag?.(MODULE_ID,"maneuverStrike");
+    const link=usage?.getFlag?.(MODULE_ID,"grappleStrike")??usage?.getFlag?.(MODULE_ID,"stunningStrike")??usage?.getFlag?.(MODULE_ID,"maneuverStrike")??usage?.getFlag?.(MODULE_ID,"deathStrikeSave");
     if(link?.damageId){const damage=game.messages.get(link.damageId);if(damage)schedule(damage);}
 }
 function schedule(message) {

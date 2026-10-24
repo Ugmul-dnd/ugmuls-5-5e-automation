@@ -1,5 +1,35 @@
 # Changelog
 
+## Unreleased
+
+- Add Death Strike to first-round Sneak Attack hits. Prompt the native Constitution save without its duplicate Sneak Attack damage, block automatic/manual HP application until the outcome and animations resolve, and seed double damage on failure. Preserve original dice, criticals, Assassinate damage, reactive halving and Apply/Undo.
+
+- Fix player Envenom prompts waiting for GM-only animation acknowledgements. Await player-local save dice while GM application retains cross-client synchronization, and explicitly link automatic/manual Envenom damage to its Poison save and recorded targets. Preserve helper snapshots, resistance bypass and pending-card completion.
+
+- Add Assassin Envenom Weapons to initial and end-turn Cunning Strike Poison saves. Failed saves prompt the native extra Poison damage on the same save workflow; successful saves do not prompt damage and repeat-save success still clears Poison. Ignore only Poison resistance, preserve immunity and native Apply/Undo, and correct the known book activity’s 2d8 default to the stated 2d6 on generated copies. Preserve customized damage formulas and the existing Poison die cost.
+
+- Add 2024 Assassinate: target-specific first-round Advantage against combatants that have not taken a turn, with AC5e cancellation; add native Rogue-level Surprising Strikes damage to confirmed Sneak Attack hits in round one. Preserve weapon damage type, native Initiative Advantage and fixed bonus critical policy, without extra resource use or movement/chat scans.
+
+- Label Evasion holders beside their names in qualifying pending and rolled save summaries, including grouped cards. Indicate when Incapacitated makes Evasion inactive without exposing save outcomes.
+
+- Show Uncanny Dodge controls and its applied summary only on damage cards, including grouped damage cards; omit them from attack cards.
+
+- Add Evasion for any actor owning the feature: qualifying Dexterity saves that normally deal half on success force per-target native multipliers of zero on success and half on failure. Preserve damage dice, native resistance/immunity handling, pending saves and Apply/Undo; exclude Incapacitated actors, other saves and non-half-on-success effects. Available under Common automation options.
+
+- Add Uncanny Dodge on confirmed incoming attack/damage cards. Consume the native feature’s tracked Reaction without item charges, set only the Rogue’s native damage multiplier to half, and preserve original dice, resistance handling, explicit multiplier overrides and Apply/Undo. Support GM/player ownership, grouped cards, duplicate-use guards and targeted shared refreshes; seeing the attacker is confirmed by the click.
+
+- Explicitly remove Devious Strikes Daze/Obscure at the end of the target’s next turn. Stamp each new/reapplied effect, repair expiry on native effect reuse, and recognize recorded save-card sources when older effects lack tracking flags. Preserve application-turn effects, Knock Out and unrelated conditions. Damage wake-up also recognizes older card-linked Knock Out effects without tracking flags.
+
+- Add owned Devious Strikes options to Cunning Strike configuration: Daze (2 Sneak Attack dice), Obscure (3) and Knock Out (6), with combined Improved Cunning Strike costs before critical scaling. Use native saves/effects after damage; Daze/Obscure end at target-next-turn end, and Knock Out repeats its Constitution save at turn end and ends on positive damage. Daze action choices remain table-managed.
+
+- Use the Prone icon on generated Cunning Strike Trip cards and their linked effect, distinguishing Trip from Poison without modifying the owned book feature.
+
+- Preserve the owned Cunning Strike source on temporary save helpers and recover Poison tracking from recorded save cards when older helper UUIDs cannot resolve. Repeat Constitution saves at target turn end use the original Rogue DC and remove Poison on success.
+
+- Refresh Cunning Strike selectors immediately when Sneak Attack is toggled manually. Default Sneak Attack on eligible finesse/ranged attacks when a conscious allied creature is within 5 feet of the recorded target and the attack has no effective Disadvantage. Use recorded source/target tokens, scene units/grid distance and large-token edges; keep manual choices and avoid movement hooks.
+
+- Add base Cunning Strike choices to Sneak Attack damage configuration for all Rogue subclasses: native dice costs before critical scaling, Poison/Trip saves after applied damage, Poison end-turn repeat saves and manual Withdraw movement. Support two distinct choices with Improved Cunning Strike, kit/size eligibility and duplicate guards. Devious Strikes and subclass extensions remain manual.
+
 ## v0.8.1 — Artificer & Paladin Automation (2026-10-24)
 
 ### Release highlights
