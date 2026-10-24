@@ -859,6 +859,7 @@ const MONSTER_DAMAGE_DEFAULTS={
   }
 };
 const MONSTER_ESCAPE_DEFAULTS={
+"genie-dao-crush":{name:"Elemental Smite — Dao’s Crush",enabled:true,attachment:"creature",sourceKind:"monsterEscape",sourceIdentifier:"elemental-smite",sourceSpellUuid:"Compendium.dnd-heroes-faerun.options.Item.hofOngElementalS",effectName:"Crushed (Grappled & Restrained)",effectId:"5eS5mKboaQxPHEJz",event:"turnStart",promptMode:"manual",escapeCheck:true,checkSkills:["acr","ath"],saveActivity:"Dao escape check",checkActivityId:"csOPXyBgbuK3D3wh",damageActivity:"",damageFormula:"",endOnSuccess:true,manualSaveLabel:"Use action — Escape Dao’s Crush",manualSaveNote:"Optional action: choose Strength (Athletics) or Dexterity (Acrobatics) against the Paladin’s recorded spell save DC. Success ends both Grappled and Restrained."},
 "mm-final-escape-1":{
   "name": "Aberrant Cultist - Tentacle Lash",
   "enabled": true,
@@ -1795,6 +1796,7 @@ const MONSTER_ESCAPE_DEFAULTS={
   }
 };
 const MONSTER_SAVE_DEFAULTS={
+"natures-wrath":{name:"Nature’s Wrath",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"natures-wrath",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbpdnNaturesWra",effectName:"Nature's Wrath",effectId:"EeHl1k3tizvxbdLY",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Save",saveActivityId:"SuusUi5JLqtcqLyj",saveAbility:"str",endOnSuccess:true},
 "mm-repeat-drone":{
   "name": "Chasme - Drone",
   "enabled": true,

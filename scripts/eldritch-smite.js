@@ -1,3 +1,4 @@
+const updateSmiteSlot=(actor,path,value)=>globalThis.Ugmuls55eAutomationResources?.updateSpellSlot?.(actor,path,value)??actor.update({[path]:value});
 const ID="ugmuls-5-5e-automation",selected=new WeakMap(),pending=new WeakMap(),reserved=new Map();
 const enabled=()=>game.settings.get(ID,"eldritchSmiteAutomation")===true;
 export const eldritchFeature=actor=>Array.from(actor?.items??[]).find(item=>item.type==="feat"&&
@@ -64,7 +65,7 @@ export async function commitEldritch(app,options) {
         const slot=pactSlot(actor),needed=1+(globalThis.Ugmuls55eAutomationSmite?.pendingPactCost?.(app)??0);
         if(!(slot?.value>=needed))throw Error("Not enough Pact Magic slots for the selected smites.");
         const value=Number(slot.value);
-        await actor.update({"system.spells.pact.value":value-1});restore=()=>actor.update({"system.spells.pact.value":value});
+        await updateSmiteSlot(actor,"system.spells.pact.value",value-1);restore=()=>updateSmiteSlot(actor,"system.spells.pact.value",value);
         if(turn)await saveUsedMarker(actor,{
             name:"Eldritch Smite - used",img:eldritchFeature(actor)?.img,disabled:false,transfer:false,
             system:{changes:[]},flags:{[ID]:{eldritchTurn:turn,eldritchCombat:game.combat?.id}}

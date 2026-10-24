@@ -17,7 +17,13 @@ export function isBardicInspireActivity(activity) {
 }
 
 export function healingBuffActivity(activity){return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
+export function manualBuffChoice(activity) { return (activity?.item?.identifier ?? activity?.item?.system?.identifier) === "aura-of-elemental-shielding" || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
 export function eligibleBuffActivity(activity) {
+    if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="avenging-angel"&&activity.id==="PUWfXLPucizXR8p0"&&game.settings.get(MODULE_ID,"avengingAngelAutomation")===true)return false;
+    // Dao is an immediate offensive condition, applied once by its dedicated workflow.
+    if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="elemental-smite" && activity.id==="rsaGenieDaoApply") return false;
+    // Elemental Shielding always requires a manual, mutually exclusive choice.
+    if (manualBuffChoice(activity)) return false;
     // Utility activities have no attack/save or damage/healing roll to resolve.
     return (activity?.type === "utility"||healingBuffActivity(activity)) && ["spell","feat"].includes(activity.item?.type) &&
         !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)) && !activity.target?.template?.type;
@@ -90,6 +96,7 @@ export async function applyBuffEffects(message) {
 }
 
 export function collapseAppliedBuffTray(message, html) {
+    if (manualBuffChoice(message?.getAssociatedActivity?.({scaled:true}))) return;
     if(message.getFlag?.(MODULE_ID,"effectApplyReopened")&&!message.getFlag?.(MODULE_ID,"outcomeEffectsApplied")&&!message.getFlag?.(MODULE_ID,"buffAutoApplied")) {
         const root=html instanceof HTMLElement?html:html?.[0];
         for(const tray of root?.querySelectorAll("effect-application")??[])tray.open=true;

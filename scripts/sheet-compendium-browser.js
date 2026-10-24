@@ -17,6 +17,44 @@ export function sheetBrowserOptions(actor,tab,spellLists=globalThis.dnd5e?.regis
     return {tab:spells?"spells":"physical",filters:{initial}};
 }
 
+const selecting=new Map(),adding=new Map();
+const spellKey=item=>item?.system?.identifier||item?.name?.trim().toLowerCase();
+export function sheetSpellSelectionOptions(actor){
+ const options=sheetBrowserOptions(actor,"spells");
+ return {...options,window:{title:"Add spells — "+actor.name},hint:"Select spells to add to "+actor.name+". Choose several, then confirm. Existing spells are skipped; new spells start unprepared.",selection:{min:1,max:null},filters:{...options.filters,locked:{documentClass:"Item",types:new Set(["spell"])}}};
+}
+export async function addSelectedSheetSpells(actor,uuids,{event=null}={}){
+ if(actor?.type!=="character"||!actor.isOwner)throw Error("Choose a character you own.");
+ // Serialize imports per actor so concurrent confirmation cannot create duplicates.
+ const previous=adding.get(actor.uuid)??Promise.resolve(),task=previous.catch(()=>{}).then(async()=>{
+  if(!actor.isOwner)throw Error("You no longer own this character.");
+  const sources=await Promise.all([...new Set(uuids)].map(uuid=>fromUuid(uuid)));
+  if(sources.some(item=>!item||item.type!=="spell"))throw Error("A selected spell is unavailable. No spells were added.");
+  const existing=new Set(Array.from(actor.itemTypes?.spell??[]).map(spellKey)),data=[];
+  for(const source of sources){const key=spellKey(source);if(existing.has(key))continue;existing.add(key);const row=game.items.fromCompendium(source);delete row._id;row.system??={};delete row.system.prepared;
+   CONFIG.Item.dataModels?.spell?.onDropCreate?.(event??{target:{closest:()=>null}},actor,row);
+   const matches=Array.from(actor.itemTypes?.class??[]).filter(cls=>globalThis.dnd5e?.registry?.spellLists?.forType?.("class",cls.identifier??cls.system?.identifier)?.identifiers?.has(source.system.identifier));
+   if(matches.length===1){const cls=matches[0],id=cls.identifier??cls.system.identifier;row.system.sourceItem="class:"+id;const casting=cls.spellcasting??cls.system.spellcasting;if(casting)row.system.method=casting.type??(casting.progression==="pact"?"pact":"spell");}
+   row.system.prepared=Number(row.system.level)===0?CONFIG.DND5E.spellPreparationStates.prepared.value:CONFIG.DND5E.spellPreparationStates.unprepared.value;data.push(row);
+  }
+  if(!actor.isOwner)throw Error("You no longer own this character.");
+  if(data.length)await actor.createEmbeddedDocuments("Item",data);return data.length;
+ });adding.set(actor.uuid,task);try{return await task;}finally{if(adding.get(actor.uuid)===task)adding.delete(actor.uuid);}
+}
+export function requestSheetSpellSelection(actor,Browser){
+ return new Promise((resolve,reject)=>{
+  const browser=new Browser(sheetSpellSelectionOptions(actor));let selected=null;
+  const hook=Hooks.on("dnd5e.compendiumBrowserSelection",(app,uuids)=>{if(app===browser)selected=new Set(uuids);});
+  browser.addEventListener("close",()=>{Hooks.off("dnd5e.compendiumBrowserSelection",hook);resolve(selected);},{once:true});
+  try{browser.render({force:true});}catch(error){Hooks.off("dnd5e.compendiumBrowserSelection",hook);reject(error);}
+ });
+}
+export async function selectSheetSpells(actor,Browser,{event=null}={}){
+ if(actor?.type!=="character"||!actor.isOwner)throw Error("Choose a character you own.");
+ if(selecting.has(actor.uuid))return selecting.get(actor.uuid);
+ const task=(async()=>{const result=await requestSheetSpellSelection(actor,Browser);if(!result?.size)return 0;const count=await addSelectedSheetSpells(actor,result,{event});ui.notifications.info(count?"Added "+count+" spell"+(count===1?"":"s")+" to "+actor.name+".":"The selected spells are already on this character.");return count;})();selecting.set(actor.uuid,task);try{return await task;}finally{if(selecting.get(actor.uuid)===task)selecting.delete(actor.uuid);}
+}
+
 const loading=new Map();
 export function preparationClasses(actor){return Array.from(actor.itemTypes?.class??[]).filter(cls=>(cls.identifier??cls.system?.identifier)!=="paladin"&&spellProfile(actor,cls)?.policy==="library");}
 export function configuredClassSpellLevel(actor,cls){
@@ -36,12 +74,12 @@ export async function loadUnpreparedSheetSpells(actor,classId){
     const task=preloadClassSpells(actor,{cls,maxLevel});loading.set(actor.uuid,task);
     try{return await task;}finally{if(loading.get(actor.uuid)===task)loading.delete(actor.uuid);}
 }
-export async function chooseSheetSpellAction(actor,Browser){
+export async function chooseSheetSpellAction(actor,Browser,context={}){
     const classes=preparationClasses(actor),e=foundry.utils.escapeHTML,available=classes.map(cls=>({cls,level:configuredClassSpellLevel(actor,cls)}));
     const first=available.find(entry=>entry.level>0);
-    const content='<p>Browse for individual spells, or load missing spells from your class list at currently configured spell-slot levels. Loaded spells start unprepared; existing spells are unchanged.</p><label>Class<select name="class">'+available.map(({cls,level})=>'<option value="'+e(cls.id)+'" '+(!level?'disabled':cls.id===first?.cls.id?'selected':'')+'>'+e(cls.name)+(level?' — spell levels 1–'+level:' — no configured slots')+'</option>').join('')+'</select></label>';
+    const content='<p>Select one or more spells in the compendium, or load missing spells from your class list at currently configured spell-slot levels. Loaded spells start unprepared; existing spells are unchanged.</p><label>Class<select name="class">'+available.map(({cls,level})=>'<option value="'+e(cls.id)+'" '+(!level?'disabled':cls.id===first?.cls.id?'selected':'')+'>'+e(cls.name)+(level?' — spell levels 1–'+level:' — no configured slots')+'</option>').join('')+'</select></label>';
     const result=await foundry.applications.api.DialogV2.wait({classes:["rsa-add-spells"],position:{width:360},window:{title:"Add Spells"},content,rejectClose:false,buttons:[{action:"browse",label:"Browse Compendium",default:true,callback:()=>({action:"browse"})},{action:"load",label:"Load Unprepared Spells",disabled:!first,callback:(event,button,dialog)=>({action:"load",classId:dialog.element.querySelector('[name="class"]').value})}]});
-    if(result?.action==="browse")return new Browser(sheetBrowserOptions(actor,"spells")).render({force:true});
+    if(result?.action==="browse")return selectSheetSpells(actor,Browser,context);
     if(result?.action==="load"){const count=await loadUnpreparedSheetSpells(actor,result.classId);ui.notifications.info(count?"Added "+count+" missing class spell"+(count===1?"":"s")+", unprepared.":"Your available class spells are already loaded.");}
 }
 
@@ -61,12 +99,13 @@ export function handleSheetAdd(event) {
     const Browser=globalThis.dnd5e?.applications?.CompendiumBrowser;
     if(typeof Browser!=="function")return;
     event.preventDefault();event.stopImmediatePropagation();
-    if(["spells","spellbook"].includes(tab)&&game.settings.get(MODULE_ID,"sheetLoadUnpreparedSpells")===true&&preparationClasses(actor).length)return chooseSheetSpellAction(actor,Browser);
+    if(["spells","spellbook"].includes(tab)&&game.settings.get(MODULE_ID,"sheetLoadUnpreparedSpells")===true&&preparationClasses(actor).length)return chooseSheetSpellAction(actor,Browser,{event});
+    if(["spells","spellbook"].includes(tab))return selectSheetSpells(actor,Browser,{event});
     return new Browser(sheetBrowserOptions(actor,tab)).render({force:true});
 }
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"sheetAddCompendiumBrowser",{
     name:"Open Compendium Browser from Add Item",
-    hint:"Character Inventory and Spells Add Item buttons open the matching compendium browser tab. Spells preselect the character's class spell lists; filters remain editable.",
+    hint:"Character Inventory and Spells Add Item buttons open the matching compendium browser tab. Spells preselect the character's class lists and offer multi-select to add spells without dragging; filters remain editable.",
     scope:"world",config:true,type:Boolean,default:true
 }));
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"sheetLoadUnpreparedSpells",{name:"Offer Load Unprepared Class Spells",hint:"Spell Add/New buttons offer Browse Compendium or loading missing spells for full-list preparation classes. Requires configured spell slots and enabled Add Item compendium navigation.",scope:"world",config:true,type:Boolean,default:true}));

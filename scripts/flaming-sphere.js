@@ -28,7 +28,7 @@ export async function createFlamingSphereRegion(token,options={},userId){
   const levels=Array.from(token.levels??[]);if(!levels.length&&canvas.scene===scene&&canvas.level?.id)levels.push(canvas.level.id);
   await scene.createEmbeddedDocuments("Region",[{
    name:spell.name+" - Emanation",color:creator.color,
-   shapes:[{type:"emanation",radius:5*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],
+   shapes:[{type:"emanation",gridBased:true,radius:5*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],
    attachment:{token:token.id},...(levels.length?{levels}:{}),restriction:{enabled:true,type:"move"},
    visibility:CONST.REGION_VISIBILITY.ALWAYS,highlightMode:"coverage",
    flags:{dnd5e:{item:spell.uuid,activity:save.uuid,origin:link.origin,spellLevel:Number(link.level)||spell.system.level},

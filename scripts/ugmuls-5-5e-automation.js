@@ -1,3 +1,17 @@
+import "./avenging-angel.js";
+import "./vow-of-enmity.js";
+import "./holy-nimbus.js";
+import "./sacred-weapon.js";
+import "./smite-protection.js";
+import "./elemental-rebuke.js";
+import "./genie-elemental-smite.js";
+import "./aura-grid.js";
+import "./genie-shielding.js";
+import "./paladin-auras.js";
+import "./arcane-firearm.js";
+import "./arcane-jolt.js";
+import "./flash-of-genius.js";
+import "./revenant-glare.js";
 import "./monster-swallow.js";
 import "./infernal-wounds.js";
 import "./monster-source-turn-damage.js";
@@ -6,7 +20,7 @@ import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
-// v0.8.0
+// v0.8.1
 // Foundry VTT v14 / D&D5e 6.0.5+ (tested with 6.0.6)
 //
 // Features:
@@ -42,7 +56,7 @@ const oncePerTurnHistory =
 
 
 console.log(
-    "Ugmuls 5.5e Automation | v0.8.0 JS loaded"
+    "Ugmuls 5.5e Automation | v0.8.1 JS loaded"
 );
 
 
@@ -877,7 +891,7 @@ Hooks.once("ready", () => {
         }).catch(err => console.error("Ugmuls 5.5e Automation | Confirmed target registration failed:", err));
     });
 
-    console.log("Ugmuls 5.5e Automation | Installing v0.8.0 Region hook");
+    console.log("Ugmuls 5.5e Automation | Installing v0.8.1 Region hook");
 
 
     // ========================================================
@@ -1474,6 +1488,6 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         }
     });
     console.log(
-        "Ugmuls 5.5e Automation | v0.8.0 Ready"
+        "Ugmuls 5.5e Automation | v0.8.1 Ready"
     );
 });

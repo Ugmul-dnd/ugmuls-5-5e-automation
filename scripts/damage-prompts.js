@@ -52,7 +52,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                 const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal,{preview:true})??brutal;
                 const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy,{preview:true})??frenzy;
-                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,divineFury,{preview:true})??divineFury;
+                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury,{preview:true})??divineFury;
+                const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt,{preview:true})??jolt;
+                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm,{preview:true})??firearm;
                 const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver,{preview:true})??maneuver;
                 const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,valor,{preview:true})??valor;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
@@ -67,6 +69,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 finally {this._rsaPreview=false;}
             }
             _finalizeRolls(action) {
+                if(kind === "attack")globalThis.Ugmuls55eAutomationVow?.validateVowAttack(this);
                 if(kind==="damage"&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)===false)return [];
                 const rolls=super._finalizeRolls(action);
                 if(kind === "damage") {
@@ -82,7 +85,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                     const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal)??brutal;
                     const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy)??frenzy;
-                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,divineFury)??divineFury;
+                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury)??divineFury;
+                    const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt)??jolt;
+                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm)??firearm;
                     const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver)??maneuver;
                     const stunning=globalThis.Ugmuls55eAutomationStunning?.finalizeStunning(this,valor)??valor;
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
@@ -105,6 +110,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.focusMasteryAttackButtons(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.addRecklessButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationBrutal?.addBrutalButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationSacredWeapon?.addSacredWeaponButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationVow?.addVowButton(this);
                 if(kind === "damage") {
                     // Extra rider rows are previews, not separate native configuration entries.
                     for(const [index,row] of Array.from(this.element.querySelectorAll(".formulas > li")).entries()) {
@@ -122,6 +129,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationEldritch?.addEldritchChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFrenzy?.addFrenzyChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDivineFury?.addDivineFuryChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBattleMaster?.addManeuverChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationValor?.addValorOffenseChoice(this);
@@ -157,9 +166,13 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,options);
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,options);
                         await globalThis.Ugmuls55eAutomationBrutal?.commitBrutalEffects(this,options);
+                        await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,options);
+                        await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,{});
+                        await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,{});
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,{});
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,{});
                         await globalThis.Ugmuls55eAutomationGrapple?.commitGrapple(this,{});
@@ -241,16 +254,50 @@ export function promptPublishedAttack(attack){
     const usage=typeof reference==="string"?game.messages.get(reference.replace(/^ChatMessage\./,"")):reference;
     if(usage)return promptDamage(attack.getAssociatedActivity?.(),usage,"attack",attack);
 }
+// Seed the automatic prompt once from its exact confirmed attack. Dialog choices
+// and AC5e no-critical conditions remain free to change the result afterwards.
+export function preserveRollSpeaker(config,message){
+ const activity=config.subject,actor=activity?.actor??activity?.item?.actor;if(!actor)return;
+ const scene=globalThis.canvas?.scene;if(!scene)return;
+ const matches=token=>token?.actor&&(token.actor===actor||token.actor.uuid&&token.actor.uuid===actor.uuid)&&token.parent?.id===scene.id;
+ const resolve=speaker=>speaker?.token&&(!speaker.scene||speaker.scene===scene.id)?scene.tokens?.get?.(speaker.token):null;
+ const current=config.speaker,recorded=message?.data?.speaker;
+ let token=[resolve(current),resolve(recorded)].find(matches);
+ if(!token){const usage=activity.getUsageToken?.();token=usage?.document??usage;if(!matches(token))token=null;}
+ if(!token){const own=actor.token?.document??actor.token;if(matches(own))token=own;}
+ if(!token){const active=Array.from(actor.getActiveTokens?.(false,true)??[],t=>t.document??t).filter(matches);if(active.length===1)token=active[0];}
+ if(!token)return;
+ config.speaker={...recorded,...current,scene:scene.id,token:token.id,actor:actor.id};
+ if(message){message.data??={};message.data.speaker={...recorded,...config.speaker};}
+}
+export function recommendAttackCritical(config,dialog,attack){
+ if(attack?.rolls?.[0]?.isCritical!==true||config.critical?.allow===false)return;
+ config.isCritical=true;dialog.options={...dialog.options,defaultButton:"critical"};
+ for(const roll of config.rolls??[]){roll.options??={};roll.options.isCritical=true;}
+ if(game.modules?.get?.("automated-conditions-5e")?.active){
+  const seed=options=>{options["automated-conditions-5e"]={...options["automated-conditions-5e"],baseCritical:true};};
+  config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
+ }
+}
+export function damagePromptRecipient(activity,message,region=false){
+ const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave");
+ if(rebuke){const user=game.users.get?.(rebuke.userId),actor=activity.actor??activity.item?.actor;
+  if(user?.active&&(user.isGM||actor?.testUserPermission?.(user,"OWNER")))return user;
+  return game.users.activeGM??message.author;
+ }
+ return region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
+}
 export async function promptDamage(activity, message, kind = "save", attack = null) {
     const setting = kind === "attack" ? "promptDamageOnHit" : "promptDamageOnSave";
     if (game.settings.get(MODULE_ID, setting) !== true || !activity?.damage?.parts?.length || !message?.id) return;
     const region=message.getFlag?.(MODULE_ID,"regionTriggered")===true||message.getFlag?.(MODULE_ID,"sharedCardPerTurn")===true;
-    const recipient=region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
+    const recipient=damagePromptRecipient(activity,message,region);
     if (recipient?.id !== game.user.id || !activity.item?.isOwner) return;
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     if (kind === "save" && (activity.type !== "save" || (!message.getFlag?.(MODULE_ID,"regionTriggered") && turnOnlyAura(activity)))) return;
     // Empty areas wait for their first recorded trigger, without consuming the prompt guard.
     if(kind === "save" && !message.system?.targets?.length)return;
+    if(message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&(message.system.targets??[]).some(target=>!["success","failure"].includes(message.system.outcomes?.get(target.token))))return;
     const key = `${kind}:${attack?.id ?? message.id}`;
     if (opened.has(key) || queued.has(key)) return;
     queued.add(key);
@@ -273,6 +320,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (typeof activity.onChatAction === "function") {
             const hook = Hooks.on("dnd5e.preRollDamageV2", (config, dialog, damageMessage) => {
                 if (config.subject?.uuid !== activity.uuid) return;
+                recommendAttackCritical(config,dialog,attack);
                 Object.assign(dialog, configurePromptDialog("damage",dialog));
                 if (damageMessage) {
                     damageMessage.data ??= {};damageMessage.data.system ??= {};
@@ -313,14 +361,17 @@ Hooks.once("ready", () => {
     globalThis.Ugmuls55eAutomationDamage = {promptDamage,configurePromptDialog,waitForAttackAnimation,addDamageChoice};
     // Region activity execution retains its original authority. Only the
     // damage dialog is routed to a connected owner of the casting actor.
-    const promptRegionDamage=message=>{
-        if(message.type!=="usage"||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")))return;
-        setTimeout(()=>promptDamage(message.getAssociatedActivity?.(),message).catch(report),0);
+    const promptRegionDamage=card=>{
+        const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
+        const message=card.type==="usage"?card:origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")?origin:null;
+        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")))return;
+        setTimeout(()=>promptDamage(message.getAssociatedActivity?.({scaled:true}),message).catch(report),0);
     };
     Hooks.on("createChatMessage",promptRegionDamage);
     Hooks.on("createChatMessage",card=>{setTimeout(()=>promptPublishedAttack(card)?.catch(report),0);});
     Hooks.on("updateChatMessage",card=>{setTimeout(()=>promptPublishedAttack(card)?.catch(report),0);});
     Hooks.on("dnd5e.preRollDamageV2",linkDamageAttack);
+    Hooks.on("dnd5e.preRollDamageV2",(config,_dialog,message)=>preserveRollSpeaker(config,message));
     Hooks.on("updateChatMessage",promptRegionDamage);
     // Heal activities already open their native roll after use. Reuse that
     // dialog rather than opening a second one, with recorded/self targets.
@@ -344,7 +395,8 @@ Hooks.once("ready", () => {
             if(document?.actor&&document.uuid)message.data.system.targets=[describeTarget(document)];
         }
     });
-    Hooks.on("dnd5e.preRollAttackV2", (config, dialog) => {
+    Hooks.on("dnd5e.preRollAttackV2", (config, dialog, message) => {
+        preserveRollSpeaker(config,message);
         const configure = dialog.configure;
         Object.assign(dialog, configurePromptDialog("attack",dialog));
         if (configure === false) dialog.configure = false;

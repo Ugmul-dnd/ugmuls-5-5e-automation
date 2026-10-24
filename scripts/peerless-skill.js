@@ -79,7 +79,7 @@ export function renderPeerless(message,html){
         if(controls.childNodes.length)entry.root.append(controls);
     }
 }
-function refresh(document){globalThis.Ugmuls55eAutomationChatRefresh?.request("peerless",document);}
+function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("peerless",document,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"peerlessSkillAutomation",{name:"Peerless Skill Assistance",hint:"Offer Peerless Skill on the Bard's own failed attacks and ability checks. Preserve existing rolls and spend Bardic Inspiration only if the result becomes a success. Checks without a recorded DC request it before rolling.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
     Hooks.on("dnd5e.renderChatMessage",renderPeerless);Hooks.on("updateItem",refresh);
