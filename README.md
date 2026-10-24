@@ -6,15 +6,15 @@ Configurable spell regions and combat assistance for D&D5e in Foundry Virtual Ta
 
 ## Supported content
 
-Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content.
+Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content. New Artificer and Genie features also use matching official Eberron and Heroes of Faerûn content.
 
 Most features rely on the spells, class features, activities, chat cards, names, identifiers, and associated Active Effects supplied by that content. Having the expected name alone may not be enough if the item's activities or effects are configured differently.
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 0.8.0
+## Version 0.8.1
 
-Expanded spell and monster effects, recurring damage, escape actions, hidden monster auras, infernal wounds and swallowing. See [0.8.0 release notes](RELEASE-NOTES-0.8.0.md) for highlights and updating instructions.
+Artificer support, unified Paladin auras and oath features, batch spell selection, clearer Smite controls and smoother combat workflows. See [0.8.1 release notes](RELEASE-NOTES-0.8.1.md) for highlights and updating instructions.
 
 ## Main features
 
@@ -29,6 +29,8 @@ Expanded spell and monster effects, recurring damage, escape actions, hidden mon
 - **Attack assistance:** retroactive Advantage/Normal/Disadvantage and Normal/Critical controls, Shield assistance, Reckless Attack, Savage Attacker, Sneak Attack, and combat reaction, bonus-action, and spell-slot tracking.
 - **Bard assistance:** source-tracked Bardic Inspiration, Cutting Words, Peerless Skill, and Valor Combat Inspiration for initial damage and reaction defense.
 - **Unified Paladin auras:** one attached region combines supported passive class/oath benefits, grows with Paladin level, and applies only changed buffs. Includes Genie resistance selection, overlapping Protection choice and Glory’s lingering speed benefit. Disable old Aura Effects Paladin emitters before enabling this replacement. See [Paladin aura setup](docs/paladin-auras.md).
+- **Paladin oath features:** Genie Elemental Smite and Rebuke; Ancients Nature’s Wrath repeat saves; Devotion Sacred Weapon, Smite of Protection and Holy Nimbus; Vengeance Vow of Enmity and Avenging Angel. See the [release notes](RELEASE-NOTES-0.8.1.md) for controls and manual-rule limits.
+- **Artificer assistance:** Flash of Genius on failed checks/saves, destructive Arcane Jolt using the Artificer’s resources for a linked Steel Defender, and optional Arcane Firearm spell damage.
 - **Barbarian assistance:** Zealot Divine Fury, Fanatical Focus, Zealous Presence, and Brutal Strike with improved effect choices, native effects, Sundered attack bonuses, and Staggered save disadvantage.
 - **Unarmed combat:** Stunning Strike with native saves and Undo support; Grapple / Prone options on action-based unarmed hits, independent saving throws using the target’s better save, and Grappler’s once-per-turn damage benefit and source-specific attack advantage.
 - **Select several spells from the sheet:** Add Spell opens the native compendium with the character’s class lists preselected and a selection panel. Check spells and confirm once to add them without dragging; existing spells are skipped and new leveled spells start unprepared.
@@ -43,6 +45,8 @@ Expanded spell and monster effects, recurring damage, escape actions, hidden mon
 - **Interface conveniences:** compact chat cards, remembered roll-popup positions, chat scrolling improvements, and character-sheet Add Item buttons that open the matching compendium browser tab.
 
 Use the module's tabbed options interface to enable the features that suit your table. The Automations section groups options into Unique Classes, Weapon Masteries, Feats, Common, and Spells. Automatic damage and effect application are optional; manual card controls remain available.
+
+Aura emanations default to **Grid Shaped**. Match scene grid spacing and distance per square to the map. Testing uses alternating **1–2–1 diagonals**; other diagonal rules are unverified. Paladin aura outlines appear only on the Regions layer.
 
 ## Compatibility
 
@@ -84,7 +88,7 @@ After updating, **restart Foundry and hard-refresh connected browsers** to load 
 
 ### Creature effect triggers
 
-The **Trigger Automation Library** starts with Searing Smite. Its Seared effect keeps the native book data and gains the missing turn-start damage/save sequence. Damage uses the original cast level, followed by a Constitution save at the recorded DC; success removes Seared after animations. The connected caster owner receives the damage prompt, with active-GM fallback. Monster saves use the existing NPC save setting. Damage application follows existing automatic/manual damage settings. Removing, disabling, or expiring Seared stops future triggers.
+The **Trigger Automation Library** includes supported spell and monster recipes, including Searing Smite. Its Seared effect keeps the native book data and gains the missing turn-start damage/save sequence. Damage uses the original cast level, followed by a Constitution save at the recorded DC; success removes Seared after animations. The connected caster owner receives the damage prompt, with active-GM fallback. Monster saves use the existing NPC save setting. Damage application follows existing automatic/manual damage settings. Removing, disabling, or expiring Seared stops future triggers.
 
 Open **Module Options → Automations → Spells → Creature Effect Trigger Library**, or the module’s Trigger Automation Library settings menu. The library lists entries in a table. Choose **View/Edit** to open an entry in its own window. Use **Add New Effect** to create a world entry from a dropped spell or spell UUID. In View/Edit, **Choose Source** opens the same separate source picker to populate effect/activity dropdowns. Information buttons explain each section, and a preview summarizes the sequence. Native cast-level damage is the default; Custom damage reveals an optional fixed-formula override. Choose None to skip the saving throw. The GM can enable/disable the entry, choose turn start/end, match customized effect/activity names, override the damage formula, and restore defaults. World overrides survive module updates. Region recipes now use a module-owned library with local overrides; movement processing is preserved. Newly applied supported effects are registered; cast Searing Smite again to test effects created before this update.
 
@@ -94,4 +98,4 @@ Open **Module Options → Automations → Spells → Creature Effect Trigger Lib
 
 ### Region spell library
 
-Seven current Region recipes are included automatically. Local changes are saved as world overrides, and custom entries remain separate. The manager shows each entry’s source and offers Reset to Default for built-ins. Existing tables migrate on the next GM load with their original settings and a backup preserved. See [Region spell library](STARTER-SPELLS.md) for coverage and migration details.
+Built-in Region recipes are included automatically. Local changes are saved as world overrides, and custom entries remain separate. The manager shows each entry’s source and offers Reset to Default for built-ins. Existing tables migrate on the next GM load with their original settings and a backup preserved. See [Region spell library](STARTER-SPELLS.md) for coverage and migration details.

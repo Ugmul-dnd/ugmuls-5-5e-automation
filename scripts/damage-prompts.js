@@ -69,6 +69,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 finally {this._rsaPreview=false;}
             }
             _finalizeRolls(action) {
+                if(kind === "attack")globalThis.Ugmuls55eAutomationVow?.validateVowAttack(this);
                 if(kind==="damage"&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)===false)return [];
                 const rolls=super._finalizeRolls(action);
                 if(kind === "damage") {
@@ -109,6 +110,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.focusMasteryAttackButtons(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.addRecklessButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationBrutal?.addBrutalButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationSacredWeapon?.addSacredWeaponButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationVow?.addVowButton(this);
                 if(kind === "damage") {
                     // Extra rider rows are previews, not separate native configuration entries.
                     for(const [index,row] of Array.from(this.element.querySelectorAll(".formulas > li")).entries()) {
@@ -276,16 +279,25 @@ export function recommendAttackCritical(config,dialog,attack){
   config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
  }
 }
+export function damagePromptRecipient(activity,message,region=false){
+ const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave");
+ if(rebuke){const user=game.users.get?.(rebuke.userId),actor=activity.actor??activity.item?.actor;
+  if(user?.active&&(user.isGM||actor?.testUserPermission?.(user,"OWNER")))return user;
+  return game.users.activeGM??message.author;
+ }
+ return region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
+}
 export async function promptDamage(activity, message, kind = "save", attack = null) {
     const setting = kind === "attack" ? "promptDamageOnHit" : "promptDamageOnSave";
     if (game.settings.get(MODULE_ID, setting) !== true || !activity?.damage?.parts?.length || !message?.id) return;
     const region=message.getFlag?.(MODULE_ID,"regionTriggered")===true||message.getFlag?.(MODULE_ID,"sharedCardPerTurn")===true;
-    const recipient=region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
+    const recipient=damagePromptRecipient(activity,message,region);
     if (recipient?.id !== game.user.id || !activity.item?.isOwner) return;
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     if (kind === "save" && (activity.type !== "save" || (!message.getFlag?.(MODULE_ID,"regionTriggered") && turnOnlyAura(activity)))) return;
     // Empty areas wait for their first recorded trigger, without consuming the prompt guard.
     if(kind === "save" && !message.system?.targets?.length)return;
+    if(message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&(message.system.targets??[]).some(target=>!["success","failure"].includes(message.system.outcomes?.get(target.token))))return;
     const key = `${kind}:${attack?.id ?? message.id}`;
     if (opened.has(key) || queued.has(key)) return;
     queued.add(key);
@@ -349,9 +361,11 @@ Hooks.once("ready", () => {
     globalThis.Ugmuls55eAutomationDamage = {promptDamage,configurePromptDialog,waitForAttackAnimation,addDamageChoice};
     // Region activity execution retains its original authority. Only the
     // damage dialog is routed to a connected owner of the casting actor.
-    const promptRegionDamage=message=>{
-        if(message.type!=="usage"||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")))return;
-        setTimeout(()=>promptDamage(message.getAssociatedActivity?.(),message).catch(report),0);
+    const promptRegionDamage=card=>{
+        const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
+        const message=card.type==="usage"?card:origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")?origin:null;
+        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")))return;
+        setTimeout(()=>promptDamage(message.getAssociatedActivity?.({scaled:true}),message).catch(report),0);
     };
     Hooks.on("createChatMessage",promptRegionDamage);
     Hooks.on("createChatMessage",card=>{setTimeout(()=>promptPublishedAttack(card)?.catch(report),0);});

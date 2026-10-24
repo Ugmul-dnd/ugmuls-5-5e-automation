@@ -19,6 +19,7 @@ export function isBardicInspireActivity(activity) {
 export function healingBuffActivity(activity){return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
 export function manualBuffChoice(activity) { return (activity?.item?.identifier ?? activity?.item?.system?.identifier) === "aura-of-elemental-shielding" || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
 export function eligibleBuffActivity(activity) {
+    if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="avenging-angel"&&activity.id==="PUWfXLPucizXR8p0"&&game.settings.get(MODULE_ID,"avengingAngelAutomation")===true)return false;
     // Dao is an immediate offensive condition, applied once by its dedicated workflow.
     if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="elemental-smite" && activity.id==="rsaGenieDaoApply") return false;
     // Elemental Shielding always requires a manual, mutually exclusive choice.

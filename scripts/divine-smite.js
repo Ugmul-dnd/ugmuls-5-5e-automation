@@ -1,3 +1,4 @@
+const updateSmiteSlot=(actor,path,value)=>globalThis.Ugmuls55eAutomationResources?.updateSpellSlot?.(actor,path,value)??actor.update({[path]:value});
 const ID="ugmuls-5-5e-automation";
 const selections=new WeakMap(),pending=new WeakMap(),reserved=new Map(),queuedFollowups=new WeakMap(),queuedActors=new Map();
 const turn=()=>game.combat?.started?`${game.combat.id}:${game.combat.round}:${game.combat.turn}`:null;
@@ -87,18 +88,33 @@ export function addSmiteChoice(app) {
         key:"smite",label:"Smite",used,value:false,disabled:used||!resources.length,change(){}
     });
     if(!group)return;group.dataset.rsaSmite="";
-    // Replace the shared Yes/No select with explicit resource choices.
+    // Keep the committed selection format stable; split only the presentation.
     const old=group.querySelector('select'),select=document.createElement("select");
-    select.setAttribute("aria-label","Smite spell and resource");select.disabled=used||!resources.length;
-    for(const choice of [{value:"no",label:used?"No - Already Used":"No"},...resources]) {
-        const option=document.createElement("option");option.value=choice.selection??choice.value;option.textContent=choice.label;select.append(option);
+    select.setAttribute("aria-label","Smite spell");select.disabled=used||!resources.length;
+    const spells=preparedSmiteSpells(actor).filter(spell=>resources.some(choice=>choice.spell===spell));
+    for(const choice of [{id:"no",name:used?"No - Already Used":"No"},...spells]){
+        const option=document.createElement("option");option.value=choice.id;option.textContent=choice.name;select.append(option);
     }
-    select.value=!used&&resources.some(resource=>resource.selection===selections.get(app))?selections.get(app):"no";
-    select.addEventListener("change",event=>{event.stopPropagation();selections.set(app,select.value);app.rebuild();});old.replaceWith(select);
+    const levelGroup=document.createElement("div");levelGroup.className="form-group rsa-damage-choice";levelGroup.dataset.rsaSmiteLevel="";
+    const label=document.createElement("label");label.textContent="Smite Level";
+    const fields=document.createElement("div");fields.className="form-fields";
+    const levels=document.createElement("select");levels.setAttribute("aria-label","Smite Level");fields.append(levels);levelGroup.append(label,fields);group.insertAdjacentElement("afterend",levelGroup);
+    const populate=(spellId,preferred)=>{
+        levels.replaceChildren();
+        const choices=resources.filter(choice=>choice.spell.id===spellId).sort((a,b)=>(a.value==="free"?-1:b.value==="free"?1:a.level-b.level));
+        levels.disabled=used||!choices.length;
+        if(levels.disabled){const blank=document.createElement("option");blank.value="";blank.textContent="";levels.append(blank);levels.value="";selections.delete(app);return;}
+        for(const choice of choices){const option=document.createElement("option");option.value=choice.selection;option.textContent=choice.value==="free"?"Free":choice.label;levels.append(option);}
+        const chosen=choices.find(choice=>choice.selection===preferred)??choices[0];levels.value=chosen.selection;selections.set(app,chosen.selection);
+    };
+    const current=!used?resources.find(choice=>choice.selection===selections.get(app)):null;
+    select.value=current?.spell.id??"no";populate(select.value,current?.selection);
+    select.addEventListener("change",event=>{event.stopPropagation();populate(select.value);app.rebuild();});
+    levels.addEventListener("change",event=>{event.stopPropagation();selections.set(app,levels.value);app.rebuild();});old.replaceWith(select);
     const caption=group.querySelector("label");
     const name=document.createElement("span");name.textContent="Smite";
     name.className=smiteBonus(smiteTarget(app))?"rsa-smite-holy":"";
-    const explanation="Choose one prepared Smite spell and its resource. Divine Smite adds an extra 1d8 against Fiends and Undead. Smite damage joins the weapon roll. Saves use a separate card; effects apply after a failed save, or directly when no save is required.";
+    const explanation="Choose one prepared Smite spell, then its cast level. Free or the lowest available slot is selected first; choose a higher slot to upcast. Divine Smite adds an extra 1d8 against Fiends and Undead. Smite damage joins the weapon roll. Saves use a separate card; effects apply after a failed save, or directly when no save is required.";
     const info=document.createElement("i");info.className="fa-solid fa-circle-info rsa-rider-info";
     info.tabIndex=0;info.setAttribute("role","img");info.setAttribute("aria-label",explanation);
     info.setAttribute("data-tooltip",explanation);
@@ -151,7 +167,7 @@ export async function commitSmite(app,options) {
             await item.update({[path]:spent+1});rollback=()=>item.update({[path]:spent});
         } else {
             const path=`system.spells.${choice.value}.value`,value=Number(actor.system.spells[choice.value].value);
-            await actor.update({[path]:value-1});rollback=()=>actor.update({[path]:value});
+            await updateSmiteSlot(actor,path,value-1);rollback=()=>updateSmiteSlot(actor,path,value);
         }
         const bonus=await globalThis.Ugmuls55eAutomationResources?.markBonusAction(actor);
         if(bonus)markers.push(bonus);

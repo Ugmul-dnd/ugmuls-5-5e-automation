@@ -1,4 +1,4 @@
-# Shared helper-card lookup optimization (0.8.1 development)
+# Shared helper-card lookup optimization (0.8.1)
 
 The 2026-10-19 damage-confirmation trace showed repeated temporary item construction/preparation beneath associated-item/activity lookups, alongside chat layout, effect-panel and dice work. This change targets that repeated preparation without altering workflow scheduling.
 

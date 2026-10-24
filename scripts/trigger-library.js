@@ -1796,6 +1796,7 @@ const MONSTER_ESCAPE_DEFAULTS={
   }
 };
 const MONSTER_SAVE_DEFAULTS={
+"natures-wrath":{name:"Nature’s Wrath",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"natures-wrath",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbpdnNaturesWra",effectName:"Nature's Wrath",effectId:"EeHl1k3tizvxbdLY",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Save",saveActivityId:"SuusUi5JLqtcqLyj",saveAbility:"str",endOnSuccess:true},
 "mm-repeat-drone":{
   "name": "Chasme - Drone",
   "enabled": true,

@@ -69,7 +69,7 @@ export function bindFuryTargets(root,choices){
 export async function chooseTargets(card,context,option){
  if(option==="dao")return context.targets;
  if(option==="djinni")return [];
- const choices=(option==="efreeti"?furyEnemies(card,context.actor):genieNearby(card,context.actor,10)).filter(t=>!context.targets.some(target=>target.token===t.uuid));
+ const choices=(option==="efreeti"?furyEnemies(card,context.actor):genieNearby(card,context.actor,10)).filter(t=>t.actor?.uuid!==context.actor.uuid&&!context.targets.some(target=>target.token===t.uuid));
  if(option==="efreeti"&&!choices.length)return context.targets;
  const esc=s=>foundry.utils.escapeHTML(String(s));
  const content='<p>'+ (option==="efreeti"?'Choose the second creature within 30 feet of the Paladin.':'Choose additional creatures in your 10-foot emanation. The Divine Smite target is included.')+'</p>'+choices.map((t,i)=>'<label style="display:block"><input type="'+(option==="efreeti"?'radio':'checkbox')+'" name="genie-target" value="'+i+'"> '+esc(t.name)+'</label>').join('');
@@ -77,7 +77,7 @@ export async function chooseTargets(card,context,option){
  if(!selected)return null;if(option==="efreeti"&&selected.length!==1)throw Error("Choose one second creature.");
  // Recheck range after the choice; do not spend a use on stale selections.
  const allowed=new Set((option==="efreeti"?furyEnemies(card,context.actor):genieNearby(card,context.actor,10)).map(t=>t.uuid));
- if(selected.some(t=>!allowed.has(t.uuid)))throw Error("A chosen creature is no longer in range or visible.");
+ if(selected.some(t=>t.actor?.uuid===context.actor.uuid||!allowed.has(t.uuid)))throw Error("A chosen creature is no longer in range or visible.");
  return [...context.targets,...selected.map(describe)];
 }
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
@@ -147,6 +147,7 @@ export async function applyDaoCrush(card){
   const applied=await globalThis.Ugmuls55eAutomationEffectUndo.apply(card,card,effect,actor,tray);
   if(applied)await globalThis.Ugmuls55eAutomationRecurring?.registerRecurringEffect(applied,{spell:feature,level:0,sourceCard:card});
   await card.setFlag(ID,"genieDaoApplied",true);
+  await card.setFlag(ID,"outcomeEffectsApplied",true);
  }finally{applying.delete(card.id);}
 }
 export function renderElementalSmite(message,html){

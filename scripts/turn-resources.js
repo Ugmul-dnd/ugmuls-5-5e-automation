@@ -1,3 +1,13 @@
+const castingSlotUpdates=new WeakMap();
+export async function updateSpellSlot(actor,path,value){
+ if(!/^system\.spells\.(spell[1-9]|pact)\.value$/.test(path)||!Number.isFinite(value))throw Error("Invalid spell-slot resource update.");
+ if(!game.modules?.get?.("monks-combat-details")?.active)return actor.update({[path]:value});
+ let state=castingSlotUpdates.get(actor);
+ if(!state){state={count:0,own:Object.hasOwn(actor,"_castingSpell"),previous:actor._castingSpell};castingSlotUpdates.set(actor,state);}
+ state.count++;actor._castingSpell=true;
+ try{return await actor.update({[path]:value});}
+ finally{if(--state.count===0){if(state.own)actor._castingSpell=state.previous;else delete actor._castingSpell;castingSlotUpdates.delete(actor);}}
+}
 const ID="ugmuls-5-5e-automation";
 const creating=new Map();
 const definitions={bonus:{name:"Bonus Action - used",flag:"bonusActionUsed",setting:"bonusActionTracker",img:"icons/svg/upgrade.svg"},
@@ -105,7 +115,7 @@ Hooks.once("init",()=>{
     game.settings.register(ID,"spellSlotTurnTracker",{name:"Spell Slot Casting Tracker",hint:"For player characters in active combat, Consumed Spell Slot tracks a slot spent casting a spell on the current combat turn and blocks another slot-funded spell that turn. Free casts and cantrips remain available. Clears when the turn changes.",scope:"world",config:true,type:Boolean,default:true});
 });
 Hooks.once("ready",()=>{
-    globalThis.Ugmuls55eAutomationResources={resourceUsed,resourceEffect,markResource,reuseMarker,
+    globalThis.Ugmuls55eAutomationResources={resourceUsed,resourceEffect,markResource,reuseMarker,updateSpellSlot,
         bonusActionUsed:actor=>resourceUsed(actor,"bonus"),hasCastWithSlot:actor=>resourceUsed(actor,"spell"),
         markBonusAction:(actor,options)=>markResource(actor,"bonus",options),markSpellCast:(actor,options)=>markResource(actor,"spell",options)};
     Hooks.on("dnd5e.activityConsumption",allowTurnResourceUse);

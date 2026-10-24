@@ -8,7 +8,7 @@ const flag = (doc, key) => doc?.getFlag?.(ID, key) ?? doc?.flags?.[ID]?.[key];
 const identifier = item => item?.identifier ?? item?.system?.identifier;
 const enabled = () => game.settings.get(ID, "paladinAuraAutomation") === true;
 const authority = () => game.user?.isGM && (!game.users.activeGM || game.users.activeGM.id === game.user.id);
-const featureKeys = new Set(["aura-of-protection", "aura-expansion", "aura-of-courage", "aura-of-devotion", "aura-of-warding", "aura-of-alacrity", "aura-of-elemental-shielding"]);
+const featureKeys = new Set(["aura-of-protection", "aura-expansion", "aura-of-courage", "aura-of-devotion", "aura-of-warding", "aura-of-alacrity", "aura-of-elemental-shielding", "smite-of-protection"]);
 export const elementalTypes = ["acid", "cold", "fire", "lightning", "thunder"];
 const values = collection => Array.from(collection?.values?.() ?? collection ?? []);
 export function auraFeature(actor, key) {
@@ -47,6 +47,7 @@ export function auraProfile(token) {
         bonus: Math.max(1, Number(actor.system?.abilities?.cha?.mod) || 0), active: !auraIncapacitated(actor),
         courage: level >= 10 && !!auraFeature(actor, "aura-of-courage"),
         devotion: level >= 7 && !!auraFeature(actor, "aura-of-devotion"),
+        coverHalf: level >= 15 && !!auraFeature(actor,"smite-of-protection") && values(actor.effects).some(effect=>rawActive(effect)&&flag(effect,"smiteProtectionAura")),
         alacrity: level >= 7 && !!auraFeature(actor, "aura-of-alacrity"), resistances};
 }
 export function auraAllied(source, target) {
@@ -128,7 +129,7 @@ export function aggregateAuraBenefits(actor, profiles) {
     if (protection) changes.push({key:"system.bonuses.abilities.save", value:String(protection.bonus), type:"add"});
     for (const value of resistances) changes.push({key:"system.traits.dr.value", value, type:"add"});
     for (const value of immunity) changes.push({key:"system.traits.ci.value", value, type:"add"});
-    return {changes, protection:protection?.actor.uuid ?? null, bonus:protection?.bonus ?? 0, resistances, immunity,
+    return {changes, statuses:available.some(p=>p.coverHalf)?["coverHalf"]:[], protection:protection?.actor.uuid ?? null, bonus:protection?.bonus ?? 0, resistances, immunity,
         sources:[...new Set(available.map(p => p.token.uuid))].sort()};
 }
 function changeSignature(changes) { return JSON.stringify(values(changes).map(c => ({key:c.key, type:c.type, value:String(c.value)}))); }
@@ -136,11 +137,11 @@ async function syncBuff(actor, scene, profiles) {
     const benefit = aggregateAuraBenefits(actor, profiles), effects = values(actor.effects).filter(ownedEffect), existing = effects[0];
     if (!benefit.changes.length) { if (effects.length) await actor.deleteEmbeddedDocuments("ActiveEffect", effects.map(e => e.id)); return; }
     const record = {...benefit, scene:scene.uuid}, data = {name:"Paladin Aura", img:"icons/magic/defensive/barrier-shield-dome-blue-purple.webp", type:"base", disabled:false, transfer:false, origin:benefit.protection,
-        system:{changes:benefit.changes, origin:{actor:benefit.protection}}, statuses:[], duration:{value:null, units:"seconds", expiry:null, expired:false},
+        system:{changes:benefit.changes, origin:{actor:benefit.protection}}, statuses:benefit.statuses, duration:{value:null, units:"seconds", expiry:null, expired:false},
         flags:{[ID]:{paladinAuraBuff:record}, autoanimations:{version:5, isEnabled:false, isCustomized:false, killAnim:true}}};
     if (effects.length > 1) await actor.deleteEmbeddedDocuments("ActiveEffect", effects.slice(1).map(e => e.id));
     if (!existing) await actor.createEmbeddedDocuments("ActiveEffect", [data]);
-    else if (existing.disabled || changeSignature(existing.system?.changes) !== changeSignature(data.system.changes) || ownedEffect(existing)?.scene !== scene.uuid || existing.origin !== benefit.protection || existing.system?.origin?.actor !== benefit.protection) await existing.update(data);
+    else if (existing.disabled || JSON.stringify(values(existing.statuses).sort()) !== JSON.stringify(data.statuses) || changeSignature(existing.system?.changes) !== changeSignature(data.system.changes) || ownedEffect(existing)?.scene !== scene.uuid || existing.origin !== benefit.protection || existing.system?.origin?.actor !== benefit.protection) await existing.update(data);
 }
 const combatStamp = (combat = game.combat) => combat?.started ? `${combat.id}:${combat.round}:${combat.turn}` : null;
 function ownAlacrity(actor) { return paladinLevel(actor) >= 7 && values(auraFeature(actor, "aura-of-alacrity")?.effects).some(e => rawActive(e) && (e.system?.changes ?? []).some(c => c.key === "system.attributes.movement.speed")); }

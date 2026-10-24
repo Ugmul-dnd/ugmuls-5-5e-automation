@@ -1,6 +1,50 @@
 # Changelog
 
-## Unreleased — 0.8.1 development
+## v0.8.1 — Artificer & Paladin Automation (2026-10-24)
+
+### Release highlights
+
+- Unified Paladin auras combine supported class and oath benefits in one attached, level-scaled Region, with local controls and source-specific cleanup.
+- New Paladin assistance covers Genie Elemental Smite/Rebuke and shielding choices, Ancients Nature’s Wrath repeat saves, Devotion Sacred Weapon/Smite of Protection/Holy Nimbus, and Vengeance Vow of Enmity/Avenging Angel.
+- Artificer Flash of Genius, destructive Arcane Jolt (including linked Steel Defenders), and Arcane Firearm join the native chat and roll workflow.
+- Add several class-filtered spells at once; choose Smite spells and cast levels in separate configuration rows.
+- Reduce redundant helper-card preparation and movement-driven reaction-card redraws; repair critical recommendations, target displays and Smite resource notifications.
+
+Restart Foundry and refresh all clients after updating. Disable old Aura Effects Paladin emitters before using the unified aura replacement. Aura emanations default to Grid Shaped; match scene grid spacing and distance to the map. Current testing uses alternating 1–2–1 diagonals. Local library overrides remain in control; apply fresh effects or recast features when testing changed tracking.
+
+### Detailed changes
+
+- Add Avenging Angel’s Frightful Aura to the unified Paladin aura. Preserve native ten-minute flight/hover, feature use, Bonus Action and Restore Use. Prompt enemy turn-start Wisdom saves; failed saves grant source-tagged Frightened for one minute or until damage and incoming attack Advantage through AC5e. Preserve unrelated fear, normal Disadvantage cancellation and GM/player damage cleanup.
+
+- Post a brief public notice before refreshed attacks when Sacred Weapon or Vow of Enmity is activated, naming the weapon/target and spent Channel Divinity use. Free Vow transfers announce the new target and preserved duration. Notices are posted once by the client handling the successful activation.
+
+- Add Vow of Enmity activation to weapon/unarmed attack configuration. Track one marked creature for one minute, integrate target-specific Advantage with AC5e, and preserve normal Disadvantage cancellation. Offer free transfer after the current mark reaches 0 HP without resetting duration, or spend another Channel Divinity use for a new Vow. Validate range, visibility, ownership, resources and stale attack prompts without movement-driven lookups.
+
+- Add Holy Nimbus as a temporary self activation using the existing Paladin aura. Preserve native feature/slot-restoration and Bonus Action handling; automate enemy turn-start Radiant damage, Holy Ward save Advantage against Fiend/Undead sources, and aura-radius bright sunlight illumination. Share reversible light ownership with Sacred Weapon so overlapping effects clean up correctly.
+
+- Add Sacred Weapon activation to equipped melee weapon attack configuration. Spend one Channel Divinity use, apply the native Devotion enchantment, and reopen native attack configuration with the bonus. A temporary actor effect controls the enchantment and 20/40-foot token light; disable/delete/expiry or unequipping removes the benefits, while restoring prior lighting without overwriting unrelated changes.
+
+- Explicitly expire Smite of Protection at the casting Paladin’s next turn start and resynchronize aura recipients immediately. Keep the benefit through other creatures’ turns and clear it when combat ends, rather than relying solely on native effect expiry.
+
+- Add Devotion’s Smite of Protection to the unified Paladin aura after Divine Smite, including the weapon-damage selector. Grant only the native coverHalf status to the Paladin and allies in range until the caster’s next turn starts; preserve other aura benefits and stronger cover. Simple Cover/AC5e own the cover calculations and bypass rules. No extra aura or flat AC/save bonus is added.
+
+- Add Nature’s Wrath end-of-turn Strength save automation to its native Restrained effect. Repeat saves use the recorded Paladin DC, consume no action or Channel Divinity, and remove the originating effect on success. Preserve the native initial save, duration and condition; add no extra action/turn restrictions.
+
+- Prevent Monk’s Combat Details from mistaking Smite slot spending/refunds for prepared-spell changes. Scope its existing casting marker to Divine/Eldritch Smite slot resource updates, restore prior marker state on success or failure, and retain genuine preparation-change enforcement.
+
+- Route Elemental Rebuke’s damage dialog to the connected owner/GM who clicked the reaction, even when the save card is created by the active GM. Wait for the attacker’s save outcome, open only on the designated client, and fall back to the active GM if that user disconnects.
+
+- Fix Elemental Rebuke reduction lookup after Foundry expands dotted token UUID flag keys. Store records under plain token IDs, support both legacy UUID formats, and refresh linked incoming damage cards on all clients when protection is recorded.
+
+- Show Elemental Rebuke’s reduction as the native target’s ½ damage selector, with explicit multiplier overrides and no double-halving when ½ is clicked. Replace the five element buttons with a compact damage-type dropdown and Use/Cancel popup.
+
+- Add Genie Elemental Rebuke assistance on confirmed incoming hit/damage cards. Choose an element, spend a native feature use and tracked combat Reaction, halve only the Paladin’s incoming damage through native application, and prompt the attacker’s native Dexterity save and elemental damage. Validate ownership and prevent duplicate use; preserve damage Undo/reapply and avoid movement refreshes.
+
+- Exclude the casting Paladin, including other tokens linked to that actor, from Fury and Surge additional-target choices and final selection validation.
+
+- Mark Dao’s Crush with the shared applied-effect completion state so its Effects section collapses after automatic application. Preserve Undo reopening the tray and manual reapplication collapsing it again, without automatically reapplying an undone effect.
+
+- Split weapon damage’s Smite configuration into one spell selector and a separate Smite Level row. Leave the level blank and disabled with no spell selected; default to a free use or the lowest available qualifying slot, with higher slots available for upcasting. Preserve resource spending, critical damage and follow-up saves/effects.
 
 - Sync Efreeti’s Fury’s enemy-only secondary-target picker with map targets. Hover highlights the token; selecting in the picker or targeting an eligible enemy on the map updates the other view. Remove dialog hooks/highlights on close. If no other visible enemy is within 30 feet, skip the picker and roll damage against the original target.
 
@@ -32,7 +76,7 @@
 
 - Show the granting Paladin as the source of unified aura buffs and lingering Alacrity. Repair existing owned buffs during synchronization, and update the source when the chosen Protection provider changes.
 
-- Add unified passive Paladin auras: one attached, invisible-by-default emanation follows native/level-based range and combines Protection, Courage, Devotion, Warding, Glory Alacrity and Genie Elemental Shielding. Use the source Paladin’s Charisma (minimum +1), avoid overlapping Protection stacking, pause while Incapacitated, and preserve native self effects and existing conditions. Add actor-window controls for source enable/visibility, Genie resistance and preferred Protection source. Batch committed movement checks, avoid writes when benefits remain unchanged, and decline duplicate Aura Effects emitters. Temporary oath powers and Channel Divinity remain separate.
+- Add unified passive Paladin auras: one attached, Regions-layer-only emanation follows native/level-based range and combines Protection, Courage, Devotion, Warding, Glory Alacrity and Genie Elemental Shielding. Use the source Paladin’s Charisma (minimum +1), avoid overlapping Protection stacking, pause while Incapacitated, and preserve native self effects and existing conditions. Add actor-window controls for source enable and preferred Protection source, with Genie resistance chosen from its native card. Batch committed movement checks, avoid writes when benefits remain unchanged, and decline duplicate Aura Effects emitters. Temporary oath powers and Channel Divinity remain separate.
 
 - Add optional Arcane Firearm to Artificer spell damage configuration. Confirm casting through the firearm, add a typed 1d8 bonus to one damage roll, and persist one use per cast across linked attacks/damage cards. Choose a damage type for mixed-damage spells; spend no charges and do not double the separately rolled bonus on critical hits. Exclude cannon/weapon attacks and other classes’ spells.
 

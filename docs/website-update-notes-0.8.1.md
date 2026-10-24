@@ -7,3 +7,5 @@ Pending for the next website update:
 - Explain that grid-shaped coverage follows scene distance rules, so incorrect map/grid spacing can change which creatures receive an aura.
 
 The changelog and Paladin aura guide already include this note. Website publication remains pending.
+
+Release copy and feature coverage are prepared in RELEASE-NOTES-0.8.1.md. The website update should also include Artificer support, unified Paladin auras and oath features, batch spell selection, separate Smite spell/level controls, and reduced movement-driven chat refreshes. Link the corresponding feature guides and retain the documented manual-rule limits.

@@ -1,4 +1,4 @@
-# Add Spell multi-selection (0.8.1 development)
+# Add Spell multi-selection (0.8.1)
 
 With Open Compendium Browser from Add Item enabled, native and Tidy character sheet spell Add/New controls open the D&D5e compendium's existing selection mode. The current class spell lists are preselected, with editable filters and spell-only content locked. The native selection panel supports multiple checked spells and one confirmation; no drag/drop is required.
 
