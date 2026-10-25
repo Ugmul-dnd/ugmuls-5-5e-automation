@@ -1,3 +1,7 @@
+import "./terrify.js";
+import "./thiefs-reflexes.js";
+import "./rend-mind.js";
+import "./homing-strikes.js";
 import "./death-strike.js";
 import "./envenom-weapons.js";
 import "./assassinate.js";

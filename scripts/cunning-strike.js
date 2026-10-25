@@ -2,6 +2,7 @@ const ID="ugmuls-5-5e-automation",choices=new WeakMap(),jobs=new Set();
 const values=x=>Array.from(x?.values?.()??x??[]),key=x=>x?.identifier??x?.system?.identifier;
 const enabled=()=>game.settings.get(ID,"cunningStrikeAutomation")===true;
 export const cunningFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="cunning-strike"&&i.system?.source?.rules!=="2014");
+export const terrifyFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="strike-fear"&&i.system?.source?.rules!=="2014");
 export const deviousFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="devious-strikes"&&i.system?.source?.rules!=="2014");
 const actorFor=app=>(app.message?.data?.speaker?ChatMessage.getSpeakerActor(app.message.data.speaker):null)??app.config?.subject?.actor;
 export function cunningContext(app){
@@ -14,11 +15,12 @@ export function cunningContext(app){
  return {actor,feature,attack,target,record:targets[0],hit:!!target&&attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)};
 }
 export function cunningOptions(actor,target){
- const feature=cunningFeature(actor),devious=deviousFeature(actor),activities=values(feature?.system?.activities),advanced=values(devious?.system?.activities),size=target?.actor?.system?.traits?.size;
+ const feature=cunningFeature(actor),scion=terrifyFeature(actor),devious=deviousFeature(actor),activities=values(feature?.system?.activities),advanced=values(devious?.system?.activities),size=target?.actor?.system?.traits?.size;
  const kit=values(actor?.items).some(i=>i.type==="tool"&&(key(i)==="poisoners-kit"||/poisoner['’]?s kit/i.test(i.name??"")));
  return [{key:"poison",label:"Poison",allowed:kit,activity:activities.find(a=>a.type==="save"&&(a.id==="n64fvJMT9fPUy7DH"||a.name==="Poison"))},
  {key:"trip",label:"Trip",allowed:["tiny","sm","med","lg"].includes(size),activity:activities.find(a=>a.type==="save"&&(a.id==="dWcCw1vTWRMx4YzD"||a.name==="Trip"))},
  {key:"withdraw",label:"Withdraw",allowed:true,activity:activities.find(a=>a.type==="utility"&&(a.id==="m2bRZ1YeD3yf9nV7"||a.name==="Withdraw"))},
+ {key:"terrify",label:"Terrify",cost:1,feature:scion,allowed:true,activity:values(scion?.system?.activities).find(a=>a.type==="save"&&(a.id==="p0Sf2KiK0hWXSc6x"||a.name==="Terrify"))},
  {key:"daze",label:"Daze",cost:2,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="4TnBjQTJzt9UjUos"||a.name==="Daze"))},
  {key:"obscure",label:"Obscure",cost:3,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="ki4lIPVGNA0HjEzH"||a.name==="Obscure"))},
  {key:"knock-out",label:"Knock Out",cost:6,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="3eq7lcmpkJJBU2KO"||a.name==="Knock Out"))}
@@ -30,7 +32,7 @@ export function sneakDiceBudget(actor){
  const sneak=values(actor?.items).find(i=>i.type==='feat'&&(key(i)==='sneak-attack'||/^sneak attack$/i.test(i.name??'')));
  const damage=values(sneak?.system?.activities).find(a=>a.damage?.parts?.length),source=damage?.getDamageConfig?.()?.rolls?.[0];
  if(!source?.parts?.length)return null;
- const formula=source.parts.map(p=>typeof p==='string'?Roll.replaceFormulaData(p,source.data??actor.getRollData()):'').join('+'),dice=[...formula.matchAll(/(?<![\w.])(\d+)d6\b/g)];
+ const formula=source.parts.map(p=>typeof p==='string'?Roll.replaceFormulaData(p,source.data??actor.getRollData()):'').join('+'),dice=[...formula.matchAll(/(?<![\w.])(\d+)d6(?!\d)/g)];
  return dice.length===1?Number(dice[0][1]):null;
 }
 export function addCunningChoices(app,sneakSelected){
@@ -56,11 +58,26 @@ export function reduceCunning(app,source,{preview=false}={}){
  if(selected.length>limit||new Set(selected).size!==selected.length||selected.some(k=>!options.some(o=>o.key===k&&o.allowed)))throw Error('The selected Cunning Strike options are no longer available.');
  const cost=selected.reduce((sum,k)=>sum+options.find(o=>o.key===k).cost,0);
  const parts=source.parts.map(p=>typeof p==='string'?Roll.replaceFormulaData(p,source.data??c.actor.getRollData()):p),dice=[];
- parts.forEach((p,index)=>{if(typeof p==='string')for(const m of p.matchAll(/(?<![\w.])(\d+)d6\b/g))dice.push({index,number:Number(m[1]),offset:m.index,length:m[0].length});});
+ parts.forEach((p,index)=>{if(typeof p==='string')for(const m of p.matchAll(/(?<![\w.])(\d+)d6(?!\d)/g))dice.push({index,number:Number(m[1]),offset:m.index,length:m[0].length});});
  if(dice.length!==1||dice[0].number<cost)throw Error('Cunning Strike needs enough native Sneak Attack dice for its cost.');
  const d=dice[0],part=parts[d.index];parts[d.index]=part.slice(0,d.offset)+(d.number-cost)+'d6'+part.slice(d.offset+d.length);
  const job={actor:c.actor.uuid,feature:c.feature.id,target:c.target.uuid,choices:selected,cost};
  return {...source,parts,options:{...source.options,flavor:'Sneak Attack — '+selected.map(k=>options.find(o=>o.key===k).label).join(' + ')+' (−'+cost+' dice)',rsaCunningStrike:job}};
+}
+export function prepareTerrifyData(data,id,actor){
+ const activity=data.system.activities[id];
+ // Imported/older owned features can retain a save activity without a usable
+ // effect profile. Make the generated save self-contained; leave the item alone.
+ const profiles=new Set((activity.effects??[]).map(e=>e._id));
+ data.effects??=[];
+ let effect=data.effects.find(e=>profiles.has(e._id)&&((e.statuses??[]).includes('frightened')||/terrify/i.test(e.name??'')))??data.effects.find(e=>e._id==='QCrtOB3YmjifFdTO'||e.name==='Strike Fear: Terrify');
+ if(!effect){effect={_id:'QCrtOB3YmjifFdTO',img:'systems/dnd5e/icons/svg/statuses/frightened.svg',type:'base',system:{changes:[]}};data.effects.push(effect);}
+ effect.name='Strike Fear: Terrify';effect.disabled=false;effect.transfer=false;effect.origin=actor.uuid;
+ effect.statuses=Array.from(new Set([...(effect.statuses??[]),'frightened']));
+ effect.duration={value:60,units:'seconds',expiry:'turnStart',expired:false};effect.start=null;
+ effect.flags??={};effect.flags[ID]={...effect.flags[ID],terrifySource:actor.uuid};effect.flags.dnd5e={...effect.flags.dnd5e,isTemporary:true};
+ activity.effects=[{_id:effect._id,onSave:false}];activity.appliedEffects=[effect._id];
+ return effect;
 }
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export async function resolveCunning(card){
@@ -82,6 +99,7 @@ export async function resolveCunning(card){
    if(choice==='withdraw'){ledger.push(choice);await card.setFlag(ID,'cunningResolved',[...ledger]);continue;}
    const option=cunningOptions(actor,target).find(o=>o.key===choice);if(!option||!option.allowed)throw Error('Cunning Strike '+choice+' is no longer valid for this target.');
    const sourceFeature=option.feature,data=sourceFeature.toObject(),id=option.activity.id,use=data.system.activities[id];
+   if(choice==='terrify')prepareTerrifyData(data,id,actor);
    if(choice==='trip'){
     const icon='systems/dnd5e/icons/svg/statuses/prone.svg';
     data.img=icon;use.img=icon;

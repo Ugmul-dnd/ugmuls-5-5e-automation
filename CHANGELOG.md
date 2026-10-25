@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+- Make generated Terrify save cards carry an explicit enabled Frightened effect and failed-save profile, repairing missing or stale owned-item effect links on the temporary copy. Preserve caster identity, repeat-save registration and the original book item.
+
+- Add Scion of the Three’s Terrify to Cunning Strike damage configuration when Strike Fear is owned. Deduct one Sneak Attack die before critical scaling, prompt the native Wisdom save after damage, apply Frightened with end-turn repeat saves, and grant attack Advantage only to the originating Rogue while the effect is active. Preserve Improved Cunning Strike combinations and normal Advantage/Disadvantage cancellation. Recognize native Sneak Attack die modifiers when calculating and deducting Cunning Strike costs, preserving Dread Incarnate’s minimum-3 dice.
+
+- Add Thief’s Reflexes: create a second combat-tracker entry linked to the same token at Initiative minus 10 for round one, then remove it after native turn-end processing. Mirror the original entry’s Initiative, name, visibility and defeated state, prevent duplicate entries, and recognize the extra turn in reaction tracking and Assassinate targeting.
+
+- Fix Rend Mind Stunned effects missing end-turn saves: register its class-feature effect through the existing feature-save path and strip resource consumption from repeat-save helpers.
+
+- Add Soulknife Rend Mind on Psychic Blade Sneak Attack damage cards. Prefer its free use, then spend three Soulknife Psionic Energy Dice; prompt the native Wisdom save and apply Stunned on failure with end-turn repeat saves. Restore the free use on Long Rest and prevent duplicate activation for the same hit.
+
+- Add Soulknife Homing Strikes to missed Psychic Blade attack cards. Add the native Psionic Energy Die to the original attack, spend it only when the miss becomes a hit, and resume the existing damage workflow. Support player/GM use, one attempt per attack, multiclass resource isolation, animation ordering and Apply/Undo locks.
+
 - Add Death Strike to first-round Sneak Attack hits. Prompt the native Constitution save without its duplicate Sneak Attack damage, block automatic/manual HP application until the outcome and animations resolve, and seed double damage on failure. Preserve original dice, criticals, Assassinate damage, reactive halving and Apply/Undo.
 
 - Fix player Envenom prompts waiting for GM-only animation acknowledgements. Await player-local save dice while GM application retains cross-client synchronization, and explicitly link automatic/manual Envenom damage to its Poison save and recorded targets. Preserve helper snapshots, resistance bypass and pending-card completion.

@@ -179,6 +179,8 @@ const EVENT_SAVE_DEFAULTS={
   }
 };
 const REPEAT_SAVE_DEFAULTS={
+ "strike-fear-terrify":{name:"Strike Fear — Terrify",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"strike-fear",sourceSpellUuid:"Compendium.dnd-heroes-faerun.options.Item.hofSotStrikeFear",effectName:"Strike Fear: Terrify",effectId:"QCrtOB3YmjifFdTO",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Terrify",saveActivityId:"p0Sf2KiK0hWXSc6x",saveAbility:"wis",endOnSuccess:true},
+ "rend-mind":{name:"Rend Mind",enabled:true,attachment:"creature",sourceKind:"monsterSave",sourceIdentifier:"rend-mind",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbrgeRendMind00",effectName:"Rend Mind",effectId:"HoAwF2AAONF9XNKK",event:"turnEnd",damageActivity:"",damageFormula:"",saveActivity:"Rend Mind (Free)",saveActivityId:"UH1H8gC9X34sXqOI",endOnSuccess:true},
   "blinding-smite": {
     "name": "Blinding Smite",
     "enabled": true,

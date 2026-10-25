@@ -82,7 +82,7 @@ export async function registerGrappleEscape(effect){
  const dc=Number(effect.getFlag(ID,"grappleEscapeDC")??globalThis.Ugmuls55eAutomationGrapple?.grappleDC?.(caster));if(!Number.isFinite(dc)||dc<=0)return;
  await effect.setFlag(ID,"recurringEffect",{instance:foundry.utils.randomID(),key:"grapple",caster:caster.uuid,level:0,dc,sourceCard:effect.system?.origin?.message});
 }
-async function registerNativeEffect(effect){
+export async function registerNativeEffect(effect){
  if(!authority())return;
  const originRef=effect.system?.origin?.message,old=effect.getFlag?.(ID,"recurringEffect");if(old&&old.sourceCard===originRef)return;
  if(effect.getFlag?.(ID,"grappleMode")==="grapple")return registerGrappleEscape(effect);
@@ -93,8 +93,8 @@ async function registerNativeEffect(effect){
  // Cunning Strike used disposable item IDs in earlier cards. Resolve their Poison
  // from the recorded card's owned Rogue feature, never persist a temporary UUID.
  const cunning=sourceCard?.getFlag?.(ID,"cunningStrikeSave");
- if(["poison","knock-out"].includes(cunning?.choice)){
-  const identifier=cunning.choice==="knock-out"?"devious-strikes":"cunning-strike";
+ if(["poison","knock-out","terrify"].includes(cunning?.choice)){
+  const identifier=cunning.choice==="terrify"?"strike-fear":cunning.choice==="knock-out"?"devious-strikes":"cunning-strike";
   const actor=sourceCard.getAssociatedActor?.(),owned=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier&&(!cunning.sourceFeature||item.uuid===cunning.sourceFeature));
   if(owned)spell=owned;
  }

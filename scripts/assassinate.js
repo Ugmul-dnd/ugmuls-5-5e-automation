@@ -19,7 +19,7 @@ export function rememberAssassinateTurn(combat,changes={}){
 export function assassinateAdvantage(actor,target){
  const combat=game.combat;if(!enabled()||!firstRound(combat)||!assassinateFeature(actor)||!participant(actor,combat)||!target)return false;
  const token=target.document??target;
- const matches=(combat.turns??[]).filter(c=>token.actor?c.token?.uuid===token.uuid:c.actor?.uuid===token.uuid);
+ const matches=(combat.turns??[]).filter(c=>!c.getFlag?.(ID,"thiefsReflexes")).filter(c=>token.actor?c.token?.uuid===token.uuid:c.actor?.uuid===token.uuid);
  if(matches.length!==1)return false;
  const victim=matches[0],seen=turnHistory(combat);if(combat.combatant?.id)seen.add(combat.combatant.id);
  return !seen.has(victim.id);

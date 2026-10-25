@@ -1,6 +1,8 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ rend:{setting:"rendMindAutomation",types:["damage"],feature:"rend-mind",own:true},
+ homing:{setting:"homingStrikesAutomation",types:["attack"],feature:"soul-blades",own:true},
  evasion:{setting:"evasionAutomation",types:["damage","usage","save"],feature:"evasion",incoming:true},
  uncanny:{setting:"uncannyDodgeAutomation",types:["damage"],feature:"uncanny-dodge",incoming:true},
  rebuke:{setting:"elementalRebukeAutomation",types:["attack","damage"],feature:"elemental-rebuke",incoming:true},

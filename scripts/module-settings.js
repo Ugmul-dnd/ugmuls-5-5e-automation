@@ -9,7 +9,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Monk",keys:["stunningStrikeAutomation"]},
     {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation","elementalRebukeAutomation","sacredWeaponAutomation","holyNimbusAutomation","vowOfEnmityAutomation","avengingAngelAutomation"]},
     {name:"Ranger",keys:["huntersPreyAutomation"]},
-    {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation"]},
+    {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},
     {name:"Warlock",keys:["eldritchSmiteAutomation"]},
     {name:"Wizard",keys:[]}

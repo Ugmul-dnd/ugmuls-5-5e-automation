@@ -10,8 +10,9 @@ export function offTurn(activity) {
     if(!combat?.started||!combat.combatant||!actor)return false;
     const token=activity.getUsageToken?.();const doc=token?.document??token;
     const combatants=Array.from(combat.combatants??[]);
-    const combatant=(doc?combatants.find(entry=>entry.token?.uuid===doc.uuid):null)??combatants.find(entry=>entry.actor?.uuid===actor.uuid);
-    return !!combatant&&combatant.id!==combat.combatant.id;
+    const tokens=doc?combatants.filter(entry=>entry.token?.uuid===doc.uuid):[];
+    const matches=tokens.length?tokens:combatants.filter(entry=>entry.actor?.uuid===actor.uuid);
+    return matches.length>0&&!matches.some(entry=>entry.id===combat.combatant.id);
 }
 function cleaveMessage(message){const data=message?.data??message,reference=data?.system?.origin,origin=typeof reference==="string"?game.messages?.get?.(reference):reference;return !!(data?.flags?.[ID]?.cleaveSource||origin?.getFlag?.(ID,"cleaveSource"));}
 function manualActivity(activity,message) {
