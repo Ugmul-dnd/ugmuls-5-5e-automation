@@ -18,7 +18,7 @@ export function isBardicInspireActivity(activity) {
 
 export function teamTacticsActivity(activity){return activity?.type==="heal"&&activity.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="team-tactics"&&activity.id==="prA3XGTjuTOdIxOe";}
 export function healingBuffActivity(activity){if(teamTacticsActivity(activity))return true;return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
-export function manualBuffChoice(activity) { return ["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(activity?.item?.identifier ?? activity?.item?.system?.identifier) || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
+export function manualBuffChoice(activity) { return globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(activity) || ["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(activity?.item?.identifier ?? activity?.item?.system?.identifier) || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
 export function eligibleBuffActivity(activity) {
     if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="avenging-angel"&&activity.id==="PUWfXLPucizXR8p0"&&game.settings.get(MODULE_ID,"avengingAngelAutomation")===true)return false;
     // Dao is an immediate offensive condition, applied once by its dedicated workflow.

@@ -41,6 +41,7 @@ export async function rerollFocus(original,bonus){
     for(const result of adjusted.d20.results){result.active=false;result.discarded=true;result.rerolled=true;}
     adjusted.d20.results.push(...results.map((result,index)=>({...result,active:index===winningIndex,discarded:index!==winningIndex})));
     adjusted.options.rsaSaveDicePool=results;adjusted.resetFormula();adjusted._total=adjusted._evaluateTotal();
+    if(Number(bonus)===0)return {roll:adjusted,results};
     const flat=await new CONFIG.Dice.BasicRoll(String(bonus)).evaluate();
     return {roll:await inspiredRoll(adjusted,flat),results};
 }

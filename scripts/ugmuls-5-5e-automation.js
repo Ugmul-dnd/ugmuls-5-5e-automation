@@ -1,3 +1,12 @@
+import "./focused-strike.js";
+import "./epitome-stride.js";
+import "./epitome-resistance.js";
+import "./elemental-strikes.js";
+import "./physicians-touch.js";
+import "./hand-of-harm.js";
+import "./open-hand-technique.js";
+import "./flurry-of-blows.js";
+import "./disciplined-survivor.js";
 import "./downed-status-compat.js";
 import "./deflect-attacks.js";
 import "./vitality-surge.js";

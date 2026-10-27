@@ -27,8 +27,10 @@ export async function waitForTrackedRollAnimation(message) {
     await Promise.all(Array.from(visualAnimations.get(message.id)??[]));
 }
 
-export function canAdjustSave(message, user) {
-    return !message?.getFlag?.(MODULE_ID,"carefulSpell") && !message?.getFlag?.(MODULE_ID,"automaticGrappleFailure") && !isRollAdjustmentLocked(message) && ["save", "attack"].includes(message?.type) && Boolean(user?.isGM || message.author?.id === user?.id ||
+export function saveModeLocked(message,index=0){return !!message?.getFlag?.(MODULE_ID,"disciplinedSurvivor")?.[index];}
+
+export function canAdjustSave(message, user, index=0) {
+    return !saveModeLocked(message,index) && !message?.getFlag?.(MODULE_ID,"carefulSpell") && !message?.getFlag?.(MODULE_ID,"automaticGrappleFailure") && !isRollAdjustmentLocked(message) && ["save", "attack"].includes(message?.type) && Boolean(user?.isGM || message.author?.id === user?.id ||
         message.getAssociatedActor?.()?.testUserPermission?.(user, "OWNER"));
 }
 
@@ -69,7 +71,7 @@ export async function changeSaveMode(roll, mode) {
 }
 
 export async function updateSaveMode(message, mode, index, user = game.user) {
-    if (!canAdjustSave(message, user)) throw new Error("You cannot adjust this roll.");
+    if (!canAdjustSave(message, user, index)) throw new Error("You cannot adjust this roll.");
     const roll = message.rolls?.[index];
     const adjusted = await changeSaveMode(roll, mode);
     if (adjusted === roll) return;
@@ -83,7 +85,7 @@ export async function updateSaveMode(message, mode, index, user = game.user) {
     if(adjusted._rsaNewD20Results?.length&&game.dice3d?.showForRoll&&game.user.isGM) {
         await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
     }
-    if(!canAdjustSave(message,user))return;
+    if(!canAdjustSave(message,user,index))return;
     await message.update({ rolls, flavor });
 }
 
@@ -119,7 +121,7 @@ function adjustmentEnabled(message) {
 
 function requestChange(message, mode, index) {
     if (!adjustmentEnabled(message)) return;
-    if (!canAdjustSave(message, game.user)) return;
+    if (!canAdjustSave(message, game.user,index)) return;
     const gm = game.users.activeGM;
     if (gm && gm.id !== game.user.id) {
         game.socket.emit(channel, { action: "adjustSaveMode", messageId: message.id, mode, index, userId: game.user.id, gmId: gm.id });
@@ -157,8 +159,10 @@ export function addSaveControls(message, html) {
             entry.root.querySelector(".dice-roll")?.parentElement?.classList.remove("rsa-save-mode-host");
             continue;
         }
-        if (!adjustmentEnabled(entry.message) || !canAdjustSave(entry.message, game.user) || !entry.message.isContentVisible) continue;
         const index = entry.message.rolls?.findIndex(roll => roll instanceof CONFIG.Dice.D20Roll) ?? -1;
+        const modeLocked=saveModeLocked(entry.message,index);
+        if(modeLocked)for(const control of entry.root.querySelectorAll('[data-rsa-save-modes] button, .nd5t-retro-advantage button')){control.disabled=true;control.title="Disciplined Survivor: keep the new roll.";}
+        if (!adjustmentEnabled(entry.message) || (!modeLocked&&!canAdjustSave(entry.message,game.user,index)) || !entry.message.isContentVisible) continue;
         if (index < 0 || entry.root.querySelector("[data-rsa-save-modes]")) continue;
         const rollElement = entry.root.querySelector(".dice-roll");
         if (!rollElement) continue;
@@ -176,7 +180,8 @@ export function addSaveControls(message, html) {
             const active = (entry.message.rolls[index].options.advantageMode ?? 0) === mode;
             button.classList.toggle("active", active);
             button.setAttribute("aria-pressed", String(active));
-            button.disabled = active;
+            button.disabled = active || modeLocked;
+            if(modeLocked)button.title="Disciplined Survivor: keep the new roll.";
             button.addEventListener("click", event => {
                 event.preventDefault(); event.stopPropagation();
                 for (const control of menu.querySelectorAll("button")) control.disabled = true;
@@ -208,7 +213,7 @@ Hooks.once("ready", () => {
     game.socket.on(channel, packet => {
         if (packet?.action !== "adjustSaveMode" || packet.gmId !== game.user.id || !game.user.isGM || game.users.activeGM?.id !== game.user.id) return;
         const message = game.messages.get(packet.messageId), user = game.users.get(packet.userId);
-        if (!adjustmentEnabled(message) || !user?.active || !canAdjustSave(message, user) || ![1, 0, -1].includes(packet.mode) || !Number.isInteger(packet.index) || packet.index < 0) return;
+        if (!adjustmentEnabled(message) || !user?.active || !canAdjustSave(message, user, packet.index) || ![1, 0, -1].includes(packet.mode) || !Number.isInteger(packet.index) || packet.index < 0) return;
         enqueue(() => updateSaveMode(message, packet.mode, packet.index, user)).catch(reportError);
     });
 });

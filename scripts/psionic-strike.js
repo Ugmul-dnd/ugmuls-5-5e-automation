@@ -37,7 +37,7 @@ export function useStrike(card,user=game.user,thrust="damage"){return enqueue(as
  c=strikeContext(card,user);if(!c||c.used||!c.available)throw Error("Psionic Strike changed before it could be used.");
  const {actor,resource,damage,attack,targets}=c,data=resource.toObject(),id=damage.id,use=data.system.activities[id];
  data.system.activities={[id]:use};data.effects=[];data.name="Psionic Strike";
- use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.activation={type:"special",override:true};use.effects=[];use.damage.critical={...use.damage.critical,allow:false};
+ use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.activation={type:"special",override:true};use.effects=[];use.damage.critical={...use.damage.critical,allow:game.settings.get(ID,"psionicStrikeCriticalDamage")===true};
  use.target={override:true,prompt:false,template:{type:""},affects:{type:"creature",count:"1",choice:false}};
  const helper=new CONFIG.Item.documentClass(data,{parent:actor});helper.prepareFinalAttributes?.();
  const turn=stamp(),spent=Number(resource.system.uses.spent??0);let charged=false,marker,committed=false,usage;
@@ -48,7 +48,7 @@ export function useStrike(card,user=game.user,thrust="damage"){return enqueue(as
   const flags={dnd5e:{item:{data}},[ID]:{riderTriggered:true,activityOverrideData:data,psionicStrike:metadata}};
   const result=await helper.system.activities.get(id).use({consume:false,subsequentActions:false,create:{measuredTemplate:false}},{configure:false},{data:{system:{targets},flags}});usage=result?.message;
   if(!usage)throw Error("Could not create the Psionic Strike card.");
-  const rolls=await helper.system.activities.get(id).rollDamage({isCritical:false},{configure:false},{data:{system:{origin:usage.id,targets},flags}});
+  const rolls=await helper.system.activities.get(id).rollDamage({isCritical:game.settings.get(ID,"psionicStrikeCriticalDamage")===true&&attack.rolls?.[0]?.isCritical===true},{configure:false},{data:{system:{origin:usage.id,targets},flags}});
   if(!rolls?.length)throw Error("Psionic Strike did not roll damage. No Energy Die was spent.");committed=true;
   await attack.setFlag(ID,"psionicStrikeUsed",{...metadata,message:usage.id});return rolls;
  }finally{
@@ -79,7 +79,7 @@ export async function resetStrike(combat,changes={}){
  for(const actor of actors.values()){const updates=values(actor.effects).filter(e=>!e.disabled&&e.getFlag?.(ID,"psionicStrikeCombat")===combat.id&&e.getFlag(ID,"psionicStrikeTurn")!==current).map(e=>({_id:e.id,disabled:true}));if(updates.length)await actor.updateEmbeddedDocuments("ActiveEffect",updates);}
 }
 
-Hooks.once("init",()=>game.settings.register(ID,"psionicStrikeAutomation",{name:"Psionic Strike Assistance",hint:"Offer Psionic Strike on weapon damage cards after damage is applied within 30 feet. Spend one Psi Warrior Energy Die, once on your own turn; roll separate Force damage without critical doubling.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"psionicStrikeAutomation",{name:"Psionic Strike Assistance",hint:"Offer Psionic Strike on weapon damage cards after damage is applied within 30 feet. Spend one Psi Warrior Energy Die, once on your own turn; roll separate Force damage. Critical damage is disabled unless its separate critical option is enabled.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
  Hooks.on("dnd5e.renderChatMessage",renderStrike);
  Hooks.on("preCreateChatMessage",card=>{if(!enabled()||card.type!=="attack"||!psiWarriorResource(card.getAssociatedActor?.()))return;card.updateSource({["flags."+ID+".psionicStrikeAttack"]:{turn:stamp()}});});
@@ -92,3 +92,5 @@ Hooks.once("ready",()=>{
   useStrike(card,user,packet.thrust??"damage").catch(error=>{report(error);game.socket.emit("module."+ID,{action:"psionicStrikeError",messageId:card.id,userId:user.id,error:error.message});});
  });
 });
+
+Hooks.once("init",()=>game.settings.register(ID,"psionicStrikeCriticalDamage",{name:"Psionic Strike: Allow Critical Damage",hint:"Default off: this post-damage ability rolls normal damage. Enable to follow the original attack’s critical result.",scope:"world",config:true,type:Boolean,default:false}));

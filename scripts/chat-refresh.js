@@ -1,6 +1,8 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ handOfHarm:{setting:"handOfHarmAutomation",types:["damage"],feature:"hand-of-harm",own:true},
+ disciplinedSurvivor:{setting:"disciplinedSurvivorAutomation",types:["save"],feature:"disciplined-survivor",own:true},
  deflect:{setting:"deflectAttacksAutomation",types:["damage"],feature:"deflect-attacks",incoming:true},
  wildRage:{setting:"wildRageAutomation",types:["usage"],feature:"rage-of-the-wilds",own:true},
  sharedResilience:{setting:"sharedResilienceAutomation",types:["save"],feature:"shared-resilience",all:true},

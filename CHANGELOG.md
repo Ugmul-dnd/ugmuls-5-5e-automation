@@ -2,6 +2,46 @@
 
 ## Unreleased
 
+- Add Mystic Arts Focused Strike: after Stunning Strike succeeds or fails, apply a temporary, caster-specific spell-save Disadvantage effect through the start of the Monk's next turn. Integrate AC5e recommendations with a native fallback, prevent duplicate applications, and preserve existing Stunning Strike resources and save flow.
+
+- Allow the owning Monk to Retarget GM-created Destructive Stride cards. Validate ownership and map targets on the GM, then update the usage card and linked damage recipients together without changing rolls or application history.
+
+- Show recorded target names on the first Destructive Stride card for players and GMs. Update the list when the aura adds creatures or Retarget changes recipients; respect hidden tokens and hidden chat content.
+
+- Tie Epitome resistance cleanup directly to the successful native End Attunement operation, including player-owned activation with a connected GM and temporary source-item state. Keep deletion/expiry cleanup as a fallback; preserve resistance if ending fails or an enchantment profile is being replaced.
+
+- Explicitly clear Epitome resistance when Elemental Attunement ends or is disabled, including during native enchantment-registry cleanup and owner-only sessions. Preserve unrelated resistance and a live replacement Attunement.
+
+- Automatically post the Elemental Epitome resistance choice card after successfully activating Elemental Attunement. Use the native resistance activity without extra Focus or action consumption; prevent duplicate cards and do not prompt when ending Attunement.
+
+- Add Elemental Epitome assistance during Elemental Attunement: an owner-visible, exclusive resistance selector; a grid-shaped, token-attached Destructive Stride aura and +20 Speed on Step of the Wind, ending with the current turn; and a default-No Empowered Strikes option using the native Martial Arts die, matching the strike damage type and limited to once on the Monk's own turn. Stride shares one damage-only roll among enemies encountered, once per creature, without a save or extra Focus. Preserve explicit rider save order and remove linked resistance when Attunement ends.
+
+- Fix Elemental Push/Pull follow-up saves being rejected as unavailable: remove hidden-enchantment-rider flags from the standalone save copy while preserving the owned Attunement feature.
+
+- Add default-None Elemental Push/Pull beneath Grapple in Elemental Strike damage configuration. When Acid/Cold/Fire/Lightning/Thunder damage is rolled, prompt the owned native Strength save with the chosen direction in the card title and movement instructions. Preserve damage and existing Stunning/Grapple save order; no extra Focus charge. Movement remains manual.
+
+- Post a simple chat announcement naming the Monk when Flurry of Healing and Harm activates and spends one use. Duplicate clicks and failed activation do not post announcements.
+
+- Improve Flurry counter spacing and shorten its activation button to “Flurry of Healing and Harm.” If not already enabled, hide and reject activation after the first completed attack (including misses); canceled rolls do not lock it out. Prevent retroactive free-Harm activation.
+
+- Add a Flurry of Healing and Harm activation button above the Flurry counter. Spend one use from the native Wisdom-based daily pool for that Flurry, unlock further Hand of Healing replacements and offer Hand of Harm — Free only on attacks linked to that enabled Flurry. Preserve remaining attack counts, prior healing replacements, Physician’s Touch and the shared paid/free Harm once-per-turn limit. Do not refund earlier paid Harm. Prevent duplicate activation and restore the daily use if activation fails.
+
+- Apply Physician’s Touch Poisoned after Hand of Harm when the Monk owns the feature, including native and automated Harm activities. Use native effect application/Undo and expire Poisoned at the end of the Monk’s next turn. Default Hand of Harm and Psionic Strike to normal damage; add separate opt-in critical settings that follow the original attack result.
+
+- Add Hand of Healing to Mercy’s Flurry counter: replace one remaining attack with native healing for a selected creature in touch range, with no extra Focus or action cost. Limit healing to once per Flurry, preserve the attack on unsuccessful rolls, and retain native healing application/Undo. Higher-level Flurry of Healing and Harm benefits are not automated.
+
+- Add Mercy Hand of Harm to damage cards after an Unarmed Strike or Empowered Strike actually deals HP/temporary-HP damage. Spend 1 Monk Focus Point, once per turn, and roll the native Martial Arts die + Wisdom Necrotic damage separately, preserving the source attack’s critical status. Support player/GM clicks, turn-use reuse, duplicate protection and failed-roll refunds; leave healing and higher-level Mercy upgrades for later passes.
+
+- Add Open Hand Technique choices (None/Addle/Push/Topple) to damage configuration for confirmed Flurry Empowered/Unarmed hits. Apply native Addle automatically with target-next-turn-start expiry; prompt native Strength/Dexterity saves for Push/Topple without extra Focus consumption. Topple uses native Prone effect automation; Push movement remains manual.
+
+- Treat Flurry of Blows as Bonus Action attacks for Grappler: allow ordinary Grapple/Prone in place of damage, but never retain damage through Grappler or consume its once-per-turn damage-plus-grapple benefit.
+
+- Add a Flurry of Blows attack counter after using Monk’s Focus or Heightened Focus. Open it on the clicking user’s client with two attacks, or three when Heightened Focus is owned. Prefer Empowered Strike and fall back to Unarmed Strike; use live targets between attacks, retain canceled attacks and avoid repeated Focus/Bonus Action consumption. Tag the resulting attack/damage cards as Flurry for follow-up feature support.
+
+- Disable Advantage/Normal/Disadvantage adjustments after Disciplined Survivor replaces a save, enforcing the mandatory new roll in both the card controls and GM-authorized adjustment requests.
+
+- Add Disciplined Survivor to failed Monk saving throws: spend 1 Focus Point to reroll one d20 and keep the new result, preserving the existing modifiers and DC with no added bonus or Reaction cost. Support player/GM use, dice-animation sequencing, duplicate-click protection and resource rollback; require Undo before adjusting saves with applied damage/effects.
+
 - Coordinate automatic Dead/Unconscious updates per actor across D&D5e HP handling and combat-tracker status toggles. Prevent duplicate fixed-ID status creation on NPC death while preserving overlays, native healing cleanup, important-NPC rules and Relentless Rage.
 
 - Measure Deflect Redirect range between nearest occupied token spaces instead of token centers, so adjacent Large and larger creatures qualify correctly for the 5-foot melee redirect. Use those same points for the wall check; retain native scene distance rules and the target/type selection popup.

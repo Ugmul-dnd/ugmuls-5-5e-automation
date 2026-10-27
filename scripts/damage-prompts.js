@@ -54,7 +54,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy,{preview:true})??frenzy;
                 const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury,{preview:true})??divineFury;
                 const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt,{preview:true})??jolt;
-                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm,{preview:true})??firearm;
+                const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm,{preview:true})??firearm;
+                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome,{preview:true})??epitome;
                 const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver,{preview:true})??maneuver;
                 const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,valor,{preview:true})??valor;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
@@ -73,6 +74,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind==="damage"&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)===false)return [];
                 const rolls=super._finalizeRolls(action);
                 if(kind === "damage") {
+                    globalThis.Ugmuls55eAutomationOpenHand?.finalizeOpenHand(this,rolls);
+                    globalThis.Ugmuls55eAutomationElementalMotion?.finalizeElemental(this,rolls);
                     const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
                     const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave)??cleave;
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
@@ -87,7 +90,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy)??frenzy;
                     const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury)??divineFury;
                     const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt)??jolt;
-                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm)??firearm;
+                    const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm)??firearm;
+                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome)??epitome;
                     const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver)??maneuver;
                     const stunning=globalThis.Ugmuls55eAutomationStunning?.finalizeStunning(this,valor)??valor;
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
@@ -137,6 +141,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationValor?.addValorOffenseChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationStunning?.addStunningChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationGrapple?.addGrappleChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationElementalMotion?.addElementalChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationOpenHand?.addOpenHandChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationEpitome?.addEmpoweredChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationTransmuted?.addTransmutedChoice(this);
             }
             _onPosition(position) {
@@ -169,11 +176,13 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationBrutal?.commitBrutalEffects(this,options);
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,options);
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,options);
+                        await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,{});
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,{});
+                        await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,{});
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,{});
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,{});
                         await globalThis.Ugmuls55eAutomationGrapple?.commitGrapple(this,{});
@@ -346,6 +355,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
                 if (attack && damageMessage) {
                     damageMessage.data ??= {};damageMessage.data.flags ??= {};
                     damageMessage.data.flags[MODULE_ID] = {...damageMessage.data.flags[MODULE_ID],damageAttackId:attack.id};
+                    const flurry=attack.getFlag?.(MODULE_ID,"flurryOfBlows");if(flurry)damageMessage.data.flags[MODULE_ID].flurryOfBlows=flurry;
                 }
                 Hooks.off("dnd5e.preRollDamageV2",hook);
             });
