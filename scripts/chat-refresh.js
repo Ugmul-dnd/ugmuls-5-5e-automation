@@ -1,6 +1,12 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ deflect:{setting:"deflectAttacksAutomation",types:["damage"],feature:"deflect-attacks",incoming:true},
+ wildRage:{setting:"wildRageAutomation",types:["usage"],feature:"rage-of-the-wilds",own:true},
+ sharedResilience:{setting:"sharedResilienceAutomation",types:["save"],feature:"shared-resilience",all:true},
+ indomitable:{setting:"indomitableAutomation",types:["save"],feature:"indomitable",own:true},
+ protectiveField:{setting:"protectiveFieldAutomation",types:["damage"],feature:"psionic-power",all:true},
+ psiStrike:{setting:"psionicStrikeAutomation",types:["damage"],feature:"psionic-power",own:true},
  rend:{setting:"rendMindAutomation",types:["damage"],feature:"rend-mind",own:true},
  homing:{setting:"homingStrikesAutomation",types:["attack"],feature:"soul-blades",own:true},
  evasion:{setting:"evasionAutomation",types:["damage","usage","save"],feature:"evasion",incoming:true},

@@ -60,7 +60,7 @@ export function finalizeGreatWeapons(app,rolls){
             result[index]=new roll.constructor(roll.formula+" + "+bonus+"[Great Weapon Master]",roll.data,{...foundry.utils.deepClone(roll.options),configured:true,preprocessed:true,rsaGreatWeaponMaster:true});
         }
     }
-    if(fightingEligible(app))result=result.map(roll=>roll.options?.rsaGreatWeaponFighting?roll:minimumThree(roll));
+    if(fightingEligible(app))result=result.map(roll=>roll.options?.rsaGreatWeaponFighting||roll.options?.rsaPsionicStrike?roll:minimumThree(roll));
     return result;
 }
 Hooks.once("init",()=>{

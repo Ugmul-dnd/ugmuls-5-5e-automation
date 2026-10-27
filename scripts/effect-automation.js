@@ -16,8 +16,9 @@ export function isBardicInspireActivity(activity) {
         activity.roll?.prompt!==true&&(!activity.roll?.formula||/^@scale\.bard\.inspiration(?:\.die)?$/.test(activity.roll.formula.trim()));
 }
 
-export function healingBuffActivity(activity){return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
-export function manualBuffChoice(activity) { return (activity?.item?.identifier ?? activity?.item?.system?.identifier) === "aura-of-elemental-shielding" || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
+export function teamTacticsActivity(activity){return activity?.type==="heal"&&activity.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="team-tactics"&&activity.id==="prA3XGTjuTOdIxOe";}
+export function healingBuffActivity(activity){if(teamTacticsActivity(activity))return true;return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
+export function manualBuffChoice(activity) { return ["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(activity?.item?.identifier ?? activity?.item?.system?.identifier) || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
 export function eligibleBuffActivity(activity) {
     if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="avenging-angel"&&activity.id==="PUWfXLPucizXR8p0"&&game.settings.get(MODULE_ID,"avengingAngelAutomation")===true)return false;
     // Dao is an immediate offensive condition, applied once by its dedicated workflow.
@@ -26,7 +27,7 @@ export function eligibleBuffActivity(activity) {
     if (manualBuffChoice(activity)) return false;
     // Utility activities have no attack/save or damage/healing roll to resolve.
     return (activity?.type === "utility"||healingBuffActivity(activity)) && ["spell","feat"].includes(activity.item?.type) &&
-        !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)) && !activity.target?.template?.type;
+        !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)) && (!activity.target?.template?.type||teamTacticsActivity(activity));
 }
 
 export async function applyBuffEffects(message) {

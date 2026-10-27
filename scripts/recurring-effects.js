@@ -98,7 +98,7 @@ export async function registerNativeEffect(effect){
   const actor=sourceCard.getAssociatedActor?.(),owned=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier&&(!cunning.sourceFeature||item.uuid===cunning.sourceFeature));
   if(owned)spell=owned;
  }
- if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
+ if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage","athleticsEscape","classSave"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  await registerRecurringEffect(effect,{spell,level:effect.getFlag?.("dnd5e","spellLevel")??sourceCard?.system?.level,sourceCard});
 }
 export function buildRecurringItem(spell,entry,record,phase){
@@ -108,7 +108,7 @@ export function buildRecurringItem(spell,entry,record,phase){
  const data=spell.toObject(),id=source.id;data._id=foundry.utils.randomID();data.name=entry.name+" — "+(phase==="damage"?"Recurring damage":"End effect save");
  const selected=data.system.activities[id];data.system.activities={[id]:selected};selected.effects=[];
  if(phase==="damage"&&entry.damageFromSave){selected.type="damage";delete selected.save;delete selected.damage.onSave;selected.damage.critical={allow:false};}
- if(entry.saveFirst||["monsterSave","monsterDamage"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
+ if(entry.saveFirst||["monsterSave","monsterDamage","classSave"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
 
  selected.activation={type:"special",override:true};selected.duration={units:"inst",concentration:false,override:true};selected.target={override:true,prompt:false,affects:{type:"creature",count:"1",choice:false},template:{type:""}};selected.range={override:true,units:"any"};
  if(phase!=="damage"){
@@ -155,7 +155,7 @@ async function createRecurringCard(effect,token,record,stamp,phase){
  if(entry.requiresLivingSource){const source=record.sourceToken?await fromUuid(record.sourceToken,{strict:false}):null;if(!source?.actor||source.parent?.id!==token.parent?.id||source.combatant?.defeated||source.actor.statuses?.has("dead")||Number.isFinite(source.actor.system?.attributes?.hp?.value)&&source.actor.system.attributes.hp.value<=0)return;}
  const spell=entry.sourceKind==="grapple"?{actor:await fromUuid(record.caster),system:{level:0}}:await fromUuid(record.spell);if(!spell?.actor)throw Error("The recurring effect’s source caster or spell is unavailable.");
  const {data,id}=entry.sourceKind==="recurringHealing"?buildRecurringHealingItem(spell,entry,record):entry.sourceKind==="grapple"?buildGrappleEscapeItem(token.actor,record):entry.escapeCheck&&phase!=="damage"?buildEscapeCheckItem(spell,entry,record):buildRecurringItem(spell,entry,record,phase),item=new CONFIG.Item.documentClass(data,{parent:spell.actor});
- if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
+ if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage","classSave"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
  const descriptor={token:token.uuid,actor:token.actor.uuid,name:token.name,img:token.texture?.src??token.actor.img};
  const link={effect:effect.uuid,instance:record.instance,stamp,phase,key:record.key,...(stamp.startsWith("damage:")&&entry.damageSaveAdvantage?{advantage:true}:{})};
  const sourceRef=record.sourceCard??effect.system?.origin?.message;

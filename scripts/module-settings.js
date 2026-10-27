@@ -1,12 +1,12 @@
 const MODULE_ID="ugmuls-5-5e-automation";
 export const CLASS_AUTOMATIONS=[
     {name:"Artificer",keys:["flashOfGeniusAutomation","arcaneJoltAutomation","arcaneFirearmAutomation"]},
-    {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation"]},
+    {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation","indomitableMightAutomation","primalKnowledgeAutomation","relentlessRageAutomation","mindlessRageAutomation","wildRageAutomation","vitalitySurgeAutomation"]},
     {name:"Bard",keys:["bardicInspirationAutomation","cuttingWordsAutomation","peerlessSkillAutomation","combatInspirationAutomation"]},
     {name:"Cleric",keys:[]},
     {name:"Druid",keys:[]},
-    {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation"]},
-    {name:"Monk",keys:["stunningStrikeAutomation"]},
+    {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation","psionicStrikeAutomation","telekineticThrustAutomation","protectiveFieldAutomation","indomitableAutomation","studiedAttacksAutomation","survivorAutomation","arcaneShotEffectsAutomation","banneretAutomation","sharedResilienceAutomation"]},
+    {name:"Monk",keys:["stunningStrikeAutomation","deflectAttacksAutomation"]},
     {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation","elementalRebukeAutomation","sacredWeaponAutomation","holyNimbusAutomation","vowOfEnmityAutomation","avengingAngelAutomation"]},
     {name:"Ranger",keys:["huntersPreyAutomation"]},
     {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},

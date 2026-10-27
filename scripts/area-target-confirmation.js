@@ -5,9 +5,14 @@ const DIAGNOSTIC_REVISION = "2026-10-08-confirmation-3";
 const handled = new Set();
 const pendingCards = new Set();
 
+export function excludesIntimidatingCaster(activity,token){
+ const actor=activity?.actor??activity?.item?.actor;
+ return (activity?.item?.identifier??activity?.item?.system?.identifier)==="intimidating-presence"&&activity.id==="ZRHT8mOlea6T8XpP"&&!!actor?.uuid&&(token?.document??token)?.actor?.uuid===actor.uuid;
+}
+
 export function automaticTargetMode(activity, config) {
     const type = activity.target?.affects?.type;
-    const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b"};
+    const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b","intimidating-presence":"ZRHT8mOlea6T8XpP"};
     if(selfExcludedActivities[activity.item?.identifier??activity.item?.system?.identifier]===activity.id&&activity.id&&activity.target?.template?.type)return "excludeSelf";
     if (type === "enemy") return "hostilesOnly";
     if (type === "ally") return "friendliesOnly";
@@ -167,7 +172,7 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
     eligibleTargets() {
         const targets = [];
         for (const token of (this.canChooseTargets?Array.from(game.user.targets):this.castTargets)) {
-            if ((this.message.getAssociatedActivity?.()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
+            if (!excludesIntimidatingCaster(this.message.getAssociatedActivity?.(),token)&&(this.message.getAssociatedActivity?.()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
             else if(this.canChooseTargets)token.setTarget(false, { user: game.user, releaseOthers: false });
         }
         return targets;
@@ -175,6 +180,7 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
 }
 
 export function requiresTargetConfirmation(activity) {
+    if(globalThis.Ugmuls55eAutomationBanneret?.isActivity(activity))return true;
     return ["spell","feat"].includes(activity.item?.type)&&
         (activity.target?.affects?.choice===true||globalThis.Ugmuls55eAutomationMetamagic?.needsMetamagic(activity)===true);
 }
@@ -237,9 +243,10 @@ export async function confirmCastTargets(activity, usage, results) {
     console.log("Ugmuls 5.5e Automation | Opening target confirmation", {
         user: game.user.name ?? game.user.id, activity: activity.name, targets: targets.length
     });
-    canvas.tokens.setTargets(targets.map(token => token.id));
+    const banneret=globalThis.Ugmuls55eAutomationBanneret;
+    if(!banneret?.isActivity(activity))canvas.tokens.setTargets(targets.map(token => token.id));
     let confirmed;
-    try { const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose(); }
+    try { if(banneret?.isActivity(activity))confirmed=await banneret.chooseTargets(activity,message,caster,results.templates??[]);else {const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose();} }
     catch (err) {
         if(await globalThis.Ugmuls55eAutomationPendingCast?.cancel(message)){pendingCards.delete(message.id);throw err;}
         await message.update({ [`flags.${MODULE_ID}.targetsConfirmationPending`]: false,
@@ -261,10 +268,13 @@ export async function finishConfirmedCast(activity, message, targets) {
     const eligible = [],tokens=[];
     for (const descriptor of targets) {
         const token = await fromUuid(descriptor.token);
+        if(excludesIntimidatingCaster(activity,token))continue;
         if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}
     }
     targets = eligible;
+    const banneret=globalThis.Ugmuls55eAutomationBanneret;
+    if(banneret?.isActivity(activity))targets=banneret.validateTargets(activity,activity.getUsageToken?.()??message.getAssociatedToken?.(),targets);
     if(activity.target?.affects?.choice!==true)globalThis.canvas?.tokens?.setTargets?.(tokens.map(token=>token.id));
     if (message._targetState) { message._targetState.mode = "targeted"; message._targetState.checked?.clear?.(); }
     await message.update({ "system.targets": targets });

@@ -4,6 +4,10 @@ const MODULE_ID = "ugmuls-5-5e-automation";
 
 export function shouldCleanInstantRegion(item, config, activity = null) {
     if(!["spell","feat"].includes(item?.type)||config?.triggers?.length||config?.regionEffects?.length||config?.regionConditions?.length)return false;
+    // Banneret emanations are targeting guides; the Team Tactics creature
+    // effect lasts independently until the Banneret's next turn starts.
+    const banneretIds={"group-recovery":"GKue41K0GkjUEzJk","team-tactics":"prA3XGTjuTOdIxOe"};
+    if(item.type==="feat"&&activity?.type==="heal"&&activity.id&&banneretIds[item.identifier??item.system?.identifier]===activity.id)return true;
     const entry=triggerEntry(triggerKeyForSpell(item));
     if(entry?.enabled!==false&&entry?.targetingRegionCleanup==="casterTurnEnd")return true;
     const duration = item?.type === "feat" || activity?.duration?.override

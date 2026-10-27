@@ -43,6 +43,8 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");
+    if(message.getFlag?.(MODULE_ID,"protectiveFieldPending"))return waiting(message,"Waiting for Protective Field.");
     if(!isDamageOrHealingCard(message)||message.getFlag?.(MODULE_ID,"pendingDamage"))return null;
     if(message.getFlag(MODULE_ID,"masteryGrazeUndone")||message.getFlag(MODULE_ID,"grappleNoDamage"))return null;
     if(globalThis.Ugmuls55eAutomationBattleMaster?.maneuverSaveReady(message)===false)return waiting(message,"Waiting for the maneuver saving throw.");

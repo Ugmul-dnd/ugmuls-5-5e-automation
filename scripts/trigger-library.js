@@ -2,6 +2,7 @@ const ID="ugmuls-5-5e-automation";
 // Recipes only: book items and effects remain the source of spell data.
 // Save-only recipes reuse book activities but never repeat initial spell damage.
 const ESCAPE_DEFAULTS={
+ "grasping-shot":{name:"Grasping Shot",enabled:true,attachment:"creature",sourceKind:"athleticsEscape",sourceIdentifier:"grasping-shot",sourceSpellUuid:"Compendium.dnd-arcana-unleashed.subclasses.Item.aunGraspingShot0",effectName:"Grasping Shot",effectId:"4Jp3GPgCrdWibAr0",event:"turnStart",promptMode:"manual",escapeCheck:true,checkAbility:"str",checkSkill:"ath",saveActivity:"Save",saveActivityId:"mobpmrt8tFt5gDPp",damageActivity:"",damageFormula:"",endOnSuccess:true},
   "ensnaring-strike": {
     "name": "Ensnaring Strike",
     "enabled": true,
@@ -87,6 +88,7 @@ const ESCAPE_DEFAULTS={
   }
 };
 const EVENT_SAVE_DEFAULTS={
+ "intimidating-presence":{name:"Intimidating Presence",enabled:true,attachment:"creature",sourceKind:"classSave",sourceIdentifier:"intimidating-presence",sourceSpellUuid:"Compendium.dnd-players-handbook.classes.Item.phbbrbIntimidati",requiredActivityIds:["ZRHT8mOlea6T8XpP"],effectName:"Intimidated",effectId:"3LofAPFLZJMQJirN",event:"turnEnd",saveActivity:"Save",saveActivityId:"ZRHT8mOlea6T8XpP",damageActivity:"",damageFormula:"",endOnSuccess:true,targetingRegionCleanup:"casterTurnEnd"},
   "dominate-beast": {
     "name": "Dominate Beast",
     "enabled": true,

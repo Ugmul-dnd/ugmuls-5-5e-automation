@@ -1,12 +1,13 @@
 import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCard } from "./shared-activity-card.js";
 const pendingCards = new WeakSet();
 
-function supportsRetarget(message) {
+export function supportsRetarget(message) {
+    if (!["usage","attack"].includes(message?.type)) return false;
     const item=message?.getAssociatedItem?.()??message?.getAssociatedActivity?.()?.item;
-    if(item?.type==="feat"&&((item.identifier??item.system?.identifier)==="aura-of-elemental-shielding"||/^aura of elemental shielding$/i.test(item.name??"")))return false;
+    if(item?.type==="feat"&&(["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(item.identifier??item.system?.identifier)||/^aura of elemental shielding$/i.test(item.name??"")))return false;
     if (["manualCheck","check"].includes(message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")?.phase)) return false;
     return ["usage","attack"].includes(message?.type) && (
-        ["spell","feat","weapon"].includes(message.getAssociatedItem?.()?.type) ||
+        ["spell","feat","weapon"].includes(item?.type) ||
         message.getAssociatedActivity?.()?.type === "attack");
 }
 

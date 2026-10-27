@@ -2,6 +2,78 @@
 
 ## Unreleased
 
+- Coordinate automatic Dead/Unconscious updates per actor across D&D5e HP handling and combat-tracker status toggles. Prevent duplicate fixed-ID status creation on NPC death while preserving overlays, native healing cleanup, important-NPC rules and Relentless Rage.
+
+- Measure Deflect Redirect range between nearest occupied token spaces instead of token centers, so adjacent Large and larger creatures qualify correctly for the 5-foot melee redirect. Use those same points for the wall check; retain native scene distance rules and the target/type selection popup.
+
+- Add Monk Deflect Attacks/Energy to completed, unapplied attack damage cards. Use the native reduction formula and a Reaction to reduce only the Monk’s incoming damage directly, with updated totals and tooltip breakdowns, without calling the healing activity. Base Deflect requires an attack containing Bludgeoning/Piercing/Slashing; Energy supports any attack damage type. At zero, offer optional Redirect for 1 Focus Point with visible-target/range checks, the native Dexterity save and Martial Arts damage, original incoming damage-type selection and clicker-owned damage prompts. Preserve dice-animation timing, normal resistances and HP Undo/reapply.
+
+- Clear pending feature/cast status when an existing damage or healing prompt receives its completed roll. Fixes Life-Giving Force leaving the usage card marked Pending after its healing roll, without triggering extra healing or changing manual application.
+
+- Automatically grant World Tree Vitality Surge temporary HP equal to Barbarian level when Rage activates, preserving higher existing temporary HP. No additional card, roll or Apply click. Prevent refills from Rage extensions, linked-effect updates or client reloads; Life-Giving Force remains manual.
+
+- Clicking Ram after a qualifying melee hit now automatically applies its native Prone effect through the GM with effect Undo support, instead of requiring a second Apply click. Ram remains an optional attack-card button.
+
+- Combine Wild Heart Rage of the Wilds and Power of the Wilds into a two-column selector before native Rage activation or consumption. Require one choice per owned feature; cancellation spends nothing. Add Rage-linked Falcon flight (armor eligibility stays manual), a separate attached grid-based Lion aura with contextual enemy attack Disadvantage and active-Lion target exemptions, and a Ram Prone application-card option after a qualifying melee hit on a Large or smaller creature. Keep Wolf and Lion regions independent, remove benefits/regions when Rage ends, and avoid movement-driven chat refreshes.
+
+- Add a player/GM choice card for Wild Heart Aspect of the Wilds: select Owl, Panther or Salmon to apply its native benefit and replace the previous aspect. Keep choice effects manual, hide Retarget, and allow switching freely without a daily restriction.
+
+- Reuse expired or disabled actor Reckless Attack effects on activation instead of creating a new copy each turn. Refresh the application clock and native next-turn-start expiry, restore the feature’s prepared changes and remove duplicate actor copies without touching the item template or unrelated effects.
+
+- Add Wild Heart Rage of the Wilds selection on Rage activation, routed to the owning player with GM fallback. Eagle movement remains manual; Bear uses native resistance changes; Wolf creates a grid-based, token-attached, Region-layer-only 5-foot aura and grants allies contextual attack Advantage against enemies inside it. Tie choice benefits/aura to Rage, avoid duplicate prompts/copies and evaluate Advantage at attack time without movement-driven chat refreshes.
+
+- Exclude the Berserker from Intimidating Presence’s automatic area targets, editable target confirmation and final saved target list.
+
+- Link Berserker Mindless Rage immunity to active Rage, end existing Charmed/Frightened conditions on entry and remove the temporary immunity when Rage ends. Add Intimidating Presence’s end-of-turn Wisdom repeat save using the original DC, remove its Frightened effect on success after dice animations, correct the native effect to one minute, and clear the targeting region at caster turn end. Repeat saves do not consume feature/Rage uses or reapply effects.
+
+- Add Rage KO cleanup and Relentless Rage: offer the native Constitution save at 0 HP while raging, preserve Rage until the player rolls, use the feature’s native DC/tracker and rest recovery, and automatically apply its healing on success. Failure/decline ends Rage and permits normal downed conditions; Persistent Rage survives Incapacitated but not Unconscious.
+
+- Link the owned native Primal Knowledge effect to Barbarian Rage: apply once when Rage activates, adopt an existing source-matched copy without stacking, and remove the linked copy when Rage is disabled, expires or is deleted. Reconcile active Rages on load and preserve the book’s skill formulas.
+
+- Automatically apply 2024 Barbarian Indomitable Might: Strength checks (including skills/tools actually rolled with Strength) and Strength saves use the Strength score when the completed total is lower. Preserve the rolled dice/modifiers and DC, resolve the corrected save outcome immediately, and mark replaced totals beside the character name. No button or resource consumption.
+
+- Add Banneret Shared Resilience on failed ally saving throws within 60 feet: spend the Banneret’s Reaction and native Indomitable use, replace one d20 and add the Banneret’s Fighter level, keeping the replacement. Preserve save bonuses/DC, respect ownership/visibility/Undo locks, wait for dice animations and restore resources on failure. Share the Indomitable action queue to prevent competing resource use.
+
+- Always route manual Group Recovery and Team Tactics through the capped Banneret ally selector, including when native Choose Targets is disabled. Remove both targeting Regions at the end of the Banneret’s turn using the existing targeting-area cleanup setting; Team Tactics buffs keep their independent next-turn-start expiry.
+
+- Add manual Banneret Group Recovery/Team Tactics ally selection with map/list synchronization, caster exclusion and a Charisma modifier cap (minimum one), respecting 30/60-foot range. Team Tactics grants complete D20 Test Advantage, applies after healing rolls using existing buff settings, and expires at the start of the originating Banneret’s next turn.
+
+- Show minus signs on subtractive dice in expanded native damage breakdowns, including Enfeebling Shot’s reduction. Keep all rolled values, totals and damage application unchanged; support grouped chat cards and aggregated damage types.
+
+- Explicitly expire Banishing, Shadow and Enfeebling Shot at the end of the affected creature’s next turn when native special-duration cleanup leaves them behind. Track the application turn, preserve effects through the application turn, and inspect only the outgoing combatant.
+
+- Add Arcana Unleashed shot follow-through while leaving shot activation manual: Grasping Shot gets optional turn-start Athletics escape prompts using the recorded archer DC and clears that archer’s old brambles on reuse, including a successful new save. Refresh applied Banishing/Shadow/Enfeebling target-turn expiry clocks and keep Enfeebling’s native damage reduction aligned with the originating Fighter’s die.
+
+- Add Champion Survivor’s Heroic Rally: create the native healing card at turn start while Bloodied with at least 1 HP, using 5 + Constitution modifier and existing healing application settings. Prevent duplicate turn triggers; disabling the native Survivor effect pauses the feature. Heroic Warrior and death-save changes remain manual.
+
+- Prevent AC5e with Simple Cover in standalone or Library Mode from adding cover twice when native effects already include it in sheet AC (including Bulwark of Force). Preserve cover effects, Dexterity saves, stronger/total cover, ignore-cover features and other attack AC modifiers.
+
+- Limit Protective Field prompts to self or allied tokens sharing the Fighter’s non-neutral disposition. Exclude enemies/neutral recipients and recheck allegiance before committing the reduction.
+
+- Stop Studied Attacks feedback loops by processing only new attack cards, changed rolls and explicit target changes. Ignore effect/flag/render updates and use recorded targets for orphan cleanup rather than transient evaluated-target lists.
+
+- Add Fighter Studied Attacks: misses grant target-specific Advantage on the next attack against that creature. Consume on a committed attack, retain on cancellation/unrelated targets, refresh after another miss, and expire at the end of the Fighter’s next turn. Integrate AC5e cancellation without changing Vex or consuming resources.
+
+- Add 2024 Fighter Indomitable on failed-save cards. Spend one native feature use, reroll one d20 with the Fighter-level bonus and keep the replacement result. Preserve other bonuses, save DC/targets and native outcome updates; wait for player dice animations and require Undo before changing applied damage/effects. Support grouped saves, GM/player ownership, per-roll duplicate guards and resource rollback.
+
+- Fix Retarget rendering errors from native ChatMessage private-method lookups: skip unsupported message types before item resolution, resolve string origin IDs to real source messages, and safely handle deleted origins without changing native live-item or snapshot precedence.
+
+- Wait for connected clients’ tracked Dice So Nice animations before publishing Protective Field’s reduction and adjusted total or releasing HP application. The GM’s local animation completion alone no longer reveals the result early to players.
+
+- Restore AC5e’s configured button colors for native critical-damage recommendations when AC5e leaves the button unpainted. Keep the fallback presentation-only, respect disabled coloring/no-critical rules and preserve AC5e-owned highlights.
+
+- Add Psi Warrior Protective Field on unapplied damage cards. Spend one Fighter Energy Die and Reaction to reduce damage to self or a visible creature within 30 feet. Preserve shared dice and other targets, apply native resistances afterward, pause HP application while the reduction rolls, and keep the reduction for HP Undo/reapply.
+
+- Start the selected Telekinetic Thrust save alongside the Psionic Strike Force damage roll, without waiting for HP application or the Force animation. Preserve native save-outcome/effect animation ordering and duplicate-save protection.
+
+- Combine Telekinetic Thrust with Psionic Strike’s activation: Telekinetic Adept owners choose Damage Only, Prone or Push from a vertical popup. Carry the choice through the GM workflow and automatically prompt the selected save after Force damage is applied; remove the separate Thrust button.
+
+- Add Telekinetic Thrust after applied Psionic Strike damage. Choose Prone or manual push, prompt the native Strength save, and apply Prone only on failure. Preserve source targets, one follow-up per Psionic Strike, GM/player ownership and zero additional resource cost.
+
+- Move Psionic Strike out of damage configuration and onto applied weapon-damage cards. Let the player decide after seeing weapon damage, then spend one Energy Die and roll a separate noncritical Force damage card. Require actual HP/temporary-HP damage, preserve own-turn/range/resource limits, and keep the original weapon roll and Undo unchanged.
+
+- Add Psi Warrior Psionic Strike to applied weapon-damage cards within 30 feet. Roll separate native-scaled Force damage without critical doubling, consume one Fighter Psionic Energy Die through the active GM, and enforce once on the Fighter’s own turn. Preserve Soulknife pool separation, duplicate-use protection and native damage application.
+
 - Make generated Terrify save cards carry an explicit enabled Frightened effect and failed-save profile, repairing missing or stale owned-item effect links on the temporary copy. Preserve caster identity, repeat-save registration and the original book item.
 
 - Add Scion of the Three’s Terrify to Cunning Strike damage configuration when Strike Fear is owned. Deduct one Sneak Attack die before critical scaling, prompt the native Wisdom save after damage, apply Frightened with end-turn repeat saves, and grant attack Advantage only to the originating Rogue while the effect is active. Preserve Improved Cunning Strike combinations and normal Advantage/Disadvantage cancellation. Recognize native Sneak Attack die modifiers when calculating and deducting Cunning Strike costs, preserving Dread Incarnate’s minimum-3 dice.

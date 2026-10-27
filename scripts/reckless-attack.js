@@ -75,12 +75,29 @@ export function recklessFeature(actor) {
     return Array.from(actor?.items??[]).find(item=>item.type==="feat"&&
         (item.identifier==="reckless-attack"||item.system?.identifier==="reckless-attack"||/^reckless attack$/i.test(item.name?.trim()??"")));
 }
-export function recklessEffects(actor) {
+export function matchingRecklessEffects(actor) {
     const feature=recklessFeature(actor);
     const sources=new Set(Array.from(feature?.effects??[]).map(effect=>effect.uuid));
-    return Array.from(actor?.effects??[]).filter(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&
-        (effect.getFlag?.(MODULE_ID,"reckless")===true||sources.has(effect._stats?.duplicateSource)||sources.has(effect._stats?.compendiumSource)||
-            /^reckless(?: attack)?$/i.test(effect.name?.trim()??"")));
+    return Array.from(actor?.effects??[]).filter(effect=>
+        effect.getFlag?.(MODULE_ID,"reckless")===true||sources.has(effect._stats?.duplicateSource)||sources.has(effect._stats?.compendiumSource)||
+        !!feature?.uuid&&effect.system?.origin?.item===feature.uuid||/^reckless(?: attack)?$/i.test(effect.name?.trim()??""));
+}
+export function recklessEffects(actor) {
+    return matchingRecklessEffects(actor).filter(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&!effect.system?.expired);
+}
+export async function reuseRecklessEffects(actor,data) {
+    const available=matchingRecklessEffects(actor),used=new Set();
+    for(const copy of data){
+        const source=copy._stats?.duplicateSource??copy._stats?.compendiumSource;
+        const existing=available.find(effect=>!used.has(effect)&&source&&[effect._stats?.duplicateSource,effect._stats?.compendiumSource].includes(source))??
+            available.find(effect=>!used.has(effect)&&effect.name===copy.name)??available.find(effect=>!used.has(effect));
+        if(existing){used.add(existing);await existing.update(copy);}
+        else await actor.createEmbeddedDocuments("ActiveEffect",[copy]);
+    }
+    // Retire only duplicate actor copies of Reckless; never touch item effects
+    // or unrelated statuses. An expired/disabled copy is reusable next turn.
+    const duplicates=available.filter(effect=>!used.has(effect)).map(effect=>effect.id).filter(Boolean);
+    if(duplicates.length)await actor.deleteEmbeddedDocuments("ActiveEffect",duplicates);
 }
 export async function activateReckless(actor) {
     if(!enabled()||!actor?.isOwner)throw Error("Reckless Attack requires ownership of the attacker.");
@@ -108,7 +125,7 @@ export async function activateReckless(actor) {
         if(!data.length)data.push({name:"Reckless Attack",img:feature.img,disabled:false,transfer:false,
             duration:{rounds:null,turns:null,seconds:null,value:null,expired:false,expiry:"sourceStart"},start:CONFIG.ActiveEffect.documentClass.getEffectStart(),
             system:{changes:[],origin:{actor:actor.uuid,item:feature.uuid}},flags:{[MODULE_ID]:{reckless:true}}});
-        await actor.createEmbeddedDocuments("ActiveEffect",data);
+        await reuseRecklessEffects(actor,data);
     })();
     activating.set(actor.uuid,task);
     try {await task;}finally {activating.delete(actor.uuid);}

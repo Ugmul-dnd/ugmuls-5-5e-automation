@@ -99,6 +99,7 @@ export function configurePromptDialog(kind, dialog = {}) {
             async _prepareButtonsContext(context, options) {
                 const prepared=await super._prepareButtonsContext(context,options);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.prepareAttackButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationStudied?.prepareStudiedButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.prepareRecklessButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
@@ -285,7 +286,7 @@ function failedEnvenomSave(message){
 }
 export function damagePromptRecipient(activity,message,region=false){
  if(message.getFlag?.(MODULE_ID,"envenomPoison"))return selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM)??message.author;
- const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave");
+ const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave")??message.getFlag?.(MODULE_ID,"deflectRedirectSave");
  if(rebuke){const user=game.users.get?.(rebuke.userId),actor=activity.actor??activity.item?.actor;
   if(user?.active&&(user.isGM||actor?.testUserPermission?.(user,"OWNER")))return user;
   return game.users.activeGM??message.author;
@@ -303,7 +304,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     // Empty areas wait for their first recorded trigger, without consuming the prompt guard.
     if(kind === "save" && !message.system?.targets?.length)return;
     if(message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&(message.system.targets??[]).some(target=>!["success","failure"].includes(message.system.outcomes?.get(target.token))))return;
-    if(kind==="save"&&message.getFlag?.(MODULE_ID,"envenomPoison")&&!failedEnvenomSave(message))return;
+    if(kind==="save"&&(message.getFlag?.(MODULE_ID,"envenomPoison")||message.getFlag?.(MODULE_ID,"deflectRedirectSave"))&&!failedEnvenomSave(message))return;
     const key = `${kind}:${attack?.id ?? message.id}`;
     if (opened.has(key) || queued.has(key)) return;
     queued.add(key);
@@ -312,7 +313,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
             await waitForAttackAnimation(attack);
             if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
         }
-        if(message.getFlag?.(MODULE_ID,"envenomPoison")){
+        if(message.getFlag?.(MODULE_ID,"envenomPoison")||message.getFlag?.(MODULE_ID,"deflectRedirectSave")){
             if(game.user.isGM)await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
             else await Promise.all(Array.from(message.getAssociatedRolls?.("save")??[],roll=>waitForAttackAnimation(roll)));
             if(!failedEnvenomSave(message))return;
@@ -378,8 +379,8 @@ Hooks.once("ready", () => {
     // damage dialog is routed to a connected owner of the casting actor.
     const promptRegionDamage=card=>{
         const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
-        const message=card.type==="usage"?card:(origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")||origin?.getFlag?.(MODULE_ID,"envenomPoison"))?origin:null;
-        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&!message.getFlag?.(MODULE_ID,"envenomPoison")))return;
+        const message=card.type==="usage"?card:(origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")||origin?.getFlag?.(MODULE_ID,"deflectRedirectSave")||origin?.getFlag?.(MODULE_ID,"envenomPoison"))?origin:null;
+        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&!message.getFlag?.(MODULE_ID,"deflectRedirectSave")&&!message.getFlag?.(MODULE_ID,"envenomPoison")))return;
         setTimeout(()=>promptDamage(message.getAssociatedActivity?.({scaled:true}),message).catch(report),0);
     };
     Hooks.on("createChatMessage",promptRegionDamage);
