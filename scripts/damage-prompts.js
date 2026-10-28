@@ -9,7 +9,8 @@ const dialogClasses = new Map();
 let positionWrites = Promise.resolve();
 
 export function addDamageChoice(app, {key, label, value, disabled=false, used=false, locked=false, change=()=>{}}) {
-    const configuration=app.element.querySelector('[data-application-part="configuration"] fieldset')
+    const configuration=app.element.querySelector('fieldset[data-application-part="configuration"]')
+        ??app.element.querySelector('[data-application-part="configuration"] fieldset')
         ??app.element.querySelector('fieldset');
     if(!configuration)return null;
     const existing=configuration.querySelector('[data-rsa-choice="'+key+'"]');
@@ -45,16 +46,21 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                 const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple,{preview:true})??grapple;
                 const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,savage)??savage;
-                const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,riders,{preview:true})??riders;
+                const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,riders,{preview:true})??riders;
+                const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,fury,{preview:true})??fury;
                 const prey=globalThis.Ugmuls55eAutomationPrey?.finalizePrey(this,sneak,{preview:true})??sneak;
                 const smite=globalThis.Ugmuls55eAutomationSmite?.finalizeSmite(this,prey,{preview:true})??prey;
                 const eldritch=globalThis.Ugmuls55eAutomationEldritch?.finalizeEldritch(this,smite,{preview:true})??smite;
                 const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                 const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal,{preview:true})??brutal;
                 const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy,{preview:true})??frenzy;
-                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury,{preview:true})??divineFury;
+                const polar=globalThis.Ugmuls55eAutomationPolarStrikes?.finalizePolarStrikes(this,divineFury,{preview:true})??divineFury;
+                const feyStrikes=globalThis.Ugmuls55eAutomationFeyStrikes?.finalizeFeyStrikes(this,polar,{preview:true})??polar;
+                const dread=globalThis.Ugmuls55eAutomationDread?.finalizeDread(this,feyStrikes,{preview:true})??feyStrikes;
+                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,dread,{preview:true})??dread;
                 const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt,{preview:true})??jolt;
-                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm,{preview:true})??firearm;
+                const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm,{preview:true})??firearm;
+                const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome,{preview:true})??epitome;
                 const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver,{preview:true})??maneuver;
                 const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,valor,{preview:true})??valor;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
@@ -73,32 +79,41 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind==="damage"&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)===false)return [];
                 const rolls=super._finalizeRolls(action);
                 if(kind === "damage") {
+                    globalThis.Ugmuls55eAutomationOpenHand?.finalizeOpenHand(this,rolls);
+                    globalThis.Ugmuls55eAutomationElementalMotion?.finalizeElemental(this,rolls);
                     const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
                     const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave)??cleave;
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                     const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple)??grapple;
                     const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,weaponRolls)??weaponRolls;
-                    const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,riders)??riders;
+                    const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,riders)??riders;
+                    const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,fury)??fury;
                     const prey=globalThis.Ugmuls55eAutomationPrey?.finalizePrey(this,sneak)??sneak;
                     const smite=globalThis.Ugmuls55eAutomationSmite?.finalizeSmite(this,prey)??prey;
                     const eldritch=globalThis.Ugmuls55eAutomationEldritch?.finalizeEldritch(this,smite)??smite;
                     const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                     const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal)??brutal;
                     const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy)??frenzy;
-                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury)??divineFury;
+                    const polar=globalThis.Ugmuls55eAutomationPolarStrikes?.finalizePolarStrikes(this,divineFury)??divineFury;
+                    const feyStrikes=globalThis.Ugmuls55eAutomationFeyStrikes?.finalizeFeyStrikes(this,polar)??polar;
+                    const dread=globalThis.Ugmuls55eAutomationDread?.finalizeDread(this,feyStrikes)??feyStrikes;
+                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,dread)??dread;
                     const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt)??jolt;
-                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,firearm)??firearm;
+                    const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm)??firearm;
+                    const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome)??epitome;
                     const valor=globalThis.Ugmuls55eAutomationValor?.finalizeValorOffense(this,maneuver)??maneuver;
                     const stunning=globalThis.Ugmuls55eAutomationStunning?.finalizeStunning(this,valor)??valor;
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
                     return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
                 }
-                if(kind === "attack"){const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
+                if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
             }
             async _prepareButtonsContext(context, options) {
                 const prepared=await super._prepareButtonsContext(context,options);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.prepareAttackButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationStudied?.prepareStudiedButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationTactics?.prepareTacticsButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.prepareRecklessButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
@@ -112,6 +127,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationBrutal?.addBrutalButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationSacredWeapon?.addSacredWeaponButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationVow?.addVowButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationRot?.addRootsChoice(this);
                 if(kind === "damage") {
                     // Extra rider rows are previews, not separate native configuration entries.
                     for(const [index,row] of Array.from(this.element.querySelectorAll(".formulas > li")).entries()) {
@@ -129,6 +145,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationEldritch?.addEldritchChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFrenzy?.addFrenzyChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDivineFury?.addDivineFuryChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationFeyStrikes?.addFeyStrikesChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationPolarStrikes?.addPolarStrikesChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationDread?.addDreadChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
@@ -136,6 +155,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationValor?.addValorOffenseChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationStunning?.addStunningChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationGrapple?.addGrappleChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationElementalMotion?.addElementalChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationOpenHand?.addOpenHandChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationEpitome?.addEmpoweredChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationTransmuted?.addTransmutedChoice(this);
             }
             _onPosition(position) {
@@ -168,11 +190,21 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationBrutal?.commitBrutalEffects(this,options);
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,options);
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,options);
+                        await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,options);
+                        await globalThis.Ugmuls55eAutomationBestialFury?.commitFury(this,options);
+                        await globalThis.Ugmuls55eAutomationDread?.commitDread(this,options);
+                        await globalThis.Ugmuls55eAutomationFeyStrikes?.commitFeyStrikes(this,options);
+                        await globalThis.Ugmuls55eAutomationPolarStrikes?.commitPolarStrikes(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationFeyStrikes?.commitFeyStrikes(this,{});
+                        await globalThis.Ugmuls55eAutomationPolarStrikes?.commitPolarStrikes(this,{});
+                        await globalThis.Ugmuls55eAutomationDread?.commitDread(this,{});
+                        await globalThis.Ugmuls55eAutomationBestialFury?.commitFury(this,{});
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,{});
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,{});
+                        await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,{});
                         await globalThis.Ugmuls55eAutomationBattleMaster?.commitManeuver(this,{});
                         await globalThis.Ugmuls55eAutomationValor?.commitValorOffense(this,{});
                         await globalThis.Ugmuls55eAutomationGrapple?.commitGrapple(this,{});
@@ -279,8 +311,13 @@ export function recommendAttackCritical(config,dialog,attack){
   config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
  }
 }
+function failedEnvenomSave(message){
+ const outcomes=(message.system.targets??[]).map(t=>message.system.outcomes?.get(t.token));
+ return outcomes.length>0&&outcomes.every(outcome=>["success","failure"].includes(outcome))&&outcomes.includes("failure");
+}
 export function damagePromptRecipient(activity,message,region=false){
- const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave");
+ if(message.getFlag?.(MODULE_ID,"envenomPoison"))return selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM)??message.author;
+ const rebuke=message.getFlag?.(MODULE_ID,"elementalRebukeSave")??message.getFlag?.(MODULE_ID,"deflectRedirectSave");
  if(rebuke){const user=game.users.get?.(rebuke.userId),actor=activity.actor??activity.item?.actor;
   if(user?.active&&(user.isGM||actor?.testUserPermission?.(user,"OWNER")))return user;
   return game.users.activeGM??message.author;
@@ -298,6 +335,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     // Empty areas wait for their first recorded trigger, without consuming the prompt guard.
     if(kind === "save" && !message.system?.targets?.length)return;
     if(message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&(message.system.targets??[]).some(target=>!["success","failure"].includes(message.system.outcomes?.get(target.token))))return;
+    if(kind==="save"&&(message.getFlag?.(MODULE_ID,"envenomPoison")||message.getFlag?.(MODULE_ID,"deflectRedirectSave"))&&!failedEnvenomSave(message))return;
     const key = `${kind}:${attack?.id ?? message.id}`;
     if (opened.has(key) || queued.has(key)) return;
     queued.add(key);
@@ -305,6 +343,11 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (attack) {
             await waitForAttackAnimation(attack);
             if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
+        }
+        if(message.getFlag?.(MODULE_ID,"envenomPoison")||message.getFlag?.(MODULE_ID,"deflectRedirectSave")){
+            if(game.user.isGM)await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
+            else await Promise.all(Array.from(message.getAssociatedRolls?.("save")??[],roll=>waitForAttackAnimation(roll)));
+            if(!failedEnvenomSave(message))return;
         }
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
@@ -315,6 +358,10 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         opened.add(key);
         const {ability, ammunitionItem: ammunition, mode: attackMode} = attack?.system ?? {};
         const isCritical = attack?.rolls?.[0]?.isCritical === true;
+        if(message.getFlag?.(MODULE_ID,"envenomPoison")&&globalThis.Ugmuls55eAutomationEnvenom?.rollEnvenomDamage){
+            await globalThis.Ugmuls55eAutomationEnvenom.rollEnvenomDamage(activity,message,{dialog:configurePromptDialog("damage",{configure:true})});
+            return;
+        }
         // onChatAction applies the usage card's consumption and upcast scaling
         // and invokes the same native damage action as its Damage button.
         if (typeof activity.onChatAction === "function") {
@@ -330,6 +377,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
                 if (attack && damageMessage) {
                     damageMessage.data ??= {};damageMessage.data.flags ??= {};
                     damageMessage.data.flags[MODULE_ID] = {...damageMessage.data.flags[MODULE_ID],damageAttackId:attack.id};
+                    const flurry=attack.getFlag?.(MODULE_ID,"flurryOfBlows");if(flurry)damageMessage.data.flags[MODULE_ID].flurryOfBlows=flurry;
                 }
                 Hooks.off("dnd5e.preRollDamageV2",hook);
             });
@@ -363,8 +411,8 @@ Hooks.once("ready", () => {
     // damage dialog is routed to a connected owner of the casting actor.
     const promptRegionDamage=card=>{
         const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
-        const message=card.type==="usage"?card:origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")?origin:null;
-        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")))return;
+        const message=card.type==="usage"?card:(origin?.getFlag?.(MODULE_ID,"elementalRebukeSave")||origin?.getFlag?.(MODULE_ID,"deflectRedirectSave")||origin?.getFlag?.(MODULE_ID,"envenomPoison"))?origin:null;
+        if(!message||(!message.getFlag?.(MODULE_ID,"regionTriggered")&&!message.getFlag?.(MODULE_ID,"sharedCardPerTurn")&&!message.getFlag?.(MODULE_ID,"elementalRebukeSave")&&!message.getFlag?.(MODULE_ID,"deflectRedirectSave")&&!message.getFlag?.(MODULE_ID,"envenomPoison")))return;
         setTimeout(()=>promptDamage(message.getAssociatedActivity?.({scaled:true}),message).catch(report),0);
     };
     Hooks.on("createChatMessage",promptRegionDamage);

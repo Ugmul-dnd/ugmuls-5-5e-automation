@@ -212,10 +212,10 @@ export async function resolveSelectedSmite(card){
         const save=initialSmiteSave(spell);
         if(save){
             // Keep native save DC, effect profiles and scaling, but never roll the initial damage twice.
-            const data=spell.toObject();data._id=foundry.utils.randomID();data.system.activities[save.id].damage.parts=[];
+            const data=spell.toObject();data._id=spell.id;data.system.activities[save.id].damage.parts=[];
             const item=new CONFIG.Item.documentClass(data,{parent:actor});
             const activity=item.system.activities.get(save.id);
-            const result=await activity.use({consume:false,scaling},{configure:false},{data:{system:{targets},flags:{dnd5e:{item:{data}},[ID]:{riderTriggered:true,smiteSave:{damageId:card.id}}}}});
+            const result=await activity.use({consume:false,scaling},{configure:false},{data:{system:{targets},flags:{dnd5e:{item:{data}},[ID]:{riderTriggered:true,activityOverrideData:data,smiteSave:{damageId:card.id,spell:spell.uuid,actor:actor.uuid}}}}});
             if(!result?.message)throw Error("The Smite save card could not be created.");
         }else{
             const item=spell.scaledClone?.(scaling)??spell.clone({}, {keepId:true});

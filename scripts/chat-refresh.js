@@ -1,6 +1,22 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ stalkersFlurry:{setting:"stalkersFlurryAutomation",types:["damage"],feature:"stalkers-flurry",own:true},
+ superiorHunterPrey:{setting:"superiorHunterPreyAutomation",types:["damage"],feature:"superior-hunters-prey",own:true},
+ superiorHunterDefense:{setting:"superiorHunterDefenseAutomation",types:["damage"],feature:"superior-hunters-defense",incoming:true},
+ handOfHarm:{setting:"handOfHarmAutomation",types:["damage"],feature:"hand-of-harm",own:true},
+ disciplinedSurvivor:{setting:"disciplinedSurvivorAutomation",types:["save"],feature:"disciplined-survivor",own:true},
+ deflect:{setting:"deflectAttacksAutomation",types:["damage"],feature:"deflect-attacks",incoming:true},
+ wildRage:{setting:"wildRageAutomation",types:["usage"],feature:"rage-of-the-wilds",own:true},
+ sharedResilience:{setting:"sharedResilienceAutomation",types:["save"],feature:"shared-resilience",all:true},
+ indomitable:{setting:"indomitableAutomation",types:["save"],feature:"indomitable",own:true},
+ protectiveField:{setting:"protectiveFieldAutomation",types:["damage"],feature:"psionic-power",all:true},
+ psiStrike:{setting:"psionicStrikeAutomation",types:["damage"],feature:"psionic-power",own:true},
+ rend:{setting:"rendMindAutomation",types:["damage"],feature:"rend-mind",own:true},
+ homing:{setting:"homingStrikesAutomation",types:["attack"],feature:"soul-blades",own:true},
+ evasion:{setting:"evasionAutomation",types:["damage","usage","save"],feature:"evasion",incoming:true},
+ chilling:{setting:"chillingRetributionAutomation",types:["damage"],feature:"chilling-retribution",incoming:true},
+ uncanny:{setting:"uncannyDodgeAutomation",types:["damage"],feature:"uncanny-dodge",incoming:true},
  rebuke:{setting:"elementalRebukeAutomation",types:["attack","damage"],feature:"elemental-rebuke",incoming:true},
  flash:{setting:"flashOfGeniusAutomation",types:["save","check"],feature:"flash-of-genius",all:true},
  bardic:{setting:"bardicInspirationAutomation",types:["attack","save","check"],own:true,effect:/^inspired$/i},

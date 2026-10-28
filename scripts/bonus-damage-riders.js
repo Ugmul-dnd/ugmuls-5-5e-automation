@@ -108,6 +108,9 @@ export function bindRiderDamageTypes(app) {
         });
     }
 }
+export function hunterMarkDie(actor){
+ return game.settings.get(ID,"foeSlayerAutomation")!==false&&Array.from(actor?.items?.values?.()??actor?.items??[]).some(i=>i.type==="feat"&&(i.identifier??i.system?.identifier)==="foe-slayer"&&i.system?.source?.rules!=="2014")?"1d10":"1d6";
+}
 export function finalizeRiders(app,rolls) {
     const result=[...rolls];
     for(const rider of availableRiders(app)) {
@@ -122,10 +125,10 @@ export function finalizeRiders(app,rolls) {
                 options:{...part.options,type,types:[...elementalTypes],flavor:rider.name,isCritical:critical,critical:policy,rsaBonusRider:rider.key}}, {critical:policy}));
             continue;
         }
-        result.push(new CONFIG.Dice.DamageRoll(`1d6[${rider.name}]`,{},
+        result.push(new CONFIG.Dice.DamageRoll(`${rider.key==="hunters-mark"?hunterMarkDie(app.config?.subject?.actor??app.config?.subject?.item?.actor):"1d6"}[${rider.name}]`,{},
             {type:rider.type,isCritical:critical,critical:policy,rsaBonusRider:rider.key}));
     }
-    return result;
+    return globalThis.Ugmuls55eAutomationAncient?.finalizeAncient(app,result)??result;
 }
 Hooks.once("init",()=>{
     game.settings.register(ID,"lastMinorElementalsType",{scope:"client",config:false,type:String,default:"acid"});

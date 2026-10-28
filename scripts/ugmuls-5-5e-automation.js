@@ -1,3 +1,64 @@
+import "./frozen-haunt.js";
+import "./chilling-retribution.js";
+import "./automatic-healing.js";
+import "./fortifying-soul.js";
+import "./hunters-rime.js";
+import "./biting-cold.js";
+import "./frigid-explorer.js";
+import "./ancient-might.js";
+import "./rot-and-violence.js";
+import "./hungering-might.js";
+import "./hollow-wrath-aura.js";
+import "./misty-wanderer.js";
+import "./beguiling-twist.js";
+import "./fey-dreadful-strikes.js";
+import "./stalkers-flurry.js";
+import "./dread-ambusher.js";
+import "./bestial-fury.js";
+import "./superior-hunters-prey.js";
+import "./superior-hunters-defense.js";
+import "./ranger-rest-options.js";
+import "./hunter-defensive-tactics.js";
+import "./ranger-base.js";
+import "./focused-strike.js";
+import "./epitome-stride.js";
+import "./epitome-resistance.js";
+import "./elemental-strikes.js";
+import "./physicians-touch.js";
+import "./hand-of-harm.js";
+import "./open-hand-technique.js";
+import "./flurry-of-blows.js";
+import "./disciplined-survivor.js";
+import "./downed-status-compat.js";
+import "./deflect-attacks.js";
+import "./vitality-surge.js";
+import "./rage-of-the-wilds.js";
+import "./mindless-rage.js";
+import "./relentless-rage.js";
+import "./primal-knowledge.js";
+import "./indomitable-might.js";
+import "./shared-resilience.js";
+import "./banneret.js";
+import "./negative-damage-display.js";
+import "./arcane-shot-effects.js";
+import "./survivor.js";
+import "./simple-cover-compat.js";
+import "./studied-attacks.js";
+import "./indomitable.js";
+import "./critical-button-highlight.js";
+import "./protective-field.js";
+import "./telekinetic-thrust.js";
+import "./psionic-strike.js";
+import "./terrify.js";
+import "./thiefs-reflexes.js";
+import "./rend-mind.js";
+import "./homing-strikes.js";
+import "./death-strike.js";
+import "./envenom-weapons.js";
+import "./assassinate.js";
+import "./evasion.js";
+import "./uncanny-dodge.js";
+import "./cunning-strike.js";
 import "./avenging-angel.js";
 import "./vow-of-enmity.js";
 import "./holy-nimbus.js";
@@ -7,6 +68,7 @@ import "./elemental-rebuke.js";
 import "./genie-elemental-smite.js";
 import "./aura-grid.js";
 import "./genie-shielding.js";
+import "./wild-aspect.js";
 import "./paladin-auras.js";
 import "./arcane-firearm.js";
 import "./arcane-jolt.js";
@@ -20,7 +82,7 @@ import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
-// v0.8.1
+// v0.8.2
 // Foundry VTT v14 / D&D5e 6.0.5+ (tested with 6.0.6)
 //
 // Features:
@@ -56,7 +118,7 @@ const oncePerTurnHistory =
 
 
 console.log(
-    "Ugmuls 5.5e Automation | v0.8.1 JS loaded"
+    "Ugmuls 5.5e Automation | v0.8.2 JS loaded"
 );
 
 
@@ -891,7 +953,7 @@ Hooks.once("ready", () => {
         }).catch(err => console.error("Ugmuls 5.5e Automation | Confirmed target registration failed:", err));
     });
 
-    console.log("Ugmuls 5.5e Automation | Installing v0.8.1 Region hook");
+    console.log("Ugmuls 5.5e Automation | Installing v0.8.2 Region hook");
 
 
     // ========================================================
@@ -1488,6 +1550,6 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         }
     });
     console.log(
-        "Ugmuls 5.5e Automation | v0.8.1 Ready"
+        "Ugmuls 5.5e Automation | v0.8.2 Ready"
     );
 });

@@ -1,0 +1,11 @@
+# Superior Hunter's Prey
+
+After the Ranger actually deals HP or temporary-HP damage to their current Hunter's Mark target, the final damage card offers Superior Hunter's Prey to its owner or GM. The current Mark concentration and target must still match. New source damage cards record their combat turn; old cards cannot spend a later turn's use. The feature works once per turn, including eligible off-turn damage.
+
+Click the button to choose one different visible enemy within 30 feet of the original marked creature. The picker syncs its radio selection with map targeting and highlights tokens on hover. Range uses the marked creature as the origin; sight uses the Ranger. Exclude friendly and neutral tokens, the original creature, Ranger, hidden/dead/ineligible targets, and blocked sight. Enemy disposition is relative to the Ranger and is rechecked at confirmation. No candidates or Cancel spends nothing.
+
+Confirm copies and applies only the original evaluated Hunter's Mark Force damage. No dice are rerolled or animated again; already-rolled Foe Slayer and critical results are retained exactly. The source card must include an identifiable Mark damage roll. This costs no spell slot, Focus, action or Reaction. It does not move Hunter's Mark. Native damage application handles resistance/immunity/vulnerability and HP Undo. The generated cards opt out of automatic damage so confirmation cannot apply damage twice.
+
+The active GM validates player requests, range, Mark, source damage and once-per-turn use, then copies/applies the recorded damage. Canceling selection or failing to create the copied card preserves the turn use. Once the copied damage card has been created, application failure preserves that roll and its spent use for manual recovery rather than permitting another roll. Undo/reapply of the extra damage does not refund the turn use.
+
+Test on both clients: damage the marked target, select a second creature near that target but more than 30 feet from the Ranger, hover/select from list and map, then confirm. Check Force resistance and Foe Slayer. Confirm no button for damage to unmarked targets, prevented/undone damage, or generated Superior Prey damage. A second use on another damage card in the same turn must fail; a new eligible damage card next turn should offer it again.

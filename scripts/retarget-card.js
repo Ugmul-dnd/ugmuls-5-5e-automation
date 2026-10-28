@@ -1,22 +1,53 @@
 import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCard } from "./shared-activity-card.js";
 const pendingCards = new WeakSet();
 
-function supportsRetarget(message) {
+export function supportsRetarget(message) {
+    if (!["usage","attack"].includes(message?.type)) return false;
+    if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;
+    if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(message.getAssociatedActivity?.()))return false;
+    if(globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(message.getAssociatedActivity?.()))return false;
     const item=message?.getAssociatedItem?.()??message?.getAssociatedActivity?.()?.item;
-    if(item?.type==="feat"&&((item.identifier??item.system?.identifier)==="aura-of-elemental-shielding"||/^aura of elemental shielding$/i.test(item.name??"")))return false;
+    if(item?.type==="feat"&&(["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(item.identifier??item.system?.identifier)||/^aura of elemental shielding$/i.test(item.name??"")))return false;
     if (["manualCheck","check"].includes(message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")?.phase)) return false;
     return ["usage","attack"].includes(message?.type) && (
-        ["spell","feat","weapon"].includes(message.getAssociatedItem?.()?.type) ||
+        ["spell","feat","weapon"].includes(item?.type) ||
         message.getAssociatedActivity?.()?.type === "attack");
 }
 
+const RETARGET_ID="ugmuls-5-5e-automation";
+export function canRetargetCard(message,user=game.user){
+ if(user?.isGM||message?.isOwner&&user?.id===game.user.id)return true;
+ if(message?.isContentVisible===false||message?.type!=="usage"||!message.getFlag?.(RETARGET_ID,"epitomeStrideDamage"))return false;
+ const actor=message.getAssociatedActor?.()??message.getAssociatedActivity?.()?.actor;
+ return !!actor?.testUserPermission?.(user,"OWNER");
+}
+export async function receiveStrideRetarget(packet){
+ if(packet?.action!=="retargetStrideCard"||!game.user.isGM||game.users.activeGM?.id!==game.user.id||packet.gmId!==game.user.id)return;
+ const user=game.users.get(packet.userId),card=game.messages.get(packet.messageId);
+ if(!user?.active||!card?.getFlag?.(RETARGET_ID,"epitomeStrideDamage")||!canRetargetCard(card,user)||!Array.isArray(packet.targets))return;
+ const source=card.getAssociatedToken?.(),scene=(source?.document??source)?.parent??globalThis.canvas?.scene,targets=[];
+ for(const uuid of new Set(packet.targets)){
+  if(typeof uuid!=="string")return;
+  const token=await fromUuid(uuid);
+  if(!token?.actor||token.parent?.id!==scene?.id||!user.isGM&&token.hidden)continue;
+  targets.push(token);
+ }
+ await retargetSpellCard(card,targets);
+}
 export async function retargetSpellCard(message, targets = game.user.targets) {
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
-    if (!supportsRetarget(message) || (!game.user.isGM && !message.isOwner) || pendingCards.has(message)) return;
+    if (!supportsRetarget(message) || !canRetargetCard(message) || pendingCards.has(message)) return;
     const descriptors = [...new Map(Array.from(targets).filter(isHealingCard(message)?isEligibleHealingTarget:isEligibleTarget).map(target => {
         const token = target.document ?? target;
         return [token.uuid, describeTarget(token)];
     })).values()];
+    // The owning Monk can choose recipients, while the GM updates its own
+    // usage card and every linked roll, including player-authored damage.
+    if(!game.user.isGM&&!message.isOwner&&message.getFlag?.(RETARGET_ID,"epitomeStrideDamage")){
+        const gm=game.users.activeGM;if(!gm)throw Error("A connected GM is required to retarget this aura card.");
+        game.socket.emit("module."+RETARGET_ID,{action:"retargetStrideCard",messageId:message.id,userId:game.user.id,gmId:gm.id,targets:descriptors.map(t=>t.token)});
+        return;
+    }
     pendingCards.add(message);
     try {
         let cards;
@@ -61,7 +92,7 @@ export async function retargetSpellCard(message, targets = game.user.targets) {
 export function addRetargetButton(message, html) {
     hideRemovedTargetSummaries(message, html);
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
-    if (!supportsRetarget(message) || (!game.user.isGM && !message.isOwner)) return;
+    if (!supportsRetarget(message) || !canRetargetCard(message)) return;
     if (message.type === "usage" && message.getAssociatedActivity?.()?.type === "attack" &&
         game.settings.get("ugmuls-5-5e-automation","simplifyAttackCards") === true) return;
     const root = html instanceof HTMLElement ? html : html?.[0];
@@ -131,4 +162,7 @@ Hooks.once("init", () => game.settings.register("ugmuls-5-5e-automation", "retar
     scope: "world", config: true, type: Boolean, default: true,
     onChange: () => ui.chat?.render({ force: true })
 }));
-Hooks.once("ready", () => Hooks.on("dnd5e.renderChatMessage", addRetargetButton));
+Hooks.once("ready", () => {
+ Hooks.on("dnd5e.renderChatMessage",addRetargetButton);
+ game.socket.on("module."+RETARGET_ID,packet=>{receiveStrideRetarget(packet).catch(error=>{console.error("Destructive Stride Retarget",error);ui.notifications.error(error.message);});});
+});

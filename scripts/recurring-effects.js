@@ -8,6 +8,39 @@ const active=effect=>effect&&!effect.disabled&&effect.active!==false&&!effect.du
 const originOf=card=>typeof card?.system?.origin==="string"?game.messages.get(card.system.origin):card?.system?.origin;
 const report=error=>{console.error("Ugmuls 5.5e Automation | Recurring effect",error);ui.notifications.error("Recurring effect could not finish: "+error.message);};
 export function hasExternalTurnAutomation(effect){return Array.from(effect?.changes??effect?.system?.changes??[]).some(change=>/OverTime|macro\.(execute|itemMacro)|onTurn/i.test(change.key??""));}
+const values=v=>Array.from(v?.values?.()??v??[]);
+async function recurringDocument(ref){if(!ref)return null;try{return await fromUuid(ref,{strict:false});}catch{return null;}}
+function sameRecurringCaster(item,caster){return !!item?.actor&&(!caster||item.actor.uuid===caster);}
+async function recurringOwnedSource(spell,sourceCard,caster=spell?.actor?.uuid){
+ const smite=sourceCard?.getFlag?.(ID,"smiteSave"),damage=smite?.damageId?game.messages.get(smite.damageId):null;
+ const selected=damage?.getFlag?.(ID,"selectedSmite")??damage?.getFlag?.(ID,"selectedSmiteRequest");
+ for(const ref of [smite?.spell,selected?.spell]){
+  const item=await recurringDocument(ref);if(sameRecurringCaster(item,caster))return item;
+ }
+ const actor=spell?.actor??sourceCard?.getAssociatedActor?.();if(!actor||caster&&actor.uuid!==caster)return null;
+ const owned=actor.items?.get?.(spell?.id)??values(actor.items).find(i=>i.uuid===spell?.uuid);
+ if(sameRecurringCaster(owned,caster))return owned;
+ const identifier=spell?.identifier??spell?.system?.identifier;
+ const matches=identifier?values(actor.items).filter(i=>i.type===spell?.type&&(i.identifier??i.system?.identifier)===identifier):[];
+ return matches.length===1&&sameRecurringCaster(matches[0],caster)?matches[0]:null;
+}
+export async function resolveRecurringSource(effect,record){
+ const direct=await recurringDocument(record.spell);if(sameRecurringCaster(direct,record.caster))return direct;
+ const sourceCard=await recurringDocument(record.sourceCard??effect.system?.origin?.message);
+ const stored=sourceCard?.getAssociatedItem?.({scaled:false});
+ let owned=await recurringOwnedSource(stored,sourceCard,record.caster);
+ if(!owned){
+  const caster=await recurringDocument(record.caster);
+  const matches=values(caster?.items).filter(item=>sameRecurringCaster(item,record.caster)&&triggerKeyForSpell(item,effect)===record.key);
+  if(matches.length===1)owned=matches[0];
+ }
+ const source=owned??(sameRecurringCaster(stored,record.caster)?stored:null);
+ // Recover only the recorded caster's matching recipe; never select an item
+ // from another actor or guess between duplicate owned copies.
+ if(!source||triggerKeyForSpell(source,effect)!==record.key)return null;
+ if(owned&&owned.uuid!==record.spell){record={...record,spell:owned.uuid,caster:owned.actor.uuid};await effect.setFlag(ID,"recurringEffect",record);}
+ return source;
+}
 export async function registerRecurringEffect(effect,{spell,level,sourceCard}={}){
  if(!authority()||!effect||hasExternalTurnAutomation(effect))return;
  const previous=effect.getFlag?.(ID,"recurringEffect");if(previous&&(!sourceCard||previous.sourceCard===sourceCard.uuid))return;
@@ -17,10 +50,12 @@ export async function registerRecurringEffect(effect,{spell,level,sourceCard}={}
  const save=Array.from(spell.system.activities??[]).find(a=>a.type==="save"&&(a.id===entry.saveActivityId||a.name===entry.saveActivity));
  const check=(entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?Array.from(spell.system.activities??[]).find(a=>a.type==="check"&&a.id===entry.checkActivityId):null;
  const dc=entry.saveActivity?Number((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?(entry.escapePassiveSkill?spell.actor?.system?.skills?.[entry.escapePassiveSkill]?.passive:check?.check?.dc?.value):entry.sourceKind==="syntheticSave"?spell.actor?.system?.attributes?.spell?.dc:save?.save?.dc?.value):null;if(entry.saveActivity&&(!Number.isFinite(dc)||dc<=0))throw Error(entry.name+" needs a configured save DC.");
+ const candidateSource=await recurringOwnedSource(spell,sourceCard);
+ const ownedSource=candidateSource&&triggerKeyForSpell(candidateSource,effect)===key?candidateSource:null;
  const sourceToken=sourceCard?.getAssociatedToken?.()??spell.actor?.token;
  const sourceTokenUuid=(sourceToken?.document??sourceToken)?.uuid;
  const healing=entry.sourceKind==="recurringHealing"?{healingAmount:recurringHealingAmount(spell,entry)}:{};
- await effect.setFlag(ID,"recurringEffect",{...healing,...(sourceTokenUuid?{sourceToken:sourceTokenUuid}:{}),...((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?{checkSkills:entry.checkSkills,escapeDisadvantage:entry.escapeDisadvantage===true}:{}),instance:foundry.utils.randomID(),key,spell:spell.uuid,caster:spell.actor?.uuid??spell.parent?.uuid,level:Number(level??spell.system.level??0),dc,sourceCard:sourceCard?.uuid??effect.system?.origin?.message,region:sourceCard?.getFlag?.(ID,"sourceRegion"),concentration:effect.system?.origin?.effect});
+ await effect.setFlag(ID,"recurringEffect",{...healing,...(sourceTokenUuid?{sourceToken:sourceTokenUuid}:{}),...((entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)?{checkSkills:entry.checkSkills,escapeDisadvantage:entry.escapeDisadvantage===true}:{}),instance:foundry.utils.randomID(),key,spell:ownedSource?.uuid??spell.uuid,caster:spell.actor?.uuid??spell.parent?.uuid,level:Number(level??spell.system.level??0),dc,sourceCard:sourceCard?.uuid??effect.system?.origin?.message,region:sourceCard?.getFlag?.(ID,"sourceRegion"),concentration:effect.system?.origin?.effect});
  if((entry.oneShot||entry.singleSave)&&previous)await effect.unsetFlag(ID,"recurringOneShotCard");
  if(entry.manualResolution&&previous)await effect.unsetFlag(ID,"recurringPaused");
  if(entry.oneShot&&effect.duration?.value!=null)await effect.update({duration:{value:null,units:"seconds",expiry:null,expired:false}});
@@ -82,14 +117,23 @@ export async function registerGrappleEscape(effect){
  const dc=Number(effect.getFlag(ID,"grappleEscapeDC")??globalThis.Ugmuls55eAutomationGrapple?.grappleDC?.(caster));if(!Number.isFinite(dc)||dc<=0)return;
  await effect.setFlag(ID,"recurringEffect",{instance:foundry.utils.randomID(),key:"grapple",caster:caster.uuid,level:0,dc,sourceCard:effect.system?.origin?.message});
 }
-async function registerNativeEffect(effect){
+export async function registerNativeEffect(effect){
  if(!authority())return;
  const originRef=effect.system?.origin?.message,old=effect.getFlag?.(ID,"recurringEffect");if(old&&old.sourceCard===originRef)return;
  if(effect.getFlag?.(ID,"grappleMode")==="grapple")return registerGrappleEscape(effect);
  const activity=effect.system?.origin?.activity?await fromUuid(effect.system.origin.activity):null;
  const source=effect._stats?.duplicateSource?await fromUuid(effect._stats.duplicateSource):null;
- const spell=activity?.item??source?.parent;if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  const sourceCard=originRef?await fromUuid(originRef):null;
+ let spell=activity?.item??source?.parent;
+ // Cunning Strike used disposable item IDs in earlier cards. Resolve their Poison
+ // from the recorded card's owned Rogue feature, never persist a temporary UUID.
+ const cunning=sourceCard?.getFlag?.(ID,"cunningStrikeSave");
+ if(["poison","knock-out","terrify"].includes(cunning?.choice)){
+  const identifier=cunning.choice==="terrify"?"strike-fear":cunning.choice==="knock-out"?"devious-strikes":"cunning-strike";
+  const actor=sourceCard.getAssociatedActor?.(),owned=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier&&(!cunning.sourceFeature||item.uuid===cunning.sourceFeature));
+  if(owned)spell=owned;
+ }
+ if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage","athleticsEscape","classSave"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  await registerRecurringEffect(effect,{spell,level:effect.getFlag?.("dnd5e","spellLevel")??sourceCard?.system?.level,sourceCard});
 }
 export function buildRecurringItem(spell,entry,record,phase){
@@ -99,7 +143,7 @@ export function buildRecurringItem(spell,entry,record,phase){
  const data=spell.toObject(),id=source.id;data._id=foundry.utils.randomID();data.name=entry.name+" — "+(phase==="damage"?"Recurring damage":"End effect save");
  const selected=data.system.activities[id];data.system.activities={[id]:selected};selected.effects=[];
  if(phase==="damage"&&entry.damageFromSave){selected.type="damage";delete selected.save;delete selected.damage.onSave;selected.damage.critical={allow:false};}
- if(entry.saveFirst||["monsterSave","monsterDamage"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
+ if(entry.saveFirst||["monsterSave","monsterDamage","classSave"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
 
  selected.activation={type:"special",override:true};selected.duration={units:"inst",concentration:false,override:true};selected.target={override:true,prompt:false,affects:{type:"creature",count:"1",choice:false},template:{type:""}};selected.range={override:true,units:"any"};
  if(phase!=="damage"){
@@ -110,6 +154,7 @@ export function buildRecurringItem(spell,entry,record,phase){
   data.flags??={};data.flags.autoanimations=quietAnimation(data.flags.autoanimations);
   selected.flags??={};selected.flags.autoanimations=quietAnimation(selected.flags.autoanimations);
  }
+ if(phase!=="damage"&&entry.sourceIdentifier==="cunning-strike"&&entry.saveActivityId==="n64fvJMT9fPUy7DH")globalThis.Ugmuls55eAutomationEnvenom?.prepareEnvenomPoison(data,id,spell.actor);
  if(phase==="damage"&&(entry.saveFirst||entry.sourceKind==="monsterDamage")){const quiet={version:5,isEnabled:false,isCustomized:false,killAnim:true};data.flags??={};data.flags.autoanimations=quiet;selected.flags??={};selected.flags.autoanimations=quiet;}
  if(phase==="damage"&&entry.damageTypesFallback)for(const part of selected.damage.parts??[])if(!part.types?.length)part.types=[...entry.damageTypesFallback];
  if(phase==="damage"&&entry.damageFormula){selected.damage.parts=[{custom:{enabled:true,formula:entry.damageFormula},types:selected.damage.parts[0]?.types??["fire"],scaling:{mode:""}}];}
@@ -143,9 +188,9 @@ export function buildEscapeCheckItem(spell,entry,record){
 async function createRecurringCard(effect,token,record,stamp,phase){
  const entry=triggerEntry(record.key);if(!entry?.enabled||!active(effect))return;
  if(entry.requiresLivingSource){const source=record.sourceToken?await fromUuid(record.sourceToken,{strict:false}):null;if(!source?.actor||source.parent?.id!==token.parent?.id||source.combatant?.defeated||source.actor.statuses?.has("dead")||Number.isFinite(source.actor.system?.attributes?.hp?.value)&&source.actor.system.attributes.hp.value<=0)return;}
- const spell=entry.sourceKind==="grapple"?{actor:await fromUuid(record.caster),system:{level:0}}:await fromUuid(record.spell);if(!spell?.actor)throw Error("The recurring effect’s source caster or spell is unavailable.");
+ const spell=entry.sourceKind==="grapple"?{actor:await fromUuid(record.caster),system:{level:0}}:await resolveRecurringSource(effect,record);if(!spell?.actor)throw Error("The recurring effect’s source caster or spell is unavailable.");
  const {data,id}=entry.sourceKind==="recurringHealing"?buildRecurringHealingItem(spell,entry,record):entry.sourceKind==="grapple"?buildGrappleEscapeItem(token.actor,record):entry.escapeCheck&&phase!=="damage"?buildEscapeCheckItem(spell,entry,record):buildRecurringItem(spell,entry,record,phase),item=new CONFIG.Item.documentClass(data,{parent:spell.actor});
- if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
+ if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage","classSave"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
  const descriptor={token:token.uuid,actor:token.actor.uuid,name:token.name,img:token.texture?.src??token.actor.img};
  const link={effect:effect.uuid,instance:record.instance,stamp,phase,key:record.key,...(stamp.startsWith("damage:")&&entry.damageSaveAdvantage?{advantage:true}:{})};
  const sourceRef=record.sourceCard??effect.system?.origin?.message;
@@ -154,10 +199,12 @@ async function createRecurringCard(effect,token,record,stamp,phase){
  // Reuse persistent casting choices. Careful Spell's initial-save protection
  // must not turn into automatic success on later repeat saves.
  const inherited={...(originalMeta?{metamagic:{...originalMeta,careful:[]}}:{}),...(conversion?{transmutedSpell:conversion}:{})};
- const result=await item.system.activities.get(id).use({consume:false,scaling:Math.max(0,record.level-Number(spell.system.level??0)),concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:[descriptor]},flags:{dnd5e:{item:{data}},[ID]:{...inherited,riderTriggered:true,recurringTrigger:link,...(entry.sourceKind==="monsterDamage"&&entry.saveAbility?{monsterPoisonData:data}:{})}}}});
+ const result=await item.system.activities.get(id).use({consume:false,scaling:Math.max(0,record.level-Number(spell.system.level??0)),concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:[descriptor]},flags:{dnd5e:{item:{data}},[ID]:{...inherited,riderTriggered:true,recurringTrigger:link,...(phase==="healing"?{activityOverrideData:data}:{}),...(data.flags?.[ID]?.envenomPoison?{envenomPoison:data.flags[ID].envenomPoison,activityOverrideData:data}:{}),...(entry.sourceKind==="monsterDamage"&&entry.saveAbility?{monsterPoisonData:data}:{})}}}});
  if(!result?.message)throw Error("Recurring "+phase+" card was not created.");
  if(phase==="healing"&&active(effect)&&effect.getFlag(ID,"recurringEffect")?.instance===record.instance){
-  await item.system.activities.get(id).rollDamage({isCritical:false},{configure:false},{data:{system:{origin:result.message.id,targets:[descriptor]},flags:{[ID]:{riderTriggered:true,recurringTrigger:link}}}});
+  const healingActivity=item.system.activities.get(id),healingData={system:{origin:result.message.id,targets:[descriptor]},flags:{[ID]:{riderTriggered:true,recurringTrigger:link}}};
+  if(globalThis.Ugmuls55eAutomationHealing)await globalThis.Ugmuls55eAutomationHealing.roll(healingActivity,result.message,healingData);
+  else await healingActivity.rollDamage({isCritical:false},{configure:false},{data:healingData});
  }
  return result.message;
 }

@@ -11,6 +11,12 @@ const cardFor=app=>globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(ap
 const originFor=app=>{const origin=app.message?.data?.system?.origin;return typeof origin==="string"?game.messages.get(origin):origin;};
 const feature=(actor,id,name)=>Array.from(actor?.items??[]).find(item=>item.type==="feat"&&((item.identifier??item.system?.identifier)===id||name.test(item.name?.trim()??"")));
 export const grapplerFeature=actor=>feature(actor,"grappler",/^grappler$/i);
+export function flurryGrapple(app){
+ const data=app.message?.data,origin=originFor(app),attackId=data?.flags?.[ID]?.damageAttackId,attack=attackId?game.messages.get(attackId):null;
+ if(data?.flags?.[ID]?.flurryOfBlows||cardFor(app)?.getFlag?.(ID,"flurryOfBlows")||attack?.getFlag?.(ID,"flurryOfBlows"))return true;
+ const activity=origin?.getAssociatedActivity?.(),item=activity?.item;
+ return ["monks-focus","heightened-focus"].includes(item?.identifier??item?.system?.identifier)&&(/^flurry of blows$/i.test(activity?.name??"")||["2ghJTBhilLrFn9xT","XLma1NEOJNEBD6mH"].includes(activity?.id));
+}
 export function unarmedAction(app){
     const activity=app.config?.subject,item=activity?.item,actor=actorFor(app);
     if(activity?.type!=="attack"||!actor?.isOwner||app.message?.data?.flags?.[ID]?.masteryGraze)return false;
@@ -18,7 +24,7 @@ export function unarmedAction(app){
         ["unarmed-strike","empowered-strike","elemental-strike"].includes(item?.identifier??item?.system?.identifier)||
         /^(unarmed|empowered|elemental) strikes?$/i.test(item?.name?.trim()??"");
     const activation=originFor(app)?.system?.activation?.type??activity.activation?.type??item?.system?.activation?.type;
-    if(!unarmed||activation!=="action")return false;
+    if(!unarmed||activation!=="action"&&!flurryGrapple(app))return false;
     if(game.combat?.started){
         const participants=Array.from(game.combat.combatants??[]).filter(entry=>entry.actor?.uuid===actor.uuid);
         if(participants.length&&!participants.some(entry=>entry.id===game.combat.combatant?.id))return false;
@@ -39,7 +45,7 @@ export function grapplerUsed(actor){
 }
 export function grappledBy(actor,target){return !!actor?.uuid&&Array.from(target?.effects??[]).some(effect=>active(effect)&&effect.getFlag?.(ID,"grappleCaster")===actor.uuid&&effect.getFlag?.(ID,"grappleMode")==="grapple");}
 function clearDuplicateGrapple(app){if(!pending.has(app)&&!cardFor(app)?.getFlag(ID,"grappleSave")&&selections.get(app)==="grapple"&&grappledBy(actorFor(app),stunningTarget(app)?.actor))selections.set(app,"no");}
-export function keepsGrappleDamage(app){clearDuplicateGrapple(app);return grapplerEnabled()&&selections.get(app)==="grapple"&&!!grapplerFeature(actorFor(app))&&!grapplerUsed(actorFor(app));}
+export function keepsGrappleDamage(app){clearDuplicateGrapple(app);return !flurryGrapple(app)&&grapplerEnabled()&&selections.get(app)==="grapple"&&!!grapplerFeature(actorFor(app))&&!grapplerUsed(actorFor(app));}
 export function replacesGrappleDamage(app){
     clearDuplicateGrapple(app);
     if(pending.has(app))return pending.get(app).noDamage;
@@ -58,9 +64,9 @@ export function addGrappleChoice(app){
     for(const [value,text] of [["no","No"],["grapple","Grapple"],["prone","Prone"]]){const option=document.createElement("option");option.value=value;option.disabled=value==="grapple"&&alreadyGrappled;option.textContent=option.disabled?"Grapple — already grappled by you":text;select.append(option);}
     select.value=selections.get(app);select.addEventListener("change",event=>{event.stopPropagation();selections.set(app,select.value);app.rebuild();});group.querySelector("select").replaceWith(select);
     const info=document.createElement("i");info.className="fas fa-circle-info";info.style.marginLeft="0.3em";
-    info.dataset.tooltip=`The target saves with its higher Strength or Dexterity save (Strength on a tie), against DC ${grappleDC(actor)}. Failure applies Grappled or Prone. These options replace damage. ${grapplerEnabled()?"Grappler allows damage plus Grapple once on your turn; it never adds damage to Prone.":"Grappler feat automation is disabled, so Grapple replaces damage."} Grappling requires a free hand and a target no more than one size larger than you.`;
+    info.dataset.tooltip=`The target saves with its higher Strength or Dexterity save (Strength on a tie), against DC ${grappleDC(actor)}. Failure applies Grappled or Prone. These options replace damage. ${flurryGrapple(app)?"Flurry of Blows is a Bonus Action: Grapple replaces damage and cannot use Grappler’s damage-plus-grapple benefit.":grapplerEnabled()?"Grappler allows damage plus Grapple once on your turn; it never adds damage to Prone.":"Grappler feat automation is disabled, so Grapple replaces damage."} Grappling requires a free hand and a target no more than one size larger than you.`;
     group.querySelector("label").append(info);
-    if(grapplerEnabled()&&grapplerFeature(actor)){const note=document.createElement("p");note.className="hint";note.textContent=grapplerUsed(actor)?"Grappler already used: further Grapple / Prone attempts replace damage.":"Grappler available: Grapple keeps damage once this turn.";group.append(note);}
+    if(grapplerEnabled()&&grapplerFeature(actor)){const note=document.createElement("p");note.className="hint";note.textContent=flurryGrapple(app)?"Flurry of Blows: Grapple replaces damage; Grappler’s combined damage benefit is unavailable.":grapplerUsed(actor)?"Grappler already used: further Grapple / Prone attempts replace damage.":"Grappler available: Grapple keeps damage once this turn.";group.append(note);}
 }
 export function finalizeGrapple(app,rolls,{preview=false}={}){
     clearDuplicateGrapple(app);

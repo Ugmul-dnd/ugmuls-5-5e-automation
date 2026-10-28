@@ -16,7 +16,7 @@ export function linkedHpCards(roll) {
     if(isDamageOrHealingCard(roll))return [roll];
     const origin=cardOrigin(roll);
     if(!origin)return [];
-    const stunningId=(origin.getFlag?.("ugmuls-5-5e-automation","stunningStrike")??origin.getFlag?.("ugmuls-5-5e-automation","grappleStrike")??origin.getFlag?.("ugmuls-5-5e-automation","maneuverStrike"))?.damageId;
+    const stunningId=(origin.getFlag?.("ugmuls-5-5e-automation","stunningStrike")??origin.getFlag?.("ugmuls-5-5e-automation","grappleStrike")??origin.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")??origin.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave")??origin.getFlag?.("ugmuls-5-5e-automation","deathStrikeSave"))?.damageId;
     const stunningDamage=stunningId?game.messages.get(stunningId):null;
     if(stunningDamage)return [stunningDamage];
     const cards=indexedHpCards(origin);
@@ -34,7 +34,7 @@ export function isRollAdjustmentLocked(roll) {
     const effectsApplied=card=>card?.getFlag?.("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||(card?.getFlag?.("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
     if(roll?.type==="save"&&(effectsApplied(roll)||effectsApplied(origin)))return true;
     // Rider saves resolve their own effects independently of weapon HP changes.
-    if(roll?.type==="save"&&(origin?.getFlag?.("ugmuls-5-5e-automation","stunningStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","grappleStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","maneuverStrike"))) {
+    if(roll?.type==="save"&&(origin?.getFlag?.("ugmuls-5-5e-automation","stunningStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","grappleStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave"))) {
         return origin.getFlag("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||
             (origin.getFlag("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
     }
@@ -46,7 +46,7 @@ Hooks.once("ready",()=>{
     Hooks.on("updateChatMessage",(card,changes)=>{
         const moduleId="ugmuls-5-5e-automation";
         if(!changes.flags?.[moduleId]&&!Object.keys(changes).some(key=>key.startsWith(`flags.${moduleId}.`)))return;
-        const rider=card.getFlag?.(moduleId,"stunningStrike")??card.getFlag?.(moduleId,"grappleStrike")??card.getFlag?.(moduleId,"maneuverStrike");
+        const rider=card.getFlag?.(moduleId,"stunningStrike")??card.getFlag?.(moduleId,"grappleStrike")??card.getFlag?.(moduleId,"maneuverStrike")??card.getFlag?.(moduleId,"cunningStrikeSave")??card.getFlag?.(moduleId,"deathStrikeSave");
         const effectChange=["effectUndoHistory","outcomeEffectsApplied"].some(key=>Object.hasOwn(changes.flags?.[moduleId]??{},key)||Object.hasOwn(changes,`flags.${moduleId}.${key}`));
         if(!isDamageOrHealingCard(card)&&!rider&&!effectChange)return;
         const origin=rider||card.type==="usage"?card:cardOrigin(card);

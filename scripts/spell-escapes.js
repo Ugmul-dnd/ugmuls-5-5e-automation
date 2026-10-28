@@ -62,7 +62,17 @@ export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClas
   }
   return cache.items.get(scaling);
  };
- prototype.getAssociatedItem=function(options={}){const info=context(this);return info?cached(this,info,options):getItem.call(this,options);};
+ prototype.getAssociatedItem=function(options={}){
+  const info=context(this);if(info)return cached(this,info,options);
+  // D&D5e 6's native fallback invokes a private method on the origin. An
+  // ID stored in an older/untyped card is not a branded ChatMessage instance.
+  // Resolve it to the real source document, never a proxy or shallow clone.
+  if(typeof this.system?.origin==="string"&&!live(this.system?.item?.uuid??this.getFlag?.("dnd5e","item.uuid"))){
+   const id=this.system?.item?.id??this.getFlag?.("dnd5e","item.id"),stored=this.system?.deltas?.deleted?.find(item=>item._id===id)??this.getFlag?.("dnd5e","item.data");
+   if(!stored){const source=origin(this);return source&&source!==this?source.getAssociatedItem?.(options):undefined;}
+  }
+  return getItem.call(this,options);
+ };
  prototype.getAssociatedActivity=function(options={}){
   const info=context(this);if(!info||!info.override&&live(this.system.activity?.uuid??this.getFlag?.("dnd5e","activity.uuid")))return getActivity.call(this,options);
   const id=this.system.activity?.id??this.getFlag("dnd5e","activity.id");return cached(this,info,options)?.system.activities.get(id);

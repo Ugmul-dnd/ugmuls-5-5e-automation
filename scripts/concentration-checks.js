@@ -1,14 +1,15 @@
 import {selectSaveUser} from "./save-prompts.js";
 const ID="ugmuls-5-5e-automation",rolling=new Set(),queue=new Map();
 const record=card=>card?.getFlag?.(ID,"concentrationCheck");
-const currentEffects=actor=>Array.from(actor?.concentration?.effects??[]);
+const currentEffects=actor=>Array.from(actor?.concentration?.effects??[]).filter(effect=>!globalThis.Ugmuls55eAutomationRanger?.relentlessProtected?.(actor,effect));
 const coordinator=card=>game.users.activeGM??(card?.author?.active?card.author:selectSaveUser(actorFor(card),game.users,null));
 const enabled=()=>game.settings.get(ID,"promptConcentrationChecks")===true;
 function actorFor(card){return card?.getAssociatedActor?.()??ChatMessage.getSpeakerActor(card?.speaker);}
 export function prepareConcentrationPrompt(card){
  if(card.type!=="prompt"||!enabled()&&game.settings.get(ID,"autoBreakConcentration")!==true)return;
  const button=Array.from(card.system?.buttons??[]).find(button=>button.type==="concentration");if(!button)return;
- const actor=actorFor(card),effects=currentEffects(actor);if(!actor||!effects.length)return;
+ const actor=actorFor(card),effects=currentEffects(actor);if(!actor)return;
+ if(!effects.length){if(Array.from(actor.concentration?.effects??[]).some(effect=>globalThis.Ugmuls55eAutomationRanger?.relentlessProtected?.(actor,effect)))return false;return;}
  const dc=Number(button.dc);if(!Number.isFinite(dc)||dc<1)return;
  const owner=selectSaveUser(actor,game.users,game.users.activeGM);
  const state={actor:actor.uuid,dc,ability:button.ability??null,effects:effects.map(effect=>effect.id),userId:owner?.id??null,session:foundry.utils.randomID(),status:"pending"};

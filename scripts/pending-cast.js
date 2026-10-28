@@ -1,6 +1,6 @@
 const ID="ugmuls-5-5e-automation",sessions=new Map(),wrapped=new WeakSet();
 const stateFor=data=>sessions.get(data?.flags?.[ID]?.castSession);
-const originOf=card=>typeof card?.system?.origin==="string"?game.messages.get(card.system.origin):card?.system?.origin;
+const originOf=card=>typeof card?.system?.origin==="string"?game.messages.get(card.system.origin.replace(/^ChatMessage\./,"")):card?.system?.origin;
 export function castState(card){return sessions.get(card?.getFlag?.(ID,"castSession"));}
 function flags(state,extra={}){return {[ID]:{castSession:state.id,pendingCast:true,targetsConfirmationPending:true,...extra}};}
 export async function publishPendingCast(state,activity,message){
@@ -105,7 +105,12 @@ Hooks.once("ready",()=>{
  Hooks.on("dnd5e.postActivityConsumption",(activity,usage,message)=>{const state=stateFor(message.data);if(state)state.deltas=foundry.utils.deepClone(message.data?.system?.deltas);});
  Hooks.on("dnd5e.postUseActivity",(activity,usage,results)=>{const state=castState(results?.message);if(state){state.results=results;if(noInitialRoll(state)&&!results.message.getFlag?.(ID,"targetsConfirmationPending"))settlePendingCast(results.message).catch(console.error);}});
  for(const kind of ["Attack","Damage","SavingThrow","AbilityCheck"])Hooks.on("dnd5e.preRoll"+kind+"V2",pendingRollDialog);
- Hooks.on("createChatMessage",card=>{if(!card.rolls?.length)return;const origin=originOf(card);if(castState(origin))settlePendingCast(origin).catch(console.error);});
+ // Damage/healing prompts publish an empty card, then update it with the
+ // completed roll after dice animations. Both publication paths commit usage.
+ for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>{
+  if(!card.rolls?.length||card.getFlag?.(ID,"pendingDamage"))return;
+  const origin=originOf(card);if(castState(origin))settlePendingCast(origin).catch(console.error);
+ });
  Hooks.on("ugmuls55eAutomation.targetsConfirmed",card=>{const state=castState(card);if(state&&noInitialRoll(state))settlePendingCast(card).catch(console.error);});
  Hooks.on("dnd5e.renderChatMessage",renderPendingCast);
 });

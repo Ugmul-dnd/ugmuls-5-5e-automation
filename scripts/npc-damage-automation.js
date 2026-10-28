@@ -43,11 +43,14 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");
+    if(message.getFlag?.(MODULE_ID,"protectiveFieldPending"))return waiting(message,"Waiting for Protective Field.");
     if(!isDamageOrHealingCard(message)||message.getFlag?.(MODULE_ID,"pendingDamage"))return null;
     if(message.getFlag(MODULE_ID,"masteryGrazeUndone")||message.getFlag(MODULE_ID,"grappleNoDamage"))return null;
     if(globalThis.Ugmuls55eAutomationBattleMaster?.maneuverSaveReady(message)===false)return waiting(message,"Waiting for the maneuver saving throw.");
     if(globalThis.Ugmuls55eAutomationGrapple?.grappleSaveReady(message)===false)return waiting(message,"Waiting for the Grapple / Prone saving throw.");
     if(globalThis.Ugmuls55eAutomationStunning?.stunningSaveReady(message)===false)return waiting(message,"Waiting for the Stunning Strike saving throw.");
+    if(globalThis.Ugmuls55eAutomationDeathStrike?.ready(message)===false)return waiting(message,"Waiting for the Death Strike saving throw.");
     if(isManual(message))return waiting(message,"Manual card interaction stopped this workflow.");
     if(message.getFlag(MODULE_ID,"damageUndoHistory")?.length&&!message.getFlag(MODULE_ID,"automaticDamageDone"))return waiting(message,"HP changes were already applied manually.");
     const origin=originOf(message);
@@ -179,6 +182,7 @@ export async function applyOutcomeEffects(card) {
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;
+    if(globalThis.Ugmuls55eAutomationBeguiling?.isCard?.(usage))return globalThis.Ugmuls55eAutomationBeguiling.applySavedChoice(usage);
     if(usage.getFlag?.(MODULE_ID,"smiteSave"))return globalThis.Ugmuls55eAutomationSmite?.resolveSmiteSave(usage);
     if(usage.getFlag?.(MODULE_ID,"grappleStrike"))return globalThis.Ugmuls55eAutomationGrapple?.applyGrappleOutcome(usage);
     if(usage.getFlag?.(MODULE_ID,"stunningStrike"))return globalThis.Ugmuls55eAutomationStunning?.applyStunningOutcome(usage);
@@ -266,7 +270,7 @@ async function receiveAnimationRequest(packet) {
 }
 function scheduleRiderDamage(message) {
     const usage=message?.type==="usage"?message:originOf(message);
-    const link=usage?.getFlag?.(MODULE_ID,"grappleStrike")??usage?.getFlag?.(MODULE_ID,"stunningStrike")??usage?.getFlag?.(MODULE_ID,"maneuverStrike");
+    const link=usage?.getFlag?.(MODULE_ID,"grappleStrike")??usage?.getFlag?.(MODULE_ID,"stunningStrike")??usage?.getFlag?.(MODULE_ID,"maneuverStrike")??usage?.getFlag?.(MODULE_ID,"deathStrikeSave");
     if(link?.damageId){const damage=game.messages.get(link.damageId);if(damage)schedule(damage);}
 }
 function schedule(message) {
@@ -334,7 +338,7 @@ Hooks.once("ready",async()=>{
         if(event.isTrusted===false)return;
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
         // Retrying an unanswered save continues the automatic workflow.
-        if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage]"))return;
+        if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;
         const id=interactive.closest("[data-message-id]")?.dataset.messageId;
         const message=game.messages.get(id);if(message)stopAutomaticDamage(message).catch(console.error);
     };

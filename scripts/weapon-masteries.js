@@ -123,8 +123,9 @@ export async function consumeNextAttack(attack) {
     if(remove.length)await actor.deleteEmbeddedDocuments("ActiveEffect",remove.map(effect=>effect.id));
 }
 export async function syncSap(attack) {
-    const mastery=masteryForAttack(attack);
-    if(!enabled()||!["sap","vex","slow","topple"].includes(mastery))return;
+    const base=masteryForAttack(attack),extra=globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack);
+    for(const mastery of new Set([base,extra].filter(m=>["sap","vex","slow","topple"].includes(m)))){
+    if(!enabled())return;
     const handled=new Set(attack.getFlag(MODULE_ID,"sapHandled")??[]);
     for(const target of attack.system.evaluatedTargets??[]) {
         const token=await fromUuid(target.token);if(!token?.actor)continue;
@@ -136,6 +137,7 @@ export async function syncSap(attack) {
         } else if(mastery==="sap"&&!handled.has(token.uuid)) {await masteryEffect(attack,token,"sap");handled.add(token.uuid);}
     }
     if(mastery==="sap")await attack.setFlag(MODULE_ID,"sapHandled",[...handled]);
+    }
 }
 export async function syncGraze(attack) {
     if(!authoritative()||masteryForAttack(attack)!=="graze")return;
@@ -159,13 +161,15 @@ export async function recordDamage(actor,amount,options) {
     if(!enabled()||!(amount>0))return;
     const damage=options.origin??options.originatingMessage;
     const attack=attackForDamage(damage);const mastery=masteryForAttack(attack);
-    if(!["vex","slow"].includes(mastery))return;
+    const extra=globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack);
+    const masteries=[...new Set([mastery,extra].filter(m=>["vex","slow"].includes(m)))];
+    if(!masteries.length)return;
     const target=(attack.system.evaluatedTargets??[]).find(target=>target.actor===actor.uuid&&!target.isMiss);
     if(!target)return;
     const token=await fromUuid(target.token);if(!token?.actor)return;
     const dealt=new Set(attack.getFlag(MODULE_ID,"masteryDamageTargets")??[]);
     if(dealt.has(token.uuid))return;
-    await masteryEffect(attack,token,mastery);
+    for(const selected of masteries)await masteryEffect(attack,token,selected);
     dealt.add(token.uuid);await attack.setFlag(MODULE_ID,"masteryDamageTargets",[...dealt]);
 }
 export async function performMastery(attack,tokenUuid,requestUser=game.user) {

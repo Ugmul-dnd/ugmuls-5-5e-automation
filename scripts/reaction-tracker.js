@@ -1,6 +1,7 @@
 const ID="ugmuls-5-5e-automation",creating=new Set();
 const enabled=()=>game.settings.get(ID,"reactionTracker")===true;
 export function reactionUsed(actor) {
+    const menacing=globalThis.Ugmuls55eAutomationRot?.menacingEffect(actor);if(menacing)return menacing;
     if(!actor||!game.combat?.started||!Array.from(game.combat.combatants??[]).some(entry=>entry.actor?.uuid===actor.uuid))return;
     return Array.from(actor?.effects??[]).find(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true&&
         (effect.getFlag?.(ID,"reactionUsed")===true||effect.name==="Reaction - used"));
@@ -10,8 +11,9 @@ export function offTurn(activity) {
     if(!combat?.started||!combat.combatant||!actor)return false;
     const token=activity.getUsageToken?.();const doc=token?.document??token;
     const combatants=Array.from(combat.combatants??[]);
-    const combatant=(doc?combatants.find(entry=>entry.token?.uuid===doc.uuid):null)??combatants.find(entry=>entry.actor?.uuid===actor.uuid);
-    return !!combatant&&combatant.id!==combat.combatant.id;
+    const tokens=doc?combatants.filter(entry=>entry.token?.uuid===doc.uuid):[];
+    const matches=tokens.length?tokens:combatants.filter(entry=>entry.actor?.uuid===actor.uuid);
+    return matches.length>0&&!matches.some(entry=>entry.id===combat.combatant.id);
 }
 function cleaveMessage(message){const data=message?.data??message,reference=data?.system?.origin,origin=typeof reference==="string"?game.messages?.get?.(reference):reference;return !!(data?.flags?.[ID]?.cleaveSource||origin?.getFlag?.(ID,"cleaveSource"));}
 function manualActivity(activity,message) {
@@ -37,8 +39,9 @@ export async function recordReactionUse(activity,usage,results) {
         const data={name:"Reaction - used",img:"icons/svg/clockwork.svg",disabled:false,transfer:false,
             duration:{rounds:1,expiry:"sourceStart"},start:CONFIG.ActiveEffect.documentClass.getEffectStart(),
             system:{changes:[],origin:{actor:actor.uuid}},flags:{[ID]:{reactionUsed:true,reactionUsage:message.id}}};
-        if(globalThis.Ugmuls55eAutomationResources?.reuseMarker)await globalThis.Ugmuls55eAutomationResources.reuseMarker(actor,data,"reactionUsed");
-        else await actor.createEmbeddedDocuments("ActiveEffect",[data]);
+        // Return only a newly reserved marker, so simultaneous features cannot claim the same Reaction.
+        if(globalThis.Ugmuls55eAutomationResources?.reuseMarker)return await globalThis.Ugmuls55eAutomationResources.reuseMarker(actor,data,"reactionUsed");
+        return (await actor.createEmbeddedDocuments("ActiveEffect",[data]))?.[0]??null;
     } finally {creating.delete(actor.uuid);}
 }
 

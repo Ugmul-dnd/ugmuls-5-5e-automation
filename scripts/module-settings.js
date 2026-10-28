@@ -1,15 +1,15 @@
 const MODULE_ID="ugmuls-5-5e-automation";
 export const CLASS_AUTOMATIONS=[
     {name:"Artificer",keys:["flashOfGeniusAutomation","arcaneJoltAutomation","arcaneFirearmAutomation"]},
-    {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation"]},
+    {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation","indomitableMightAutomation","primalKnowledgeAutomation","relentlessRageAutomation","mindlessRageAutomation","wildRageAutomation","vitalitySurgeAutomation"]},
     {name:"Bard",keys:["bardicInspirationAutomation","cuttingWordsAutomation","peerlessSkillAutomation","combatInspirationAutomation"]},
     {name:"Cleric",keys:[]},
     {name:"Druid",keys:[]},
-    {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation"]},
-    {name:"Monk",keys:["stunningStrikeAutomation"]},
+    {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation","psionicStrikeAutomation","psionicStrikeCriticalDamage","telekineticThrustAutomation","protectiveFieldAutomation","indomitableAutomation","studiedAttacksAutomation","survivorAutomation","arcaneShotEffectsAutomation","banneretAutomation","sharedResilienceAutomation"]},
+    {name:"Monk",keys:["stunningStrikeAutomation","deflectAttacksAutomation","disciplinedSurvivorAutomation","flurryOfBlowsAutomation","openHandTechniqueAutomation","handOfHarmAutomation","handOfHarmCriticalDamage","elementalStrikesAutomation","elementalEpitomeAutomation","focusedStrikeAutomation"]},
     {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation","elementalRebukeAutomation","sacredWeaponAutomation","holyNimbusAutomation","vowOfEnmityAutomation","avengingAngelAutomation"]},
-    {name:"Ranger",keys:["huntersPreyAutomation"]},
-    {name:"Rogue",keys:["sneakAttackAutomation"]},
+    {name:"Ranger",keys:["huntersPreyAutomation","relentlessHunterAutomation","preciseHunterAutomation","foeSlayerAutomation","defensiveTacticsAutomation","superiorHunterDefenseAutomation","superiorHunterPreyAutomation","bestialFuryAutomation","dreadAmbusherAutomation","stalkersFlurryAutomation","feyDreadfulStrikesAutomation","beguilingTwistAutomation","mistyWandererAutomation","hollowWrathAuraAutomation","hungeringMightAutomation","rotAndViolenceAutomation","ancientMightAutomation","polarStrikesAutomation","huntersRimeAutomation","fortifyingSoulAutomation","chillingRetributionAutomation","frozenHauntAuraAutomation"]},
+    {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},
     {name:"Warlock",keys:["eldritchSmiteAutomation"]},
     {name:"Wizard",keys:[]}
@@ -18,7 +18,7 @@ export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
-    {id:"common",name:"Common",icon:"fa-gears",keys:["reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","magicResistanceSaves","showConcentrationHud"]},
+    {id:"common",name:"Common",icon:"fa-gears",keys:["skipAutomaticHealingPrompts","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
     {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
