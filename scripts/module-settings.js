@@ -19,7 +19,7 @@ export const AUTOMATION_GROUPS=[
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["skipAutomaticHealingPrompts","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
-    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
+    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},

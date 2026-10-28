@@ -1,4 +1,5 @@
 import "./lifedrinker.js";
+import "./hex-choice.js";
 import "./frozen-haunt.js";
 import "./chilling-retribution.js";
 import "./automatic-healing.js";

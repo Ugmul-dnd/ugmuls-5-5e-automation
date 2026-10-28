@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Lifedrinker adds optional typed d6 damage to pact-weapon damage configuration once per turn. Its completed damage card offers optional self-healing using an available Hit Die, with the die spent only on Roll submission and a separate once-per-turn healing limit.
+- Hex curse cards automatically apply Strength and offer caster/GM ability selectors. Switching updates the existing curse without resetting concentration or duration; missing/expired curses cannot be recreated from an old card.
 
 ## v0.8.2 — Class Features & Combat Flow (2026-10-28)
 
@@ -539,6 +540,8 @@ Restart the Foundry server and reload GM/player clients after updating. Apply fr
 
 
 ## v0.7.5 — Pending Cards, Concentration & Targeting
+
+- Declare Automated Conditions 5e and Dice So Nice! as required module dependencies, with installation manifests. Both must be installed and enabled; no-Dice-So-Nice damage-card updates are not a supported configuration.
 
 - Initially empty shared spell Regions wait for their first recorded target before prompting damage. The original cast card routes that prompt to the connected caster owner, with GM fallback; later targets reuse the roll.
 - The regular Damage action reuses an unresolved Pending damage card instead of leaving a separate placeholder behind. Stale dialogs are invalidated, and targets added while a damage dialog is open are retained when the roll is published.

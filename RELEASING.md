@@ -26,4 +26,3 @@ including capitalization. GitHub's automatic source archives are not the module 
 
 For future releases, update `module.json` version and its pinned download URL,
 update tested compatibility and notes, run tests, and rebuild the matching assets.
-
