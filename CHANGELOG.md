@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Lifedrinker adds optional typed d6 damage to pact-weapon damage configuration once per turn. Its completed damage card offers optional self-healing using an available Hit Die, with the die spent only on Roll submission and a separate once-per-turn healing limit.
+
 ## v0.8.2 — Class Features & Combat Flow (2026-10-28)
 
 - Frozen Haunt gains a token-linked, grid-shaped 15-foot aura. On manual form adoption and Ranger turn start, prompt 2d4 Cold damage against enemies in the area. No movement/entry trigger; activation, resistance and immunities remain native.

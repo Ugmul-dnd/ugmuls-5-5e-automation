@@ -16,6 +16,7 @@ const rules={
  homing:{setting:"homingStrikesAutomation",types:["attack"],feature:"soul-blades",own:true},
  evasion:{setting:"evasionAutomation",types:["damage","usage","save"],feature:"evasion",incoming:true},
  chilling:{setting:"chillingRetributionAutomation",types:["damage"],feature:"chilling-retribution",incoming:true},
+ lifedrinker:{setting:"lifedrinkerAutomation",types:["damage"],feature:"lifedrinker",own:true},
  uncanny:{setting:"uncannyDodgeAutomation",types:["damage"],feature:"uncanny-dodge",incoming:true},
  rebuke:{setting:"elementalRebukeAutomation",types:["attack","damage"],feature:"elemental-rebuke",incoming:true},
  flash:{setting:"flashOfGeniusAutomation",types:["save","check"],feature:"flash-of-genius",all:true},

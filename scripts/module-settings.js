@@ -11,7 +11,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Ranger",keys:["huntersPreyAutomation","relentlessHunterAutomation","preciseHunterAutomation","foeSlayerAutomation","defensiveTacticsAutomation","superiorHunterDefenseAutomation","superiorHunterPreyAutomation","bestialFuryAutomation","dreadAmbusherAutomation","stalkersFlurryAutomation","feyDreadfulStrikesAutomation","beguilingTwistAutomation","mistyWandererAutomation","hollowWrathAuraAutomation","hungeringMightAutomation","rotAndViolenceAutomation","ancientMightAutomation","polarStrikesAutomation","huntersRimeAutomation","fortifyingSoulAutomation","chillingRetributionAutomation","frozenHauntAuraAutomation"]},
     {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},
-    {name:"Warlock",keys:["eldritchSmiteAutomation"]},
+    {name:"Warlock",keys:["eldritchSmiteAutomation","lifedrinkerAutomation"]},
     {name:"Wizard",keys:[]}
 ];
 export const AUTOMATION_GROUPS=[
