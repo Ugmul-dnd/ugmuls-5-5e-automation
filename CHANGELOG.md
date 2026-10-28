@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.2 — Class Features & Combat Flow (2026-10-28)
+
 - Frozen Haunt gains a token-linked, grid-shaped 15-foot aura. On manual form adoption and Ranger turn start, prompt 2d4 Cold damage against enemies in the area. No movement/entry trigger; activation, resistance and immunities remain native.
 
 - Chilling Retribution remains available after the triggering damage is applied, without undoing or reapplying that damage. Reaction, feature-use, and duplicate-use checks still apply.

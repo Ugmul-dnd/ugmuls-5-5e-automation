@@ -6,15 +6,15 @@ Configurable spell regions and combat assistance for D&D5e in Foundry Virtual Ta
 
 ## Supported content
 
-Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content. New Artificer and Genie features also use matching official Eberron and Heroes of Faerûn content.
+Automations are developed and tested using the official Foundry **[Player's Handbook (2024)](https://foundryvtt.com/packages/dnd-players-handbook)** and **Monster Manual** content. Additional class features use matching official Eberron, Heroes of Faerûn, Ravenloft: The Horrors Within, and Arcana Unleashed content. Only the features you use require their associated books.
 
 Most features rely on the spells, class features, activities, chat cards, names, identifiers, and associated Active Effects supplied by that content. Having the expected name alone may not be enough if the item's activities or effects are configured differently.
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 0.8.1
+## Version 0.8.2
 
-Artificer support, unified Paladin auras and oath features, batch spell selection, clearer Smite controls and smoother combat workflows. See [0.8.1 release notes](RELEASE-NOTES-0.8.1.md) for highlights and updating instructions.
+Expanded Rogue, Fighter, Barbarian, Monk and Ranger assistance brings damage riders, reactions, repeat saves, linked effects and auras into the existing combat workflow. Automated healing now offers owner-routed pending Roll prompts, with an option to roll immediately. See [0.8.2 release notes](RELEASE-NOTES-0.8.2.md) for highlights and updating instructions.
 
 ## Main features
 
