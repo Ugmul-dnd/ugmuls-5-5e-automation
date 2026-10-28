@@ -2,6 +2,82 @@
 
 ## Unreleased
 
+- Frozen Haunt gains a token-linked, grid-shaped 15-foot aura. On manual form adoption and Ranger turn start, prompt 2d4 Cold damage against enemies in the area. No movement/entry trigger; activation, resistance and immunities remain native.
+
+- Chilling Retribution remains available after the triggering damage is applied, without undoing or reapplying that damage. Reaction, feature-use, and duplicate-use checks still apply.
+
+- Chilling Retribution appears on incoming attack damage cards for the Ranger/GM, consumes Reaction and feature use, and prompts the attacker’s Wisdom save. Failure applies Stunned and Speed 0 until the end of the Ranger’s next turn; triggering damage is unchanged.
+
+- Automated Hunter’s Rime, Hungering Might, Survivor and recurring healing rolls now prompt the source character’s active owner with a pending healing roll, falling back to the GM. Enable Skip Automatic Healing Roll Prompts under Common automations to roll immediately; healing application remains a separate setting.
+
+- Fortifying Soul’s native one-hour effect defaults to Advantage against saves with linked Frightened effects and repeat saves to end Frightened, with AC5e integration. Unidentified saves remain manual.
+
+- Hunter’s Rime automatically rolls its caster-only temporary HP when Hunter’s Mark is cast, including free casts. Moving the mark does not grant more temporary HP; Disengage restrictions remain manual.
+
+- Winter Walker Frigid Explorer: Polar Strikes adds optional Cold damage to weapon damage configuration, scaling from 1d4 to 1d6 at Ranger level 11 with a per-creature turn limit. A managed Biting Cold effect bypasses Cold resistance for weapon attacks and Ranger spells/features while preserving immunity.
+
+- Strangling Roots uses the standard dropdown layout, starts with Sap selected, and remembers each user’s last used choice.
+
+- Ancient Might automatically adds the Hollow Warden’s Wisdom modifier to attack damage against Frightened targets while Wrath of the Wild is active. Persistent Wrath remains manual.
+
+- Hollow Warden Rot and Violence: Menacing Aura blocks HP recovery and Reactions until the Ranger’s next turn; Strangling Roots adds a None/Sap/Slow attack choice alongside the weapon’s usual mastery while transformed.
+
+- Automatically roll Hollow Warden Hungering Might healing after a confirmed attack hit while transformed and Bloodied, once per turn. Use the native 1d10 + Wisdom formula with real HP eligibility rather than requiring a Bloodied status icon. Preserve normal healing application, dice animation and Undo; share the turn limit with manual feature use and avoid retroactive triggers from old attack cards.
+
+- Add Hollow Warden Unnerving Aura to native Wrath of the Wild transformations: a token-attached, grid-shaped 10-foot emanation visible on the Region layer. Automatically prompt enemy Wisdom saves on transformation and the Ranger's turn start, apply Frightened on failure until the Ranger's next turn, and remove the aura when the transformation ends. No movement/entry saves or repeated transformation costs; native AC and other Wrath benefits remain unchanged.
+
+- Fix Wrathful Smite and other saved Smite follow-ups recording disposable spell UUIDs for repeat saves. Keep the owned spell identity with a save-only card snapshot, store stable recurring sources, and recover existing broken references from the original caster's recorded Smite card while preserving the saved DC and cast level.
+
+- Automatically add a native Misty Wanderer casting activity to owned Misty Step spells when the character owns the feature. The new activity consumes one Misty Wanderer item use and no spell slot, retaining the spell's normal casting/teleport hooks and Bonus Action. Keep regular casting unchanged; remove only module-managed activities when the feature is removed or the setting disabled. Shared teleport placement remains manual.
+
+- Add a caster/GM Charmed-or-Frightened selector to manually activated Beguiling Twist save cards. Apply only the chosen condition on a failed Wisdom save, respecting automatic saved-effect settings and native effect Undo. Add one-minute effects with end-turn Wisdom repeat saves that end on success; recurring saves do not spend another Reaction or reopen the choice.
+
+- Add Fey Wanderer's Dreadful Strikes to weapon damage configuration (default Yes): 1d4 Psychic, increasing to 1d6 at Ranger level 11, with critical support. Track each struck creature separately once per turn, so different targets remain eligible. Preview, No and canceled prompts do not spend a target's use; Gloom Stalker Dreadful Strike tracking stays separate.
+
+- Fix damage-choice placement when AC5e inserts hidden optional-bonus fieldsets ahead of the native Configuration fieldset. Target the Configuration fieldset itself so dependent Mass Fear controls stay visible and repeated renders do not create hidden duplicate options.
+
+- Render Mass Fear directly beside its mounted Dreadful Strike control, retaining a single selectable row through formula-only dialog refreshes. Changing Mass Fear no longer rebuilds the damage formulas.
+
+- Show Mass Fear only when Dreadful Strike is selected and available. Reuse its existing row across the whole damage dialog and remove duplicate rows from partial renders; no disabled placeholder is shown.
+
+- Immediately unlock/relock the Mass Fear selector when Dreadful Strike changes, including native damage-dialog rebuilds that refresh only formulas. Clear disabled styling on the existing control.
+
+- Add Stalker's Flurry selection below Dreadful Strike: Mass Fear defaults to No. Yes prompts the native Wisdom save for the struck creature and creatures within 10 feet as damage is published, with Frightened expiring at the start of the Ranger's next turn; No offers a same-weapon Sudden Strike button on the completed damage card. Follow-ups share the original Dreadful Strike use, with owner/GM access and duplicate/canceled-attack protection.
+
+- Resolve Dreadful Strike features and uses from the recorded damage-card Ranger on player-owned prompts, including reconstructed activities and imported feature names.
+
+- Refresh Argon HUD's movement counter on each client when Ambusher's Leap is applied, changed or removed. Update only the displayed Ranger's movement counter, preserving movement already spent.
+
+- Add Dreadful Strike as an optional weapon-hit damage configuration rider, spending the native activity use once per turn, respecting critical hits and native 2d6/2d8 scaling. Automatically apply Ambusher's Leap (+10 speed) on the Ranger's first combat turn and remove it when that turn ends; persist first-turn tracking through client reloads.
+
+- Add Bestial Fury bonus Force damage to linked Primal Companion attacks against the owning Ranger's active Hunter's Mark target. Respect Foe Slayer, the native noncritical bonus, independent once-per-turn tracking, and canceled damage prompts; commands and the companion's two attacks remain manual.
+
+- Restrict Superior Hunter's Prey selection to enemies of the Ranger, excluding friendly and neutral tokens. Recheck disposition when confirming before spending its turn use or applying damage.
+
+- Reuse the original evaluated Hunter's Mark damage for Superior Hunter's Prey instead of rolling again. Copy only Mark dice/results, including already-rolled critical or Foe Slayer damage, suppress duplicate dice animation, and apply the second creature's native resistance normally. Require an identifiable Mark damage roll on the source card.
+
+- Refresh the affected token's health bar on connected clients after Superior Hunter's Prey damage and Undo recording complete. Resolve the current token object after its HP/TokenDelta update; perform a visual-only refresh without reapplying damage.
+
+- Add Superior Hunter's Prey after applied damage to the Ranger's current Hunter's Mark target. Select a different visible creature within 30 feet of that target using a map-synced, hover-highlighted picker; confirmation rolls and applies noncritical Hunter's Mark Force damage with native resistance and Undo. Respect Foe Slayer, once-per-turn use, source-turn freshness, and canceled/failed-use rollback.
+
+- Preselect the largest current incoming damage type in Superior Hunter's Defense, while allowing the Ranger to choose another type.
+
+- Show current incoming damage by type and total in the Superior Hunter's Defense resistance popup, using the Hunter's native damage-tray calculation when available, including existing resistances and save multipliers. Clearly label the rolled-damage fallback.
+
+- Add Superior Hunter's Defense on completed incoming damage cards for the Hunter and GM. Spend a Reaction, select an incoming damage type when mixed, apply native resistance immediately and through the current turn, and expire the temporary effect at turn end. Recalculate recipient damage without changing shared dice or halving unrelated types; retain the triggering hit's resistance for Undo/reapply.
+
+- Move Hunter's Prey and Defensive Tactics rest selection into a native Ranger Options section in both Short and Long Rest dialogs. Preselect the current effects, retain edits through Hit Dice rerenders, and apply choices only after successful rest completion. Stop automatically posting rest choice cards; manual feature selectors remain available.
+
+- Add private Short/Long Rest Defensive Tactics selection with one persistent Escape the Horde or Multiattack Defense effect. Multiattack Defense automatically gives the triggering attacker Disadvantage on subsequent attacks against that Ranger for the rest of the current turn; correct changed misses and expire only the temporary hit markers. Escape the Horde follows the table rule that any attack against the Ranger during their own turn counts as an Opportunity Attack and recommends Disadvantage automatically, without a selector. Integrate AC5e/native cancellation.
+
+- Whisper Hunter's Prey Short/Long Rest choice cards only to the Ranger's owners and GMs; other players no longer see the selection card.
+
+- Post the Hunter's Prey selector after completed Short and Long Rests. Preserve the current choice until the Ranger switches it; the same choice card remains available through the feature, with no rest-time action/resource cost.
+
+- Use Hunter's Prey to post an owner-visible Colossus Slayer/Horde Breaker choice card. Maintain one persistent choice effect; offer the existing damage configuration only with active Colossus Slayer. Horde Breaker remains a manual attack. Changing choices costs no action/resource and does not reset the turn-use limiter.
+
+- Add Ranger Relentless Hunter automatic concentration protection for Hunter's Mark without rolls/prompts; keep other concentration checks and ending causes intact. Add Precise Hunter source-specific marked-target attack Advantage with AC5e/native cancellation, and upgrade the integrated Mark rider to d10 with Foe Slayer while retaining critical scaling and Hex's d6.
+
 - Add Mystic Arts Focused Strike: after Stunning Strike succeeds or fails, apply a temporary, caster-specific spell-save Disadvantage effect through the start of the Monk's next turn. Integrate AC5e recommendations with a native fallback, prevent duplicate applications, and preserve existing Stunning Strike resources and save flow.
 
 - Allow the owning Monk to Retarget GM-created Destructive Stride cards. Validate ownership and map targets on the GM, then update the usage card and linked damage recipients together without changing rolls or application history.

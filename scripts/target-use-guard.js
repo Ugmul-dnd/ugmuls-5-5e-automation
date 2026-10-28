@@ -1,6 +1,8 @@
 const ID="ugmuls-5-5e-automation";
 function automated(usage,message){const flags=message?.data?.flags?.[ID];return flags?.regionTriggered||flags?.riderTriggered||!!usage?.cause?.activity;}
 export function needsSelectedTarget(activity){
+ if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(activity))return false;
+ if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(activity))return false;
  if(globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(activity))return false;
  // This card chooses the owner’s aura resistance; it does not target a creature.
  if(activity?.item?.type==="feat"&&(["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(activity.item.identifier??activity.item.system?.identifier)||/^aura of elemental shielding$/i.test(activity.item.name??"")))return false;

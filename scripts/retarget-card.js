@@ -3,6 +3,8 @@ const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
     if (!["usage","attack"].includes(message?.type)) return false;
+    if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;
+    if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(message.getAssociatedActivity?.()))return false;
     const item=message?.getAssociatedItem?.()??message?.getAssociatedActivity?.()?.item;
     if(item?.type==="feat"&&(["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(item.identifier??item.system?.identifier)||/^aura of elemental shielding$/i.test(item.name??"")))return false;

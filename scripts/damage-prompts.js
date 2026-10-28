@@ -9,7 +9,8 @@ const dialogClasses = new Map();
 let positionWrites = Promise.resolve();
 
 export function addDamageChoice(app, {key, label, value, disabled=false, used=false, locked=false, change=()=>{}}) {
-    const configuration=app.element.querySelector('[data-application-part="configuration"] fieldset')
+    const configuration=app.element.querySelector('fieldset[data-application-part="configuration"]')
+        ??app.element.querySelector('[data-application-part="configuration"] fieldset')
         ??app.element.querySelector('fieldset');
     if(!configuration)return null;
     const existing=configuration.querySelector('[data-rsa-choice="'+key+'"]');
@@ -45,14 +46,18 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                 const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple,{preview:true})??grapple;
                 const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,savage)??savage;
-                const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,riders,{preview:true})??riders;
+                const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,riders,{preview:true})??riders;
+                const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,fury,{preview:true})??fury;
                 const prey=globalThis.Ugmuls55eAutomationPrey?.finalizePrey(this,sneak,{preview:true})??sneak;
                 const smite=globalThis.Ugmuls55eAutomationSmite?.finalizeSmite(this,prey,{preview:true})??prey;
                 const eldritch=globalThis.Ugmuls55eAutomationEldritch?.finalizeEldritch(this,smite,{preview:true})??smite;
                 const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                 const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal,{preview:true})??brutal;
                 const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy,{preview:true})??frenzy;
-                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury,{preview:true})??divineFury;
+                const polar=globalThis.Ugmuls55eAutomationPolarStrikes?.finalizePolarStrikes(this,divineFury,{preview:true})??divineFury;
+                const feyStrikes=globalThis.Ugmuls55eAutomationFeyStrikes?.finalizeFeyStrikes(this,polar,{preview:true})??polar;
+                const dread=globalThis.Ugmuls55eAutomationDread?.finalizeDread(this,feyStrikes,{preview:true})??feyStrikes;
+                const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,dread,{preview:true})??dread;
                 const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt,{preview:true})??jolt;
                 const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm,{preview:true})??firearm;
                 const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome,{preview:true})??epitome;
@@ -81,14 +86,18 @@ export function configurePromptDialog(kind, dialog = {}) {
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                     const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple)??grapple;
                     const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,weaponRolls)??weaponRolls;
-                    const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,riders)??riders;
+                    const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,riders)??riders;
+                    const sneak=globalThis.Ugmuls55eAutomationSneak?.finalizeSneak(this,fury)??fury;
                     const prey=globalThis.Ugmuls55eAutomationPrey?.finalizePrey(this,sneak)??sneak;
                     const smite=globalThis.Ugmuls55eAutomationSmite?.finalizeSmite(this,prey)??prey;
                     const eldritch=globalThis.Ugmuls55eAutomationEldritch?.finalizeEldritch(this,smite)??smite;
                     const brutal=globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalDamage(this,eldritch)??eldritch;
                     const frenzy=globalThis.Ugmuls55eAutomationFrenzy?.finalizeFrenzy(this,brutal)??brutal;
                     const divineFury=globalThis.Ugmuls55eAutomationDivineFury?.finalizeDivineFury(this,frenzy)??frenzy;
-                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,divineFury)??divineFury;
+                    const polar=globalThis.Ugmuls55eAutomationPolarStrikes?.finalizePolarStrikes(this,divineFury)??divineFury;
+                    const feyStrikes=globalThis.Ugmuls55eAutomationFeyStrikes?.finalizeFeyStrikes(this,polar)??polar;
+                    const dread=globalThis.Ugmuls55eAutomationDread?.finalizeDread(this,feyStrikes)??feyStrikes;
+                    const jolt=globalThis.Ugmuls55eAutomationJolt?.finalizeJolt(this,dread)??dread;
                     const firearm=globalThis.Ugmuls55eAutomationFirearm?.finalizeFirearm(this,jolt)??jolt;
                     const epitome=globalThis.Ugmuls55eAutomationEpitome?.finalizeEmpowered(this,firearm)??firearm;
                     const maneuver=globalThis.Ugmuls55eAutomationBattleMaster?.finalizeManeuver(this,epitome)??epitome;
@@ -97,13 +106,14 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
                     return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,transmuted)??transmuted;
                 }
-                if(kind === "attack"){const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
+                if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
             }
             async _prepareButtonsContext(context, options) {
                 const prepared=await super._prepareButtonsContext(context,options);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.prepareAttackButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationStudied?.prepareStudiedButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationTactics?.prepareTacticsButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.prepareRecklessButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
@@ -117,6 +127,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationBrutal?.addBrutalButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationSacredWeapon?.addSacredWeaponButton(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationVow?.addVowButton(this);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationRot?.addRootsChoice(this);
                 if(kind === "damage") {
                     // Extra rider rows are previews, not separate native configuration entries.
                     for(const [index,row] of Array.from(this.element.querySelectorAll(".formulas > li")).entries()) {
@@ -134,6 +145,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationEldritch?.addEldritchChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFrenzy?.addFrenzyChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDivineFury?.addDivineFuryChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationFeyStrikes?.addFeyStrikesChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationPolarStrikes?.addPolarStrikesChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationDread?.addDreadChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
@@ -177,9 +191,17 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,options);
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,options);
                         await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,options);
+                        await globalThis.Ugmuls55eAutomationBestialFury?.commitFury(this,options);
+                        await globalThis.Ugmuls55eAutomationDread?.commitDread(this,options);
+                        await globalThis.Ugmuls55eAutomationFeyStrikes?.commitFeyStrikes(this,options);
+                        await globalThis.Ugmuls55eAutomationPolarStrikes?.commitPolarStrikes(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationFeyStrikes?.commitFeyStrikes(this,{});
+                        await globalThis.Ugmuls55eAutomationPolarStrikes?.commitPolarStrikes(this,{});
+                        await globalThis.Ugmuls55eAutomationDread?.commitDread(this,{});
+                        await globalThis.Ugmuls55eAutomationBestialFury?.commitFury(this,{});
                         await globalThis.Ugmuls55eAutomationJolt?.commitJolt(this,{});
                         await globalThis.Ugmuls55eAutomationFirearm?.commitFirearm(this,{});
                         await globalThis.Ugmuls55eAutomationEpitome?.commitEmpowered(this,{});

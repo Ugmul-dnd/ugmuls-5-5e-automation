@@ -1,6 +1,7 @@
 const ID="ugmuls-5-5e-automation",creating=new Set();
 const enabled=()=>game.settings.get(ID,"reactionTracker")===true;
 export function reactionUsed(actor) {
+    const menacing=globalThis.Ugmuls55eAutomationRot?.menacingEffect(actor);if(menacing)return menacing;
     if(!actor||!game.combat?.started||!Array.from(game.combat.combatants??[]).some(entry=>entry.actor?.uuid===actor.uuid))return;
     return Array.from(actor?.effects??[]).find(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true&&
         (effect.getFlag?.(ID,"reactionUsed")===true||effect.name==="Reaction - used"));

@@ -27,7 +27,9 @@ export async function triggerSurvivor(combat,changes={}){
   const result=await rally.activity.use({consume:false,concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:[descriptor]},flags}});
   if(!result?.message)throw Error("Heroic Rally could not create its healing card.");
   created=true;
-  await rally.activity.rollDamage({isCritical:false},{configure:false},{data:{system:{origin:result.message.id,targets:[descriptor]},flags}});
+  const healingData={system:{origin:result.message.id,targets:[descriptor]},flags};
+  if(globalThis.Ugmuls55eAutomationHealing)await globalThis.Ugmuls55eAutomationHealing.roll(rally.activity,result.message,healingData);
+  else await rally.activity.rollDamage({isCritical:false},{configure:false},{data:healingData});
  }catch(error){
   // Keep the turn claimed after card creation; a failed roll can be retried
   // from that card without producing a second automatic healing benefit.

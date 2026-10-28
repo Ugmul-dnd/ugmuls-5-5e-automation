@@ -182,6 +182,7 @@ export async function applyOutcomeEffects(card) {
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;
+    if(globalThis.Ugmuls55eAutomationBeguiling?.isCard?.(usage))return globalThis.Ugmuls55eAutomationBeguiling.applySavedChoice(usage);
     if(usage.getFlag?.(MODULE_ID,"smiteSave"))return globalThis.Ugmuls55eAutomationSmite?.resolveSmiteSave(usage);
     if(usage.getFlag?.(MODULE_ID,"grappleStrike"))return globalThis.Ugmuls55eAutomationGrapple?.applyGrappleOutcome(usage);
     if(usage.getFlag?.(MODULE_ID,"stunningStrike"))return globalThis.Ugmuls55eAutomationStunning?.applyStunningOutcome(usage);
@@ -337,7 +338,7 @@ Hooks.once("ready",async()=>{
         if(event.isTrusted===false)return;
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
         // Retrying an unanswered save continues the automatic workflow.
-        if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage]"))return;
+        if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;
         const id=interactive.closest("[data-message-id]")?.dataset.messageId;
         const message=game.messages.get(id);if(message)stopAutomaticDamage(message).catch(console.error);
     };
