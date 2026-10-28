@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Hex curse cards automatically apply Strength and offer caster/GM ability selectors. Switching updates the existing curse without resetting concentration or duration; missing/expired curses cannot be recreated from an old card.
+
 ## v0.8.2 — Class Features & Combat Flow (2026-10-28)
 
 - Frozen Haunt gains a token-linked, grid-shaped 15-foot aura. On manual form adoption and Ranger turn start, prompt 2d4 Cold damage against enemies in the area. No movement/entry trigger; activation, resistance and immunities remain native.
