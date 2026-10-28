@@ -6,6 +6,14 @@ const enabled=()=>game.settings.get(ID,"hexAbilityChoice")===true,authority=()=>
 const live=e=>e&&!e.disabled&&e.active!==false&&!e.duration?.expired&&!e.system?.expired;
 export function hexChoiceActivity(activity){return enabled()&&activity?.type==="utility"&&activity.item?.type==="spell"&&riderKey(activity.item)==="hex";}
 export function hexAbility(effect){return abilities.find(a=>values(effect?.system?.changes).some(c=>c.key==="system.abilities."+a+".check.roll.mode"&&Number(c.value)<0));}
+export function isEldritchHex(item,actor){
+ return (item?.identifier??item?.system?.identifier)==="great-old-one-hex"||/^hex \(powerful\)$/i.test(item?.name??"")||[item?._stats?.compendiumSource,item?.flags?.core?.sourceId].some(r=>r?.endsWith(".n2qsI3p9HBVQIjeK"))||values(actor?.items).some(i=>i.type==="feat"&&((i.identifier??i.system?.identifier)==="eldritch-hex"||/^eldritch hex$/i.test(i.name??"")||[i._stats?.compendiumSource,i.flags?.core?.sourceId].some(r=>r?.endsWith(".phbwlkEldritchHe"))));
+}
+export function hexCurseChanges(native,ability,item,actor){
+ const changes=values(native.system?.changes).map(c=>({...c}));if(!isEldritchHex(item,actor))return changes;
+ const key="system.abilities."+ability+".save.roll.mode";
+ return [...changes.filter(c=>!/^system\.abilities\.(str|dex|con|int|wis|cha)\.save\.roll\.mode$/.test(c.key)),{key,value:-1,type:"add"}];
+}
 function context(card){const activity=card?.getAssociatedActivity?.({scaled:true}),actor=card?.getAssociatedActor?.()??activity?.actor;return {activity,actor,item:activity?.item};}
 function sourceEffect(item,activity,ability){return values(item?.effects).find(e=>hexAbility(e)===ability&&(!activity.effects?.length||values(activity.effects).some(r=>r._id===e.id||r.uuid===e.uuid)));}
 export async function initializeHex(card){
@@ -19,7 +27,7 @@ export async function initializeHex(card){
  const applied=undo?await undo.apply(card,card,source,target,tray):await tray._applyEffectToActor(source,target);if(!applied?.uuid)throw Error("Hex could not apply its Strength curse.");
  const previousChoice=flag(actor,"hexActiveChoice"),native=source.toObject();
  const record={effect:applied.uuid,target:target.uuid,token:token?.uuid,caster:actor.uuid,item:item.uuid,concentration:concentration.uuid,card:card.id,ability:"str"};
- await applied.update({name:native.name,img:native.img,"system.changes":native.system.changes,statuses:native.statuses??["cursed"],["flags."+ID+".hexChoice"]:record,"flags.dnd5e.dependentOn":concentration.uuid,"system.origin.effect":concentration.uuid});
+ await applied.update({name:native.name,img:native.img,"system.changes":hexCurseChanges(native,"str",item,actor),statuses:native.statuses??["cursed"],["flags."+ID+".hexChoice"]:record,"flags.dnd5e.dependentOn":concentration.uuid,"system.origin.effect":concentration.uuid});
  await card.setFlag(ID,"hexChoice",record);
  // Reassigning Hex ends only this caster/concentration's earlier managed curse.
  await actor.setFlag(ID,"hexActiveChoice",record);
@@ -34,7 +42,7 @@ export async function selectHexAbility(card,ability,user=game.user){
  const source=sourceEffect(item,activity,ability);if(!source)throw Error("That Hex ability is not available on this card.");
  const data=source.toObject();
  // Update in place: retain concentration dependency, expiry, start and Undo identity.
- await effect.update({name:data.name,img:data.img,"system.changes":data.system.changes,statuses:data.statuses??["cursed"],["flags."+ID+".hexChoice"]:{...record,ability}});
+ await effect.update({name:data.name,img:data.img,"system.changes":hexCurseChanges(data,ability,item,actor),statuses:data.statuses??["cursed"],["flags."+ID+".hexChoice"]:{...record,ability}});
  await card.setFlag(ID,"hexChoice",{...record,ability});globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return ability;
 }
 async function request(card,ability){const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"hexAbilityChoice",card:card.id,ability,user:game.user.id,gm:gm.id});else await enqueue(()=>selectHexAbility(card,ability));}
@@ -44,14 +52,14 @@ export function renderHexChoice(message,html){
  for(const {card,node}of entries){
   node.querySelectorAll(":scope > .rsa-hex-choice").forEach(e=>e.remove());if(card?.type!=="usage")continue;const {activity,actor}=context(card);if(!hexChoiceActivity(activity)||card.isContentVisible===false||!(game.user.isGM||actor?.isOwner))continue;
   for(const tray of node.querySelectorAll("effect-application"))tray.hidden=true;
-  const box=document.createElement("div");box.className="rsa-attack-actions rsa-hex-choice";const info=document.createElement("p");info.textContent="Hex ability checks: choose one ability. Strength is applied automatically.";box.append(info);
+  const box=document.createElement("div");box.className="rsa-attack-actions rsa-hex-choice";const info=document.createElement("p");info.textContent=isEldritchHex(activity.item,actor)?"Eldritch Hex: Disadvantage on checks and saves for one ability. Strength is applied automatically.":"Hex ability checks: choose one ability. Strength is applied automatically.";box.append(info);
   const row=document.createElement("div");row.style.cssText="display:flex;flex-wrap:wrap;gap:4px";
   const chosen=flag(card,"hexChoice")?.ability;
   for(const ability of abilities){const button=document.createElement("button");button.type="button";button.textContent=ability.toUpperCase();button.setAttribute("aria-pressed",String(chosen===ability));button.style.flex="1 1 44px";if(chosen===ability)button.style.outline="1px solid var(--dnd5e-color-gold, #c9ad6a)";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();request(card,ability).catch(report);});row.append(button);}box.append(row);node.append(box);
  }
 }
 function report(error){console.error("Hex ability selection",error);ui.notifications.error(error.message);}
-Hooks.once("init",()=>game.settings.register(ID,"hexAbilityChoice",{name:"Hex Ability Selection",hint:"Apply Strength Hex automatically on the curse card, then let the caster/GM switch abilities. Requires the existing curse and active concentration; missing effects must be recast.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"hexAbilityChoice",{name:"Hex Ability Selection",hint:"Apply Strength Hex automatically on the curse card, then let the caster/GM switch abilities. Eldritch Hex also applies save Disadvantage for the chosen ability. Requires the existing curse and active concentration; missing effects must be recast.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
  globalThis.Ugmuls55eAutomationHex={hexChoiceActivity};
  for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>{if(authority()&&card.type==="usage"&&hexChoiceActivity(card.getAssociatedActivity?.()))enqueue(()=>initializeHex(card)).catch(report);});

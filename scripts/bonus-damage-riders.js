@@ -16,10 +16,11 @@ export function riderTargets(app) {
 }
 export function riderKey(item) {
     const identifier=item?.identifier??item?.system?.identifier;
+    if(identifier==="great-old-one-hex")return "hex";
     if(definitions[identifier])return identifier;
     if(identifier===elementalKey)return elementalKey;
     const name=item?.name?.toLowerCase().replace(/[’']/g,"").trim();
-    return name==="hex"?"hex":name==="hunters mark"?"hunters-mark":name==="conjure minor elementals"?elementalKey:null;
+    return ["hex","hex (powerful)","eldritch hex"].includes(name)&&item?.type==="spell"?"hex":name==="hunters mark"?"hunters-mark":name==="conjure minor elementals"?elementalKey:null;
 }
 export function riderConcentration(actor,key) {
     return Array.from(actor?.concentration?.effects??[]).find(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true&&

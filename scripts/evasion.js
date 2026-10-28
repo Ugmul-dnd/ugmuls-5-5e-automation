@@ -70,7 +70,9 @@ export function renderEvasion(message,html){
  for(const {card,root:node}of entries){
   node.querySelectorAll(':scope > .rsa-evasion-summary').forEach(el=>el.remove());if(card.isContentVisible===false||card.type!=='damage')continue;
   const entries=(card.system?.targets??[]).map(t=>evasionContext(card,t.token)).filter(Boolean);if(!entries.length)continue;
-  for(const tray of node.querySelectorAll('damage-application'))tray.refreshMultiplier?.();
+  // Collapsed/grouped chat trays may not have run their connectedCallback yet.
+  // Native recorded-target build events refresh the multiplier once the list exists.
+  for(const tray of node.querySelectorAll('damage-application'))if(tray.targetList?.querySelectorAll)tray.refreshMultiplier?.();
   const note=document.createElement('div');note.className='rsa-evasion-summary';note.style.cssText='padding:4px 8px;font-size:0.85em;';note.textContent=entries.map(e=>'Evasion: '+e.actor.name+' — '+(e.multiplier===0?'no damage':'half damage')).join(' · ');node.append(note);
  }
 }

@@ -22,6 +22,7 @@ function isActiveGM() {
 }
 
 export async function trackInstantRegion(region) {
+    if(region.flags?.[MODULE_ID]?.searingVengeanceArea)return; // Searing cleanup follows the activation turn, not the caster turn.
     if (!game.settings.get(MODULE_ID, "cleanupTargetingRegions")) return;
     if (!isActiveGM()) return;
     const itemUUID = region.flags?.dnd5e?.item;

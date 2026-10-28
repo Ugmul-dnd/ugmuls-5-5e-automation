@@ -29,7 +29,7 @@ export function defaultSpellTargetDisplay(message,html){
         if(!card||targetDisplayInitialized.has(card)||!card.system?.targets?.length)continue;
         const itemType=card.system.item?.type??card.getAssociatedItem?.()?.type??card.getAssociatedActivity?.()?.item?.type;
         const activity=card.getAssociatedActivity?.(),monsterArea=activity?.actor?.type==="npc"&&!!activity.target?.template?.type;
-        if(itemType!=="spell"&&!monsterArea&&!card.getFlag?.(MODULE_ID,"monsterAuraDamage")&&!card.getFlag?.(MODULE_ID,"monsterFearSave")&&!card.getFlag?.(MODULE_ID,"sourceTurnDamage"))continue;
+        if(itemType!=="spell"&&!monsterArea&&(activity?.item?.identifier??activity?.item?.system?.identifier)!=="searing-vengeance"&&!card.getFlag?.(MODULE_ID,"searingRescueHeal")&&!card.getFlag?.(MODULE_ID,"darkBlessingHeal")&&!card.getFlag?.(MODULE_ID,"monsterAuraDamage")&&!card.getFlag?.(MODULE_ID,"monsterFearSave")&&!card.getFlag?.(MODULE_ID,"sourceTurnDamage"))continue;
         targetDisplayInitialized.add(card);
         card._targetState??={checked:new Map(),mode:""};
         card._targetState.mode="targeted";card._targetState.checked?.clear?.();

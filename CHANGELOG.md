@@ -2,6 +2,70 @@
 
 ## Unreleased
 
+- Fiendish Resilience adds a Resistance Selection dropdown to Short/Long Rest dialogs for the 2024 feature. On completion, apply the selected damage resistance (excluding Force), default future rests to the current choice, reuse configured native effects when available, and replace only this feature’s prior resistance.
+
+- Dark One’s Own Luck waits for the shared client dice-animation completion barrier before publishing its adjusted total. A background GM no longer allows results to appear before the player’s bonus dice finish; failed waits refund the reserved use.
+
+- Dark One’s Own Luck adds a button to the owning character’s ability-check and saving-throw cards, including grouped rolls. Rolls the native bonus, preserves existing dice and roll modes, spends one native use, and limits use to once per roll. Includes GM/player validation, failed-adjustment refunds, applied damage/effect locks, and targeted resource/grant refreshes.
+
+- Fixed Dark One’s Blessing failing after healing and defeating the same token again. Recover unchanged token/source fields from the matching stored event when Foundry sends only the new event key; preserve duplicate protection.
+
+- Fixed Dark One’s Blessing discarding captured defeats when synthetic token actor updates omit the final HP value. Process the captured transition marker, recheck current 0 HP, and retain duplicate/Undo protection.
+
+- Dark One’s Blessing resolves its fixed native temporary HP without a Roll dialog, preserving healing Apply/Undo. Nearby enemy defeats measure range using the defeated token’s scene grid, including when the authority GM views another scene.
+
+- Dark One’s Blessing detects enemies dropping from positive HP to 0. Grants native temporary HP through the existing healing workflow for the Warlock’s own finishing damage at any range, or any nearby enemy defeat within 10 feet. Tracks the actual damaged token/source card, ignores Undo and repeated 0-HP updates, preserves higher temp HP, and defaults its healing cards to Targets.
+
+- Searing Vengeance automatically applies its native Blinded effect to confirmed enemy damage targets after dice animations when status auto-application is enabled, preserving effect Undo, collapsed applied state and current-turn expiry. Explicitly exempted this no-action feature from off-turn reaction checks and Reaction Used tracking.
+
+- Searing Vengeance requires exactly one targeted ally (or self) at 0 HP within 60 feet before spending its native use. Automatically centers its burst on that creature, restricts the area picker to enemies, heals half the rescued creature’s maximum HP with native Undo, and defaults cards to Targets. Burst and Blinded cleanup follow the activation turn.
+
+- Searing Vengeance keeps manual activation and native damage/targeting, while Blinded now expires at the end of its activation turn (the rescued creature’s turn), rather than the Warlock’s or affected enemy’s turn. Records activation timing, prevents late application from extending the effect, and cleans up at combat end.
+
+- Celestial Resilience now initially checks the first five eligible allies while preserving player changes. Fixed temporary HP application when native healing cards resolve their source as a message document instead of an ID. Guarded Evasion multiplier refreshes until grouped/collapsed damage trays have initialized their target list.
+
+- Celestial Resilience adds up-to-five visible ally checkboxes to Short/Long Rest and Magical Cunning dialogs. On completion, automatically grants the native full temporary HP amount to the Warlock and the native smaller amount to selected allies, excluding the caster from the five. Uses native healing cards/Apply damage handling for higher-temp-HP preservation and Undo, with active-GM validation and duplicate protection.
+
+- Celestial Radiant Soul gains a managed on/off effect that automatically adds its native Charisma bonus to the first Fire/Radiant spell damage roll each turn, labeled Radiant Soul. Area spells select one bonus recipient; other targets retain normal damage. Includes noncritical flat bonus, per-turn reservations and canceled-roll protection.
+
+- Beguiling Defenses adds a Reaction on incoming attack damage cards: spend the feature use, halve that Warlock’s damage and prompt the attacker’s Wisdom save. On failure, return Psychic damage equal to actual damage applied, regardless of save/application order. Includes optional Pact Magic slot restoration, GM/player routing, duplicate protection and normal damage Undo controls.
+
+- Simplified Dreadful Step into one post-teleport target picker with separate Departure and Arrival groups. Select one area, confirm its targets and hover creatures for map highlighting. Removed the casting-location dropdown and replaced the two chat location buttons with a single Choose Targets fallback. Taunting Step continues to target departure only.
+
+- Dreadful Step now provides explicit Resolve at Arrival and Resolve at Departure controls on pending cast cards. Arrival is now the default for new casts. Each control updates the selected area before resolving, including older casts saved as Departure.
+
+- Fixed Dreadful Step’s location being reset to Departure during asynchronous casting-form updates. Capture submitted location before rerendering, display Arrival/Departure on the cast card, and leave empty-area casts available for Confirm Arrival retries.
+
+- Fixed Fey Step destination selection to read the submitted casting control directly. Dreadful/Taunting area targeting no longer excludes creatures based on token visibility, which can lag behind teleport arrival; Refreshing Step retains its visibility requirement.
+
+- Fixed Disappearing Step’s applied-effect section remaining open. Added authoritative caster-turn cleanup for Disappearing and Taunting Step so their effects end at the caster’s next turn start even when native helper-effect expiry does not resolve.
+
+- Archfey Misty Step gains an optional Fey Step casting selector. Recorded departure and settled token movement drive Refreshing/Taunting Step, with Disappearing/Dreadful Step unlocked by Misty Escape. Provides Confirm Arrival/Cancel Extras fallback controls, native healing/save cards, source-turn effect expiry, Taunting attack disadvantage and Disappearing invisibility cleanup. Dreadful Step uses no damage on a successful save, correcting the native activity. Native teleport animation, casting resources and reaction casting remain unchanged.
+
+- Thought Shield creates a fixed Psychic damage card after Psychic damage is applied to its owner, reflecting the post-resistance Psychic amount to the source creature. Preserves normal Apply/Undo, prevents duplicate cards on reapplication and blocks reflection loops.
+
+- Extended automatic combat placement (caster initiative − 0.01) to Animate Objects, Giant Insect, Summon Beast/Celestial/Construct/Dragon/Elemental/Fey/Fiend/Undead, Summon Dinosaur, Summon Plant, Homunculus Servant, Staff of the Python and Domestic Wonder. Covers all summon profiles; keeps familiar, mount and action-controlled spell tokens outside this automation. Added a Common automation toggle.
+
+- Creatures with a straightforward Regeneration feature now use their native healing activity at turn start when injured with at least 1 HP, including summoned Slaad spirits. Respects healing prompt/application options, disabled passive effects and once-per-turn protection. Conditional damage/environmental suppression variants remain manual.
+
+- Mind Flayer summons automatically gain a grid-shaped Whispering Aura: start-of-spirit-turn Wisdom saves and native Psychic damage within 5 feet, excluding the summoner and suppressed while incapacitated.
+
+- Fixed Summon Aberration combat enrollment for global combats without a linked scene; resolve the caster by exact token or an unambiguous same-scene combatant.
+
+- Summon Aberration automatically joins active combat at its caster’s initiative minus 0.01, including normal and Create Thrall casts.
+
+- Summon Aberration offers a Create Thrall Yes/No casting choice. Yes preserves slot consumption while disabling new concentration, using a one-minute temporary casting and granting the native Warlock-level/Charisma temporary HP (repairing the source formula typo). Timed Thrall tokens expire independently of existing Hex concentration. Linked Aberrations gain the native once-per-turn Psychic bonus against their owner’s active Hex target.
+
+- Hex (Powerful) from Eldritch Hex now uses the standard caster/GM ability selector and damage rider. Strength applies automatically; switching replaces both check and save Disadvantage. Repair the missing native Intelligence save penalty, preserve concentration/expiry, and retain missing-effect/recast guards. Ordinary Hex also gains the save penalty when its caster owns Eldritch Hex.
+
+- Clairvoyant Combatant’s native failed-save effect now supplies reciprocal caster-specific attack Advantage/Disadvantage, with AC5e cancellation, a linked caster effect, Warlock-level duration and cleanup when Awakened Mind changes targets. Native activation/save/resource use remains unchanged.
+
+- Psychic Spells remembers each client’s last rolled damage type per owned spell/activity/damage row. Later rolls default to that type without overriding live edits or saving canceled prompts.
+
+- Great Old One Psychic Spells automatically gains a managed passive effect that offers Psychic on native Warlock spell damage-type selectors. Disabling the effect pauses the choice; other classes’ spells, original formulas and component handling remain unchanged.
+
+- Investment of the Chain Master expands linked familiar physical damage rows with Necrotic/Radiant choices. Incoming familiar damage cards offer the Warlock’s tracked Reaction to resist only that damage, retaining native calculation and Undo without a lingering resistance effect.
+
 - Lifedrinker adds optional typed d6 damage to pact-weapon damage configuration once per turn. Its completed damage card offers optional self-healing using an available Hit Die, with the die spent only on Roll submission and a separate once-per-turn healing limit.
 - Hex curse cards automatically apply Strength and offer caster/GM ability selectors. Switching updates the existing curse without resetting concentration or duration; missing/expired curses cannot be recreated from an old card.
 
@@ -884,3 +948,9 @@ Validated with automated regression checks and user testing on Foundry v14 with 
 - Initial public package release.
 - Configurable Region activity triggers, targeting, Once Per Turn, native Region Active Effects, and concentration cleanup.
 - End-turn activity triggers skip tokens at 0 HP, with the dead status, or marked defeated.
+
+
+
+
+
+

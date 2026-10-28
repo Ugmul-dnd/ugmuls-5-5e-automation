@@ -2,13 +2,13 @@ import {getRegionSpellTable} from "./region-library.js";
 import {describeTarget,isEligibleTarget} from "./shared-activity-card.js";
 import {sendSavePrompt} from "./save-prompts.js";
 const ID="ugmuls-5-5e-automation",syncing=new Set(),running=new Set();
-const specs={"stench":{name:"Stench",id:"mJbwhj3beOIB3Jgj",type:"save",condition:"poisoned",ability:"con",immunitySeconds:3600,speciesImmunity:true,effectId:"rHL9lpchOon81CN1"},"fetid-aura":{name:"Fetid Aura",id:"viDmXaiaC23yBh98",type:"save",condition:"poisoned",ability:"con",immunitySeconds:0,effectId:"osCPSzW0IxYlG7t0"},"fear-aura":{name:"Fear Aura",id:"oT8238p9jXwVy76c",type:"save",condition:"frightened",ability:"wis",immunitySeconds:86400,enemiesOnly:true},"heat-aura":{name:"Heat Aura",id:"LDcQJj3oXyPCuCaT"},"flame-aura":{name:"Flame Aura",id:"f4cPafTT2VXHbpr7"},"fire-aura":{name:"Fire Aura",id:"15VgJKVXwYBOFSqJ"}};
+const specs={"whispering-aura":{name:"Whispering Aura",id:"dnd5eactivity000",type:"save",sourceTurn:true,radius:5},"stench":{name:"Stench",id:"mJbwhj3beOIB3Jgj",type:"save",condition:"poisoned",ability:"con",immunitySeconds:3600,speciesImmunity:true,effectId:"rHL9lpchOon81CN1"},"fetid-aura":{name:"Fetid Aura",id:"viDmXaiaC23yBh98",type:"save",condition:"poisoned",ability:"con",immunitySeconds:0,effectId:"osCPSzW0IxYlG7t0"},"fear-aura":{name:"Fear Aura",id:"oT8238p9jXwVy76c",type:"save",condition:"frightened",ability:"wis",immunitySeconds:86400,enemiesOnly:true},"heat-aura":{name:"Heat Aura",id:"LDcQJj3oXyPCuCaT"},"flame-aura":{name:"Flame Aura",id:"f4cPafTT2VXHbpr7"},"fire-aura":{name:"Fire Aura",id:"15VgJKVXwYBOFSqJ"}};
 const authority=()=>game.user?.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export function monsterAuraActivities(token){
  return Array.from(token?.actor?.items??[]).flatMap(item=>{
   const spec=specs[item.identifier??item.system?.identifier],config=spec&&getRegionSpellTable()[spec.name];
   if(item.type!=="feat"||item.system?.type?.value!=="monster"||!spec||config?.enabled===false||!config?.monsterAura)return [];
-  return Array.from(item.system.activities??[]).filter(a=>a.id===spec.id&&a.type===(spec.type??"damage")&&Number(a.target?.template?.size)>0).map(activity=>({item,activity,config,spec}));
+  return Array.from(item.system.activities??[]).filter(a=>a.id===spec.id&&a.type===(spec.type??"damage")&&Number(spec.radius??a.target?.template?.size)>0).map(activity=>({item,activity,config,spec}));
  });
 }
 export async function syncMonsterAuras(token){
@@ -20,7 +20,7 @@ export async function syncMonsterAuras(token){
    const existing=regions.find(r=>r.flags[ID].monsterAura.item===item.uuid&&!keep.has(r.id)),scale=scene.grid.size/scene.grid.distance;
    if(!Number.isFinite(scale)||scale<=0)continue;
    const levels=Array.from(token.levels??[]);if(!levels.length&&globalThis.canvas?.scene===scene&&canvas.level?.id)levels.push(canvas.level.id);
-   const data={name:spec.name+" — "+token.name,color:game.user.color,shapes:[{type:"emanation",gridBased:true,radius:Number(activity.target.template.size)*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],attachment:{token:token.id},...(levels.length?{levels}:{}),restriction:{enabled:true,type:"move"},visibility:config.hideRegionFromPlayers!==false?CONST.REGION_VISIBILITY.GAMEMASTER:CONST.REGION_VISIBILITY.ALWAYS,highlightMode:"coverage",flags:{[ID]:{monsterAura:{token:token.uuid,item:item.uuid,activity:activity.id}}}};
+   const data={name:spec.name+" — "+token.name,color:game.user.color,shapes:[{type:"emanation",gridBased:true,radius:Number(spec.radius??activity.target.template.size)*scale,base:{type:"token",x:token.x,y:token.y,width:token.width,height:token.height,shape:token.shape,rotation:0}}],attachment:{token:token.id},...(levels.length?{levels}:{}),restriction:{enabled:true,type:"move"},visibility:config.hideRegionFromPlayers!==false?CONST.REGION_VISIBILITY.GAMEMASTER:CONST.REGION_VISIBILITY.ALWAYS,highlightMode:"coverage",flags:{[ID]:{monsterAura:{token:token.uuid,item:item.uuid,activity:activity.id}}}};
    if(existing){keep.add(existing.id);if(existing.visibility!==data.visibility||JSON.stringify(existing.shapes)!==JSON.stringify(data.shapes)||existing.attachment?.token!==token.id)await existing.update(data);}
    else {const created=await scene.createEmbeddedDocuments("Region",[data]);for(const region of created)keep.add(region.id);}
   }
@@ -86,12 +86,43 @@ export async function startMonsterCombatAuras(combat){
 }
 export async function processMonsterAuraTurn(combat,changes){
  if(!authority()||!combat.started)return;
- if(changes.started===true||!combat.previous?.combatantId){await startMonsterCombatAuras(combat);await triggerMonsterFearTurn(combat);return;}
+ if(changes.started===true||!combat.previous?.combatantId){await startMonsterCombatAuras(combat);await triggerMonsterFearTurn(combat);await triggerWhisperingAura(combat);return;}
  if(!("turn" in changes||"round" in changes))return;
  const previous=combat.previous;if(!previous?.combatantId||previous.combatantId===combat.combatant?.id&&previous.round===combat.round)return;
  const token=combat.combatants.get(previous.combatantId)?.token;if(token)await triggerMonsterAura(token,combat.id+":"+previous.round+":"+previous.turn);
- await triggerMonsterFearTurn(combat);
+ await triggerMonsterFearTurn(combat);await triggerWhisperingAura(combat);
 }
+
+export function whisperingTargets(region,source,caster){
+ return monsterAuraTargets(region,source).filter(t=>t.actor?.uuid!==caster?.uuid&&!(caster?.id&&t.actorId===caster.id));
+}
+export async function triggerWhisperingAura(combat){
+ if(!authority()||!combat?.started)return;
+ const source=combat.combatant?.token;if(!source?.actor)return;
+ const stamp=combat.id+":"+combat.round+":"+combat.turn;
+ for(const {item,activity,spec}of monsterAuraActivities(source).filter(e=>e.spec.sourceTurn)){
+  if(auraSuppressed(source,item)||["incapacitated","unconscious","stunned","paralyzed","petrified"].some(s=>source.actor.statuses?.has(s)))continue;
+  const region=Array.from(source.parent.regions??[]).find(r=>r.flags?.[ID]?.monsterAura?.token===source.uuid&&r.flags[ID].monsterAura.item===item.uuid);
+  if(!region||running.has(region.uuid)||region.getFlag(ID,"whisperingLastTurn")===stamp)continue;
+  running.add(region.uuid);
+  try{
+   const origin=source.actor.getFlag?.("dnd5e","summon.origin"),spell=origin?await fromUuid(origin):null,caster=spell?.actor;
+   const targets=whisperingTargets(region,source,caster);if(!targets.length)continue;
+   const dc=Number(caster?.system?.attributes?.spelldc??activity.save?.dc?.value);if(!Number.isFinite(dc)||dc<=0)throw Error("Whispering Aura needs the summoner’s spell save DC.");
+   const {data,id}=buildMonsterAuraDamage(item,activity);data.system.description={value:"<p>Whispering Aura: Wisdom save; Psychic damage on a failed save.</p>",chat:""};
+   data.system.activities[id].save={...data.system.activities[id].save,dc:{calculation:"",formula:String(dc)}};
+   data.flags.dnd5e={...data.flags.dnd5e,riders:{activity:[],effect:[],item:[]}};
+   const helper=new CONFIG.Item.documentClass(data,{parent:item.actor});helper.prepareFinalAttributes?.();const use=helper.system.activities.get(id),descriptors=targets.map(describeTarget);
+   const flags={[ID]:{riderTriggered:true,regionTriggered:true,activityOverrideData:data,whisperingAura:{source:source.uuid,stamp}},dnd5e:{item:{data}}};
+   await region.setFlag(ID,"whisperingLastTurn",stamp);
+   const result=await use.use({consume:false,scaling:0,concentration:{begin:false},create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{system:{targets:descriptors},flags}});
+   if(!result?.message)throw Error("Whispering Aura save card could not be created.");
+   for(const target of targets)await sendSavePrompt(result.message,target,"region");
+   // The shared save/damage workflow owns the damage prompt and its ordering.
+  }finally{running.delete(region.uuid);}
+ }
+}
+
 async function syncCanvas(){if(!authority())return;for(const token of globalThis.canvas?.scene?.tokens??[])await syncMonsterAuras(token);}
 async function syncActor(actor){if(!authority())return;for(const token of globalThis.canvas?.scene?.tokens??[])if(token.actor?.uuid===actor?.uuid)await syncMonsterAuras(token);}
 function report(error){console.error("Monster aura automation",error);ui.notifications.error("Monster aura could not finish. Check the aura card and console.");}
@@ -141,7 +172,7 @@ export async function triggerMonsterFearTurn(combat){
  for(const region of target.parent?.regions??[]){
   const link=region.flags?.[ID]?.monsterAura;if(!link)continue;
   const source=Array.from(target.parent.tokens??[]).find(t=>t.uuid===link.token);if(!source||source.uuid===target.uuid||swallowedByAuraSource(target,source))continue;
-  const match=monsterAuraActivities(source).find(entry=>entry.activity.type==="save"&&entry.item.uuid===link.item);if(!match||auraSuppressed(source,match.item)||monsterSaveAuraImmune(target.actor,source,match.spec)||!target.testInsideRegion?.(region))continue;
+  const match=monsterAuraActivities(source).find(entry=>entry.activity.type==="save"&&!entry.spec.sourceTurn&&entry.item.uuid===link.item);if(!match||auraSuppressed(source,match.item)||monsterSaveAuraImmune(target.actor,source,match.spec)||!target.testInsideRegion?.(region))continue;
   if(match.spec.enemiesOnly){const enemy=source.disposition===CONST.TOKEN_DISPOSITIONS.HOSTILE?CONST.TOKEN_DISPOSITIONS.FRIENDLY:CONST.TOKEN_DISPOSITIONS.HOSTILE;if(target.disposition!==enemy)continue;}
   if(match.spec.speciesImmunity&&monsterStenchKind(source.actor)&&monsterStenchKind(source.actor)===monsterStenchKind(target.actor))continue;
   const key=region.uuid+":"+target.uuid;if(running.has(key))continue;

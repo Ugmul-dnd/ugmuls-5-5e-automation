@@ -330,6 +330,8 @@ Hooks.once("ready",async()=>{
     });
     Hooks.on("dnd5e.preApplyDamage",(actor,amount,updates,options)=>{
         const message=options.origin??options.originatingMessage;
+        // The linked automatic rescue heal must not mark the main burst as manually stopped.
+        if(options.rsaSearingRescueGrant===true&&message?.getFlag?.(MODULE_ID,"searingRescueHeal"))return;
         if(!isDamageOrHealingCard(message))return;
         if(options.rsaAutomaticDamage) {if(isManual(message)||!autoApplyHpEnabled(message))return false;}
         else stopAutomaticDamage(message).catch(console.error);

@@ -75,6 +75,10 @@ export async function undoCardEffects(message) {
             await card.setFlag(MODULE_ID,"effectUndoHistory",[...records]);
         }
     }
+    for(const card of effectUndoSources(message))if(card!==usage&&card.getFlag?.(MODULE_ID,"searingBlindApplications")){
+        await card.setFlag(MODULE_ID,"outcomeEffectsApplied",false);
+        await card.setFlag(MODULE_ID,"effectApplyReopened",Date.now());
+    }
     await usage.setFlag(MODULE_ID,"outcomeEffectsApplied",false);
     await usage.setFlag(MODULE_ID,"buffAutoApplied",false);
     await usage.setFlag(MODULE_ID,"effectApplyReopened",Date.now());

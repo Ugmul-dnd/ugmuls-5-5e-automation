@@ -11,6 +11,7 @@ export function excludesIntimidatingCaster(activity,token){
 }
 
 export function automaticTargetMode(activity, config) {
+    if(globalThis.Ugmuls55eAutomationSearing?.isActivity(activity))return "hostilesOnly";
     const type = activity.target?.affects?.type;
     const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b","intimidating-presence":"ZRHT8mOlea6T8XpP"};
     if(selfExcludedActivities[activity.item?.identifier??activity.item?.system?.identifier]===activity.id&&activity.id&&activity.target?.template?.type)return "excludeSelf";
@@ -172,6 +173,8 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
     eligibleTargets() {
         const targets = [];
         for (const token of (this.canChooseTargets?Array.from(game.user.targets):this.castTargets)) {
+            const activity=this.message.getAssociatedActivity?.(),searing=globalThis.Ugmuls55eAutomationSearing;
+            if(searing?.isActivity(activity)&&!searing.validateTargets(activity,this.message,[describeTarget(token.document??token)]).length){if(this.canChooseTargets)token.setTarget(false,{user:game.user,releaseOthers:false});continue;}
             if (!excludesIntimidatingCaster(this.message.getAssociatedActivity?.(),token)&&(this.message.getAssociatedActivity?.()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
             else if(this.canChooseTargets)token.setTarget(false, { user: game.user, releaseOthers: false });
         }
@@ -272,7 +275,7 @@ export async function finishConfirmedCast(activity, message, targets) {
         if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}
     }
-    targets = eligible;
+    targets = globalThis.Ugmuls55eAutomationSearing?.isActivity(activity)?globalThis.Ugmuls55eAutomationSearing.validateTargets(activity,message,eligible):eligible;
     const banneret=globalThis.Ugmuls55eAutomationBanneret;
     if(banneret?.isActivity(activity))targets=banneret.validateTargets(activity,activity.getUsageToken?.()??message.getAssociatedToken?.(),targets);
     if(activity.target?.affects?.choice!==true)globalThis.canvas?.tokens?.setTargets?.(tokens.map(token=>token.id));

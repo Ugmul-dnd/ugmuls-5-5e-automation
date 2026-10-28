@@ -20,6 +20,8 @@ function manualActivity(activity,message) {
     return !cleaveMessage(message)&&["spell","weapon","feat"].includes(activity?.item?.type)&&!message?.data?.flags?.[ID]?.regionTriggered&&!message?.data?.flags?.[ID]?.riderTriggered;
 }
 export function reactionActivity(activity) {
+    // Searing Vengeance is a no-action rescue, even on another creature’s turn.
+    if(activity?.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="searing-vengeance")return false;
     const actor=activity?.actor??activity?.item?.actor;
     if(!actor||!game.combat?.started||!Array.from(game.combat.combatants??[]).some(entry=>entry.actor?.uuid===actor?.uuid))return false;
     return String(activity?.activation?.type??"").startsWith("reaction")||(offTurn(activity)&&activity?.activation?.type!=="bonus");

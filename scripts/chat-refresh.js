@@ -1,6 +1,8 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ ownLuck:{setting:"darkOnesOwnLuckAutomation",types:["check","save"],feature:"dark-ones-own-luck",own:true},
+ beguilingDefenses:{setting:"beguilingDefensesAutomation",types:["damage"],feature:"beguiling-defenses",incoming:true},
  stalkersFlurry:{setting:"stalkersFlurryAutomation",types:["damage"],feature:"stalkers-flurry",own:true},
  superiorHunterPrey:{setting:"superiorHunterPreyAutomation",types:["damage"],feature:"superior-hunters-prey",own:true},
  superiorHunterDefense:{setting:"superiorHunterDefenseAutomation",types:["damage"],feature:"superior-hunters-defense",incoming:true},
@@ -16,6 +18,7 @@ const rules={
  homing:{setting:"homingStrikesAutomation",types:["attack"],feature:"soul-blades",own:true},
  evasion:{setting:"evasionAutomation",types:["damage","usage","save"],feature:"evasion",incoming:true},
  chilling:{setting:"chillingRetributionAutomation",types:["damage"],feature:"chilling-retribution",incoming:true},
+ chainInvestment:{setting:"chainInvestmentAutomation",types:["damage"],feature:"investment-of-the-chain-master",all:true},
  lifedrinker:{setting:"lifedrinkerAutomation",types:["damage"],feature:"lifedrinker",own:true},
  uncanny:{setting:"uncannyDodgeAutomation",types:["damage"],feature:"uncanny-dodge",incoming:true},
  rebuke:{setting:"elementalRebukeAutomation",types:["attack","damage"],feature:"elemental-rebuke",incoming:true},

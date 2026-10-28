@@ -1,5 +1,6 @@
 // Portable recipes migrated from the current saved setup; no world document references.
 export const REGION_DEFAULTS=deepFreeze({
+"Whispering Aura":{"enabled":true,"monsterAura":true,"sourceUuid":"Compendium.dnd-players-handbook.actors.Actor.phbabsMindFlayer.Item.phbaoiWhispering","hideRegionFromPlayers":true,"auraActivityId":"dnd5eactivity000","triggers":[],"regionEffects":[]},
 "Create Whirlwind":{"enabled":true,"placementOnly":true,"sourceUuid":"Compendium.dnd-monster-manual.actors.Actor.mmDjinni00000000.Item.mmCreateWhirlwin","hideRegionFromPlayers":true,"triggers":[{"id":"djinniEntrySave1","name":"Whirlwind entry save","activity":"Save","activityId":"TYNKL0QDItFpbR2G","events":["tokenEnter"],"targeting":"everyone","oncePerTurn":true,"shareCardPerTurn":true}],"regionEffects":[]},
 "Stench":{"enabled":true,"monsterAura":true,"sourceUuid":"Compendium.dnd-monster-manual.actors.Actor.mmGhast000000000.Item.5bjPpreGFvealK36","hideRegionFromPlayers":true,"auraActivityId":"mJbwhj3beOIB3Jgj","triggers":[],"regionEffects":[]},
 "Fetid Aura":{"enabled":true,"monsterAura":true,"sourceUuid":"Compendium.dnd-monster-manual.actors.Actor.mmSwarmOfDretche.Item.mmFetidAura00000","hideRegionFromPlayers":true,"auraActivityId":"viDmXaiaC23yBh98","triggers":[],"regionEffects":[]},
