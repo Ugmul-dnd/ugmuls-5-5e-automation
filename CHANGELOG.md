@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Fixed Steps of the Fey starting GM-only animation waits on every attack/client. Only the active GM waits when the attacker has an active Disappearing Step effect, preserving effects applied while dice finish. Fixed D&D5e 6 chat render errors from native private item lookup on untyped origin messages; safely resolve stored source data without incompatible receivers.
+
 - Fiendish Resilience adds a Resistance Selection dropdown to Short/Long Rest dialogs for the 2024 feature. On completion, apply the selected damage resistance (excluding Force), default future rests to the current choice, reuse configured native effects when available, and replace only this feature’s prior resistance.
 
 - Dark One’s Own Luck waits for the shared client dice-animation completion barrier before publishing its adjusted total. A background GM no longer allows results to appear before the player’s bonus dice finish; failed waits refund the reserved use.
@@ -948,6 +950,7 @@ Validated with automated regression checks and user testing on Foundry v14 with 
 - Initial public package release.
 - Configurable Region activity triggers, targeting, Once Per Turn, native Region Active Effects, and concentration cleanup.
 - End-turn activity triggers skip tokens at 0 HP, with the dead status, or marked defeated.
+
 
 
 

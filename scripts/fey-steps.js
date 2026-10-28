@@ -177,7 +177,14 @@ function tauntDefaults(config,dialog,message){
 }
 function registerTaunt(api=globalThis.ac5e?.usageRules){if(bridge||!api?.register)return;bridge=!!api.register({key:"rsaTauntingStep",scope:"universal",hook:"attack",target:"subject",mode:"disadvantage",name:"Taunting Step",persistent:false,evaluate:s=>{const a=resolve(s.actorUuid),t=resolve(s.opponentActorUuid??s.opponentUuid);return tauntedAgainst(a?.actor??a,t?.actor??t);}});}
 async function clearDisappearing(actor,ids=null){if(!actor?.isOwner)return;for(const effect of values(actor.effects))if((!ids||ids.includes(effect.id))&&live(effect)&&flag(effect,"feyStepEffect")?.kind==="disappearing")await effect.delete();}
-async function clearAfterAttack(card){await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);await clearDisappearing(card.getAssociatedActor?.());}
+export async function clearAfterAttack(card){
+ // The completion handshake is GM-authoritative. Unrelated attacks and player
+ // clients must not start waits for an effect they cannot expire.
+ if(!enabled()||!game.user.isGM||game.users.activeGM&&game.users.activeGM.id!==game.user.id)return;
+ const actor=card.getAssociatedActor?.(),ids=values(actor?.effects).filter(e=>live(e)&&flag(e,"feyStepEffect")?.kind==="disappearing").map(e=>e.id);
+ if(!actor?.isOwner||!ids.length)return;
+ await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);await clearDisappearing(actor,ids);
+}
 const expiring=new Set();
 export async function expireFeyStepTurn(combat,changes={}){
  if(!enabled()||!game.user.isGM||game.users.activeGM&&game.users.activeGM.id!==game.user.id||!combat?.started||!("turn"in changes||"round"in changes))return;

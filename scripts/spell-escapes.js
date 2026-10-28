@@ -62,16 +62,19 @@ export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClas
   }
   return cache.items.get(scaling);
  };
+ const resolving=new WeakSet();
  prototype.getAssociatedItem=function(options={}){
   const info=context(this);if(info)return cached(this,info,options);
-  // D&D5e 6's native fallback invokes a private method on the origin. An
-  // ID stored in an older/untyped card is not a branded ChatMessage instance.
-  // Resolve it to the real source document, never a proxy or shallow clone.
-  if(typeof this.system?.origin==="string"&&!live(this.system?.item?.uuid??this.getFlag?.("dnd5e","item.uuid"))){
-   const id=this.system?.item?.id??this.getFlag?.("dnd5e","item.id"),stored=this.system?.deltas?.deleted?.find(item=>item._id===id)??this.getFlag?.("dnd5e","item.data");
-   if(!stored){const source=origin(this);return source&&source!==this?source.getAssociatedItem?.(options):undefined;}
-  }
-  return getItem.call(this,options);
+  if(live(this.system?.item?.uuid??this.getFlag?.("dnd5e","item.uuid")))return getItem.call(this,options);
+  // D&D5e 6's fallback calls a private method on the originating message.
+  // Untyped/legacy origin documents are not branded ChatMessage5e instances,
+  // even when origin has already resolved to an object rather than an ID.
+  const id=this.system?.item?.id??this.getFlag?.("dnd5e","item.id"),stored=this.system?.deltas?.deleted?.find(item=>item._id===id)??this.getFlag?.("dnd5e","item.data");
+  if(stored)return cached(this,{source:this,data:stored},options);
+  if(resolving.has(this))return;
+  const candidate=origin(this),source=candidate?.id?game.messages.get(candidate.id)??candidate:candidate;
+  if(!source||source===this)return;
+  resolving.add(this);try{return source.getAssociatedItem?.(options);}finally{resolving.delete(this);}
  };
  prototype.getAssociatedActivity=function(options={}){
   const info=context(this);if(!info||!info.override&&live(this.system.activity?.uuid??this.getFlag?.("dnd5e","activity.uuid")))return getActivity.call(this,options);
