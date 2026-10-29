@@ -1,3 +1,6 @@
+import "./grave-touched.js";
+import "./form-of-dread.js";
+import "./semblance-of-life.js";
 import "./fiendish-resilience.js";
 import "./dark-ones-own-luck.js";
 import "./dark-ones-blessing.js";

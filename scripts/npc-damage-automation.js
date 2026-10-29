@@ -262,10 +262,16 @@ function scheduleEffects(message) {
 }
 async function receiveAnimationRequest(packet) {
     if(packet.gmId!==game.users.activeGM?.id||typeof packet.requestId!=="string"||!Array.isArray(packet.rollIds))return;
-    // Let DSN's create-message hook establish its animation state first.
-    await new Promise(resolve=>setTimeout(resolve,100));
-    const rolls=packet.rollIds.map(id=>game.messages.get(id)).filter(message=>message&&message.visible!==false&&message.isContentVisible!==false);
-    await Promise.all(rolls.map(roll=>waitForDamageAnimation(roll)));
+    if(globalThis.Ugmuls55eAutomationClientRollWait)await globalThis.Ugmuls55eAutomationClientRollWait(packet.rollIds,waitForDamageAnimation);
+    else {
+        // Ready-order fallback: inactive clients must acknowledge before a
+        // potentially throttled timer, even without the shared helper yet.
+        if(globalThis.document?.hidden!==true&&globalThis.document?.hasFocus?.()!==false){
+            await new Promise(resolve=>setTimeout(resolve,100));
+            const rolls=packet.rollIds.map(id=>game.messages.get(id)).filter(message=>message&&message.visible!==false&&message.isContentVisible!==false);
+            await Promise.all(rolls.map(roll=>waitForDamageAnimation(roll)));
+        }
+    }
     game.socket.emit(`module.${MODULE_ID}`,{action:"damageAnimationsComplete",requestId:packet.requestId,gmId:packet.gmId,userId:game.user.id});
 }
 function scheduleRiderDamage(message) {

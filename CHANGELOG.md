@@ -2,6 +2,28 @@
 
 ## Unreleased
 
+- Undead: add a persistent Grave Touched effect when the revised feature is present. Arcane Necrosis bypasses Necrotic resistance for attacks and Warlock spells/features while preserving immunity, and offers optional once-per-turn Necrotic spell conversion retained across that casting’s damage rolls. Dreaded Necrosis offers one native Necrotic damage die on confirmed Form of Dread hits, with critical handling, optional die/target selection, and target-specific application. Validate separate turn uses on the active GM, roll back failed configuration/evaluation, preserve original dice and normal Undo, and leave Undead Endurance unchanged.
+
+- Fixed repeated Frightful Avatar expiry racing native effect updates. The targeted fallback now disables and expires the effect in place instead of deleting its embedded ID, preserving native queued updates and subsequent refreshes on unlinked tokens.
+
+- Fixed Frightful Avatar fear expiry on native effect refreshes: set the attacker origin, start, and source-end duration on the final application operation. Track only this feature’s applied effects for next-source-turn-end cleanup, with recovery of older effects through their exact source message and preservation of unrelated Frightened effects. Test the installed native effect create/refresh operations as well as turn progression.
+
+- Undead: link the native Form of Superior Dread effect to active Form of Dread / Necrotic Husk forms, disabling it when the base form ends. Add optional Frightful Avatar to confirmed weapon and spell attack damage configuration, with a recorded-hit target choice, once-per-turn validation by the active GM, native Wisdom saves, and failed-save Frightened expiry at the end of the attacker’s next turn. Preserve original damage dice and use the shared save/effect/Undo workflow.
+
+- Fixed Semblance reversion losing original Vestige features due to unlinked ActorDelta item tombstones. Explicitly recreate missing form items with their original IDs after native transformation, including repeated uses and damage Undo, while preserving current Divine Power usage.
+
+- Fixed Semblance Multiattack reading the original Vestige summon level retained by native Transform. Apply the capped spirit spell level to the transformed actor, restore the original summon level on reversion, retain it through damage Undo, and repair existing active forms on reload.
+
+- Fixed Semblance reversion still rejecting saved token tints when a prepared Foundry Color object loses its prototype during appearance cloning. Normalize object and numeric tint values to valid color strings before constructing transformation actors; regression now rejects malformed object tints as well as blank strings.
+
+- Fixed Semblance spirit AC retaining the companion’s native summon AC effect. Prepare and bake the spirit’s effective AC, replace only the companion summon AC bonus, and restore it on reversion or failed transformation. Explicitly set summon spell level to half Warlock level (maximum 9). Normalize blank saved token tints so existing stuck forms can revert; cover Defender AC 22 at Warlock level 20 and damage Undo.
+
+- Fixed Semblance of Life failing with Cannot redefine property: walk. Temporary native Actors are already prepared by their constructor; avoid preparing them a second time during transformation, reversion, and damage Undo.
+
+- Semblance of Life transforms the linked Vestige within 90 feet using the native feature’s scaled spirit profiles. Retains actual HP, Hit Dice and Divine Power; grants spirit HP as temporary HP; restores the original form at 0 temporary HP or after one hour. Uses native Transform with stable token/actor references, current Divine Power/Hit Dice state, damage Undo restoration, cancellation/duplicate/permission guards and failed-transform refunds. No spare summon token or manual sidebar drag required.
+
+- Background animation safety enables Dice So Nice’s own skip-inactive-tab preference per connected user through a new Common setting. Hidden/unfocused clients acknowledge shared animation waits without waiting for throttled setup timers; foreground clients retain dice-before-result ordering. Preserves other dice settings and uses no third-party source patches.
+
 - Fixed Steps of the Fey starting GM-only animation waits on every attack/client. Only the active GM waits when the attacker has an active Disappearing Step effect, preserving effects applied while dice finish. Fixed D&D5e 6 chat render errors from native private item lookup on untyped origin messages; safely resolve stored source data without incompatible receivers.
 
 - Fiendish Resilience adds a Resistance Selection dropdown to Short/Long Rest dialogs for the 2024 feature. On completion, apply the selected damage resistance (excluding Force), default future rests to the current choice, reuse configured native effects when available, and replace only this feature’s prior resistance.
@@ -950,10 +972,3 @@ Validated with automated regression checks and user testing on Foundry v14 with 
 - Initial public package release.
 - Configurable Region activity triggers, targeting, Once Per Turn, native Region Active Effects, and concentration cleanup.
 - End-turn activity triggers skip tokens at 0 HP, with the dead status, or marked defeated.
-
-
-
-
-
-
-

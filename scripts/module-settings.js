@@ -11,14 +11,14 @@ export const CLASS_AUTOMATIONS=[
     {name:"Ranger",keys:["huntersPreyAutomation","relentlessHunterAutomation","preciseHunterAutomation","foeSlayerAutomation","defensiveTacticsAutomation","superiorHunterDefenseAutomation","superiorHunterPreyAutomation","bestialFuryAutomation","dreadAmbusherAutomation","stalkersFlurryAutomation","feyDreadfulStrikesAutomation","beguilingTwistAutomation","mistyWandererAutomation","hollowWrathAuraAutomation","hungeringMightAutomation","rotAndViolenceAutomation","ancientMightAutomation","polarStrikesAutomation","huntersRimeAutomation","fortifyingSoulAutomation","chillingRetributionAutomation","frozenHauntAuraAutomation"]},
     {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},
     {name:"Sorcerer",keys:["innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation"]},
-    {name:"Warlock",keys:["eldritchSmiteAutomation","lifedrinkerAutomation","chainInvestmentAutomation","psychicSpellsAutomation","clairvoyantCombatantAutomation","thoughtShieldAutomation","createThrallAutomation","feyStepsAutomation","beguilingDefensesAutomation","radiantSoulAutomation","celestialResilienceAutomation","searingVengeanceAutomation","darkOnesBlessingAutomation","darkOnesOwnLuckAutomation","fiendishResilienceAutomation"]},
+    {name:"Warlock",keys:["eldritchSmiteAutomation","lifedrinkerAutomation","chainInvestmentAutomation","psychicSpellsAutomation","clairvoyantCombatantAutomation","thoughtShieldAutomation","createThrallAutomation","feyStepsAutomation","beguilingDefensesAutomation","radiantSoulAutomation","celestialResilienceAutomation","searingVengeanceAutomation","darkOnesBlessingAutomation","darkOnesOwnLuckAutomation","fiendishResilienceAutomation","semblanceOfLifeAutomation","formOfDreadAutomation","graveTouchedAutomation"]},
     {name:"Wizard",keys:[]}
 ];
 export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
-    {id:"common",name:"Common",icon:"fa-gears",keys:["summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
+    {id:"common",name:"Common",icon:"fa-gears",keys:["summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
     {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
@@ -132,5 +132,3 @@ Hooks.once("ready",()=>{
         const setting=game.settings.settings.get(`${MODULE_ID}.${key}`);if(setting)setting.config=false;
     }
 });
-
-

@@ -70,7 +70,9 @@ export function installEscapeCardSnapshots(Type=CONFIG.ChatMessage?.documentClas
   // Untyped/legacy origin documents are not branded ChatMessage5e instances,
   // even when origin has already resolved to an object rather than an ID.
   const id=this.system?.item?.id??this.getFlag?.("dnd5e","item.id"),stored=this.system?.deltas?.deleted?.find(item=>item._id===id)??this.getFlag?.("dnd5e","item.data");
-  if(stored)return cached(this,{source:this,data:stored},options);
+  // Own stored data short-circuits the native origin fallback. Keep normal
+  // native preparation/cloning for cards without an explicit helper override.
+  if(stored)return getItem.call(this,options);
   if(resolving.has(this))return;
   const candidate=origin(this),source=candidate?.id?game.messages.get(candidate.id)??candidate:candidate;
   if(!source||source===this)return;
