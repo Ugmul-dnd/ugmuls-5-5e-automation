@@ -45,7 +45,7 @@ export async function applyBuffEffects(message) {
     if((mark||inspire)&&message.system.targets?.length!==1)return;
     const actors=new Map();
     const type=activity.target?.affects?.type;
-    if (type === "self") {
+    if (type === "self" || globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity)&&game.settings.get(MODULE_ID,"moonlightStepAutomation")===true) {
         if (caster) actors.set(caster.uuid,caster);
     } else {
         const recipients=await Promise.all((message.system.targets??[]).map(async target=>{
@@ -82,7 +82,7 @@ export async function applyBuffEffects(message) {
         if (typeof tray._applyEffectToActor !== "function") throw Error("D&D5e effect application API is unavailable.");
         for (const actor of actors.values()) for (const effect of effects) {
             // A prior partial attempt may already have applied this source.
-            if(hasEquivalentActiveEffect(actor,effect))continue;
+            if(hasEquivalentActiveEffect(actor,effect)&&!globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity))continue;
             const tokens=await Promise.all((message.system.targets??[]).filter(target=>target.actor===actor.uuid||actors.size===1)
                 .map(target=>target.token?fromUuid(target.token):null));
             if(tokens.some(token=>token?.actor?.uuid===actor.uuid&&regionOwnsEffect(token,effect)))continue;

@@ -4,6 +4,7 @@ import "./wild-shape-flow.js";
 import "./wild-shape-concentration.js";
 import "./beast-spells.js";
 import "./druid-damage.js";
+import "./moonlight-step.js";
 import "./life-transfer.js";
 import "./reanimator-summon.js";
 import "./faerie-fire.js";

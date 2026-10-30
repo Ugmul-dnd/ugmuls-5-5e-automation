@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Moonlight Step: apply the native transport buff to the caster, integrate next-attack Advantage with AC5E, and consume after a completed attack or expire at turn end.
+
+- Moon Druid: Lunar Form adds native 2d10 Radiant damage to Wild Shape attack configuration, default Yes, disabled after once-per-turn use. Preserves critical hits and refunds failed rolls.
+
+- Remember Lunar Radiance’s last Yes/No selection per user and original Druid in client settings. Reuse it for later attacks, across Wild Shape forms and reloads, while keeping each open dialog’s choice stable. Preference writes occur only on selection changes, not preview/render; the first use still defaults to normal damage.
+
+- Moon Druid Lunar Radiance: add an optional Radiant-damage toggle to initial attack damage configuration when Improved Circle Forms is owned and the character is Wild Shaped. Default to normal damage; convert native attack parts on confirmed hits while preserving dice, critical state and independently typed riders such as Primal Strike. Support preview and submitted rolls, including returning the toggle to normal, without spending a resource or changing the native toughness effect.
+
+- Complete shared Region target synchronization: after updating the save card, discover exact linked damage cards through native links plus the shared HP-card index and carry the complete recorded target list into existing or newly published pending damage. Refresh recorded-target presentation through the shared queue while retaining prior unchecked recipients, dice, save outcomes, pending sessions and HP/Undo records. Pending publication reads the latest shared source targets. Reindex only when message type/origin changes, or on creation/deletion, rather than rescanning history for each appended target.
+
 - Correct Conjure Animals’ trigger distinction: creature movement within/out of the Region does not trigger damage, even with those legacy behavior options checked. True entry, end-of-turn and the pack’s own movement remain valid and share the existing turn allowance/card. Ignore a stale movement-damage mode for this save-based spell. Override the installed spell’s erroneous half-on-save behavior in prepared activities and native damage-card output: successful saves deal no damage, preserving failed-save damage, dice, scaling and targets without editing source items or compendiums.
 
 - Conjure Animals now triggers when its pack moves within range of stationary creatures, including creatures passed along the movement path rather than only those inside at the endpoint. Use Foundry 14’s actual movement hook and native Region geometry, with a direct-coordinate fallback. Route pack movement through the same save, per-creature turn limiter and shared damage card as entry/end-turn events; avoid duplicate client execution and leave ordinary token movement untouched.
