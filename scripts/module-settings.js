@@ -1,10 +1,10 @@
 const MODULE_ID="ugmuls-5-5e-automation";
 export const CLASS_AUTOMATIONS=[
-    {name:"Artificer",keys:["flashOfGeniusAutomation","arcaneJoltAutomation","arcaneFirearmAutomation"]},
+    {name:"Artificer",keys:["flashOfGeniusAutomation","arcaneJoltAutomation","steelDeflectAutomation","guidedPrecisionAutomation","reanimatorSummonAutomation","lifeTransferAutomation","arcaneFirearmAutomation","spellStoringItemAutomation","experimentalElixirAutomation","alchemicalSavantAutomation","chemicalMasteryAutomation"]},
     {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation","indomitableMightAutomation","primalKnowledgeAutomation","relentlessRageAutomation","mindlessRageAutomation","wildRageAutomation","vitalitySurgeAutomation"]},
     {name:"Bard",keys:["bardicInspirationAutomation","cuttingWordsAutomation","peerlessSkillAutomation","combatInspirationAutomation"]},
     {name:"Cleric",keys:[]},
-    {name:"Druid",keys:[]},
+    {name:"Druid",keys:["primalStrikeAutomation","potentSpellcastingAutomation","beastSpellsAutomation","immediateWildShapeAutomation"]},
     {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation","psionicStrikeAutomation","psionicStrikeCriticalDamage","telekineticThrustAutomation","protectiveFieldAutomation","indomitableAutomation","studiedAttacksAutomation","survivorAutomation","arcaneShotEffectsAutomation","banneretAutomation","sharedResilienceAutomation"]},
     {name:"Monk",keys:["stunningStrikeAutomation","deflectAttacksAutomation","disciplinedSurvivorAutomation","flurryOfBlowsAutomation","openHandTechniqueAutomation","handOfHarmAutomation","handOfHarmCriticalDamage","elementalStrikesAutomation","elementalEpitomeAutomation","focusedStrikeAutomation"]},
     {name:"Paladin",keys:["divineSmiteAutomation","paladinAuraAutomation","genieElementalSmiteAutomation","elementalRebukeAutomation","sacredWeaponAutomation","holyNimbusAutomation","vowOfEnmityAutomation","avengingAngelAutomation"]},
@@ -104,10 +104,10 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
         });
         this.element.querySelector("[data-rsa-trigger-library]")?.addEventListener("click",()=>{const Manager=game.settings.menus.get(`${MODULE_ID}.triggerLibrary`)?.type;if(game.user.isGM&&Manager)new Manager().render({force:true});});
         this.element.querySelector("[data-rsa-save]").addEventListener("click",async event=>{
-            if(this.saving)return;event.currentTarget.disabled=true;this.saving=true;
+            if(this.saving)return;const button=event.currentTarget;button.disabled=true;this.saving=true;
             try{await this.saveDraft();await this.close();}
             catch(err){console.error("Ugmuls 5.5e Automation | Options save failed:",err);ui.notifications.error("Could not save all options. Check the console and retry.");}
-            finally{this.saving=false;event.currentTarget.disabled=false;}
+            finally{this.saving=false;button.disabled=false;}
         });
     }
     async saveDraft(){

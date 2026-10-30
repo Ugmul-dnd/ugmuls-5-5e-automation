@@ -1,3 +1,5 @@
+const effectiveCombatant=(actor,combat=game.combat)=>globalThis.Ugmuls55eAutomationCompanions?.effectiveCombatant(actor,combat)??(combat?.started?Array.from(combat.combatants??[]).find(c=>c.actor?.uuid===actor?.uuid):null);
+const turnActors=combat=>globalThis.Ugmuls55eAutomationCompanions?.turnActors(combat)??Array.from(combat.combatants??[],c=>c.actor).filter(Boolean);
 const castingSlotUpdates=new WeakMap();
 export async function updateSpellSlot(actor,path,value){
  if(!/^system\.spells\.(spell[1-9]|pact)\.value$/.test(path)||!Number.isFinite(value))throw Error("Invalid spell-slot resource update.");
@@ -15,7 +17,7 @@ const definitions={bonus:{name:"Bonus Action - used",flag:"bonusActionUsed",sett
 const actorFor=activity=>activity?.actor??activity?.item?.actor;
 const stamp=combat=>combat?.started?String(combat.id)+":"+combat.round+":"+combat.turn:null;
 const enabled=kind=>game.settings.get(ID,definitions[kind].setting)===true;
-const inCombat=(actor,combat=game.combat)=>!!actor&&combat?.started&&Array.from(combat.combatants??[]).some(entry=>entry.actor?.uuid===actor?.uuid);
+const inCombat=(actor,combat=game.combat)=>!!effectiveCombatant(actor,combat);
 const applies=(actor,kind,combat=game.combat)=>inCombat(actor,combat)&&(kind!=="spell"||actor.type==="character");
 function manual(activity,message) {return !message?.data?.flags?.[ID]?.regionTriggered&&!message?.data?.flags?.[ID]?.riderTriggered&&["spell","weapon","feat"].includes(activity?.item?.type);}
 export function resourceEffect(actor,kind) {
@@ -68,7 +70,7 @@ function slotUpdates(activity,updates) {
 export function allowTurnResourceUse(activity,usage,message,updates) {
     const actor=actorFor(activity);if(!inCombat(actor)||!manual(activity,message))return;
     if(enabled("bonus")&&activity.activation?.type==="bonus") {
-        if(game.combat.combatant?.actor?.uuid!==actor.uuid) {
+        if(effectiveCombatant(actor)?.id!==game.combat.combatant?.id) {
             ui.notifications.warn("A bonus action cannot be used as a reaction on another creature's turn.");return false;
         }
         if(resourceUsed(actor,"bonus")) {ui.notifications.warn("Bonus action already used. Disable or delete Bonus Action - used to override.");return false;}
@@ -89,7 +91,7 @@ export async function resetTurnResources(combat,changes={},ending=false) {
     if(!game.user.isGM||(game.users.activeGM&&game.users.activeGM.id!==game.user.id)||
         (!ending&&!("turn" in changes||"round" in changes||"started" in changes)))return;
     const current=stamp(combat),incoming=combat.combatant?.actor?.uuid;
-    const actors=new Map(Array.from(combat.combatants??[]).filter(entry=>entry.actor).map(entry=>[entry.actor.uuid,entry.actor]));
+    const actors=new Map(turnActors(combat).map(actor=>[actor.uuid,actor]));
     for(const actor of actors.values()) {
         const ids=Array.from(actor.effects??[]).filter(effect=>{
             const get=key=>effect.getFlag?.(ID,key);
@@ -105,7 +107,7 @@ export async function resetTurnResources(combat,changes={},ending=false) {
                 return spell||personal;
             }
             if(spell)return get("resourceTurn")!==current;
-            return personal&&actor.uuid===incoming;
+            return personal&&effectiveCombatant(actor,combat)?.actor?.uuid===incoming;
         }).map(effect=>effect.id);
         if(ids.length)await actor.updateEmbeddedDocuments("ActiveEffect",ids.map(_id=>({_id,disabled:true})));
     }

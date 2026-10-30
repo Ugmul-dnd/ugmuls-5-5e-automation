@@ -43,6 +43,7 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(message)===false)return waiting(message,"Waiting for Steel Defender Deflect Attack.");
     if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");
     if(message.getFlag?.(MODULE_ID,"protectiveFieldPending"))return waiting(message,"Waiting for Protective Field.");
     if(!isDamageOrHealingCard(message)||message.getFlag?.(MODULE_ID,"pendingDamage"))return null;
@@ -179,6 +180,7 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(card)===false)return;
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;

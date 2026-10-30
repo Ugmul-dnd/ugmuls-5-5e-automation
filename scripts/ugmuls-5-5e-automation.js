@@ -1,3 +1,20 @@
+import "./conjure-animals-movement.js";
+import "./conjure-animals.js";
+import "./wild-shape-flow.js";
+import "./wild-shape-concentration.js";
+import "./beast-spells.js";
+import "./druid-damage.js";
+import "./life-transfer.js";
+import "./reanimator-summon.js";
+import "./faerie-fire.js";
+import "./guided-precision.js";
+import "./steel-deflect.js";
+import "./companion-turns.js";
+import "./armorer-weapons.js";
+import "./alchemical-eruption.js";
+import "./alchemical-savant.js";
+import "./experimental-elixir.js";
+import "./spell-storing-item.js";
 import "./grave-touched.js";
 import "./form-of-dread.js";
 import "./semblance-of-life.js";
@@ -482,7 +499,7 @@ async function executeRegionEvent({
             : [];
 
 
-    const trigger =
+    let trigger =
         triggers.find(
             entry =>
                 entry.id ===
@@ -504,6 +521,23 @@ async function executeRegionEvent({
     // VERIFY EVENT
     // --------------------------------------------------------
 
+    const conjuredAnimals = (spell.identifier ?? spell.system?.identifier) === "conjure-animals" &&
+        spell.system?.source?.rules !== "2014";
+    // A creature walking around inside (or leaving) the pack is not a damage
+    // condition. Entry remains valid; pack movement has its own source event.
+    // Ignore a legacy movement-damage checkbox for this save-based spell.
+    if (conjuredAnimals) {
+        if (["tokenMoveWithin", "tokenMoveOut"].includes(event.name)) return;
+        if (trigger.movementDamage) trigger = {...trigger, movementDamage:false};
+    }
+
+    // Moving the pack can affect a stationary creature that never entered or
+    // moved within the Region. Route this exact attached-pack event through the
+    // existing target/turn/shared-card workflow independently of core behaviors.
+    const packMovement = event.name === "conjuredAnimalsMove" &&
+        region.flags?.[MODULE_ID]?.conjuredAnimalsToken === event.data?.pack &&
+        (spell.identifier ?? spell.system?.identifier) === "conjure-animals";
+
     // The caster runs normal activities on their own actor. GM-only document
     // setup and movement accounting remain separate from activity execution.
     const casterUserId = region.flags?.[MODULE_ID]?.casterUserId;
@@ -518,7 +552,7 @@ async function executeRegionEvent({
     if (
         trigger.movementDamage
             ? !MOVEMENT_EVENTS.includes(event.name)
-            : !Array.isArray(trigger.events) || !trigger.events.includes(event.name)
+            : !packMovement && (!Array.isArray(trigger.events) || !trigger.events.includes(event.name))
     ) {
 
         return;
@@ -763,7 +797,7 @@ async function executeRegionEvent({
         const triggerActivity=triggerItem?.system.activities.get(activity.id)??activity;
         const results = await triggerActivity.use(
             {
-                ...((damageData||trigger.preserveCastScaling)?{scaling:Math.max(0,Number(castLevel)-Number(spell.system.level))}:{}),
+                ...((damageData||trigger.preserveCastScaling||region.flags?.[MODULE_ID]?.conjuredAnimalsToken&&trigger.preserveCastScaling!==false)?{scaling:Math.max(0,Number(castLevel)-Number(spell.system.level))}:{}),
                 consume:
                     false,
 
@@ -1558,7 +1592,7 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         try {
             const item = await fromUuid(itemUUID);
             if (item) {
-                const casterUserId = (region.flags?.[MODULE_ID]?.flamingSphereToken || region.flags?.[MODULE_ID]?.guardianToken) ? region.flags[MODULE_ID].casterUserId : userId;
+                const casterUserId = (region.flags?.[MODULE_ID]?.flamingSphereToken || region.flags?.[MODULE_ID]?.guardianToken || region.flags?.[MODULE_ID]?.conjuredAnimalsToken) ? region.flags[MODULE_ID].casterUserId : userId;
                 const update = { [`flags.${MODULE_ID}.casterUserId`]: casterUserId ?? userId ?? game.user.id };
                 const config = getRegionSpellTable()?.[item.name];
                 if (config?.hideRegionFromPlayers === true) update.visibility = CONST.REGION_VISIBILITY.GAMEMASTER;

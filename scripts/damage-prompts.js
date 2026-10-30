@@ -1,3 +1,11 @@
+// AC5E's damage render hook writes nested critical state without initializing options.
+// Repair only existing AC5E state; never change roll modes or critical decisions.
+export function prepareDamageCompatibility(app){
+ const key="automated-conditions-5e",config=app?.config;
+ if(!config||!globalThis.game?.modules?.get?.(key)?.active)return;
+ const states=[config.options?.[key],config[key],...(config.rolls??[]).map(r=>r.options?.[key])];
+ for(const state of states)if(state&&typeof state==="object"&&Object.isExtensible(state))state.options??={};
+}
 import {getRegionSpellTable} from "./region-library.js";
 import {describeTarget} from "./shared-activity-card.js";
 import {selectSaveUser} from "./save-prompts.js";
@@ -67,7 +75,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,valor,{preview:true})??valor;
                 const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted,{preview:true})??transmuted;
                 const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave,{preview:this._rsaPreview===true})??grave;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,radiant)??radiant;
+                const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant,{preview:this._rsaPreview===true})??radiant;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,savant,{preview:true})??savant;
+                const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
             }
             async _prepareContext(options) {
                 if(kind==="damage")await globalThis.Ugmuls55eAutomationPendingDamage?.prepareDamageDialog(this);
@@ -112,7 +123,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const transmuted=globalThis.Ugmuls55eAutomationTransmuted?.finalizeTransmuted(this,stunning)??stunning;
                     const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted)??transmuted;
                     const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave)??grave;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,radiant)??radiant;
+                    const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant)??radiant;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,savant)??savant;
+                const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
                 }
                 if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
@@ -126,9 +140,11 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationWeird?.prepareWeirdButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationOutlined?.prepareOutlinedButtons(this,prepared);
                 return prepared;
             }
             _onRender(context,options) {
+                if(kind === "damage")prepareDamageCompatibility(this);
                 super._onRender(context,options);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationMasteries?.focusMasteryAttackButtons(this);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.addRecklessButton(this);
@@ -160,7 +176,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationPolarStrikes?.addPolarStrikesChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDread?.addDreadChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationPrecision?.addPrecisionChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationRadiantSoul?.addRadiantTarget(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBattleMaster?.addManeuverChoice(this);
@@ -212,9 +231,15 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationRadiantSoul?.commitRadiant(this,options);
                         await globalThis.Ugmuls55eAutomationFormOfDread?.commitFear(this,options);
                         await globalThis.Ugmuls55eAutomationGraveTouched?.commitGrave(this,options);
+                        await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,options);
+                        await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,options);
+                        await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,{});
+                        await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,{});
+                        await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,{});
                         await globalThis.Ugmuls55eAutomationLifedrinker?.commitLifedrinker(this,{});
                         await globalThis.Ugmuls55eAutomationFeyStrikes?.commitFeyStrikes(this,{});
                         await globalThis.Ugmuls55eAutomationPolarStrikes?.commitPolarStrikes(this,{});
@@ -345,6 +370,7 @@ export function damagePromptRecipient(activity,message,region=false){
  return region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
 }
 export async function promptDamage(activity, message, kind = "save", attack = null) {
+    if(kind === "attack" && globalThis.Ugmuls55eAutomationSteelDeflect?.ready(attack)===false)return;
     const setting = kind === "attack" ? "promptDamageOnHit" : "promptDamageOnSave";
     if (game.settings.get(MODULE_ID, setting) !== true || !activity?.damage?.parts?.length || !message?.id) return;
     const region=message.getFlag?.(MODULE_ID,"regionTriggered")===true||message.getFlag?.(MODULE_ID,"sharedCardPerTurn")===true;

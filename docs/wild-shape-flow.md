@@ -1,0 +1,9 @@
+# Immediate Wild Shape
+
+For the owned 2024 Wild Shape and Circle Forms transform activities, confirming a Beast in the native compendium browser completes the transformation immediately. No second Transform click is required. The new world setting is grouped under Druid and defaults on.
+
+The native TransformActivity still selects the profile, filters the browser, consumes resources and records the selected UUID on its usage card. Capture that finalized activity clone, finish native use/post-use hooks, then call its caster’s native `transformInto` with the exact finalized settings. Do not transform newly controlled or targeted unrelated tokens. This retains the existing Circle Forms AC/temporary HP settings, Beast Spells transfer and concentration reversion integration without a second activity use or resource expenditure.
+
+After a successful transformation, flag the same native usage card and remove its Transform button. Guard concurrent/repeated manual and automatic actions. Keep a local completion guard if the card’s completion write fails. Canceled selection performs no transformation and keeps native card retry available; this change does not alter native browser-cancellation resource handling. Missing/failed sources report the error and retain manual retry. Other transformation modes/features, 2014 features, disabled settings and non-owned casters retain native behavior.
+
+Verification: `tests/wild-shape-flow.test.mjs` loads the installed native TransformActivity source and checks profile/browser selection, both feature identities, one resource expenditure, finalized settings, native post-use ordering, correct caster, cancellation, ownership, disabled/unrelated fallback, failed source and duplicate/concurrent action guards. Live Foundry confirmation remains pending.

@@ -17,6 +17,12 @@ export function flashRange(source,target){
  const distance=canvas.grid.measurePath([a.center,b.center]).distance,units=String(source.parent?.grid?.units??canvas.scene?.grid?.units??"ft").toLowerCase(),limit=/^(m|meters?|metres?)$/.test(units)?9.144:30;
  return Number.isFinite(distance)&&distance<=limit&&!a.checkCollision?.(b.center,{type:"sight",mode:"any"});
 }
+export function flashFriendly(source,target){
+ const a=source?.document??source,b=target?.document??target;
+ if(!a?.actor||!b?.actor)return false;if(a.actor.uuid===b.actor.uuid)return true;
+ const disposition=Number(a.disposition),recipient=Number(b.disposition);
+ return Number.isFinite(disposition)&&disposition!==0&&disposition===recipient;
+}
 export function flashCandidates(card,user=game.user,index=0){
  if(!flashEligible(card,index,user))return [];
  const recipient=actorFor(card),associated=card.getAssociatedToken?.(),target=(associated?.document??associated)??recipient?.token??Array.from(canvas.scene?.tokens??[]).find(t=>t.actor?.uuid===recipient?.uuid),tokens=Array.from(canvas.scene?.tokens??[]),seen=new Set(),entries=[];
@@ -25,7 +31,7 @@ export function flashCandidates(card,user=game.user,index=0){
  for(const token of tokens){const actor=token.actor;if(!actor||seen.has(actor.uuid)||!(user?.isGM||actor.testUserPermission?.(user,"OWNER")))continue;
   if(reactionUsed(actor)||["incapacitated","unconscious","dead","stunned","paralyzed","petrified"].some(s=>actor.statuses?.has(s)))continue;
   const feature=featureFor(actor),bonus=Math.max(1,Number(actor.system?.abilities?.int?.mod)||0),activity=Array.from(feature?.system?.activities?.values?.()??feature?.system?.activities??[]).find(a=>String(a.activation?.type??"").startsWith("reaction"));
-  if(!feature||!activity||remaining(feature)<1||actor.uuid!==recipient?.uuid&&!flashRange(token,target))continue;
+  if(!feature||!activity||remaining(feature)<1||actor.uuid!==recipient?.uuid&&(!flashFriendly(token,target)||!flashRange(token,target)))continue;
   seen.add(actor.uuid);entries.push({actor,token,feature,activity,bonus});
  }
  return entries;

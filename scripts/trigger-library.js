@@ -337,7 +337,7 @@ const REPEAT_SAVE_DEFAULTS={
   }
 };
 const DELAYED_DAMAGE_DEFAULTS={
- "melfs-acid-arrow":{name:"Melf's Acid Arrow",enabled:true,attachment:"creature",sourceIdentifier:"melfs-acid-arrow",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplMelfsAcidA",effectName:"Lingering Acid",effectId:"NgglkyjzTbDh5Loa",event:"turnEnd",damageActivity:"Lingering Acid Damage",damageActivityId:"uAyE5DrJp0YpElcw",damageFormula:"",saveActivity:"",oneShot:true,initialOutcome:"hit",endOnSuccess:false},
+ "melfs-acid-arrow":{name:"Melf's Acid Arrow",enabled:true,attachment:"creature",sourceIdentifier:"acid-arrow",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplMelfsAcidA",effectName:"Lingering Acid",effectId:"NgglkyjzTbDh5Loa",event:"turnEnd",damageActivity:"Lingering Acid Damage",damageActivityId:"uAyE5DrJp0YpElcw",damageFormula:"",saveActivity:"",oneShot:true,initialOutcome:"hit",endOnSuccess:false},
  "vitriolic-sphere":{name:"Vitriolic Sphere",enabled:true,attachment:"creature",sourceIdentifier:"vitriolic-sphere",sourceSpellUuid:"Compendium.dnd-players-handbook.spells.Item.phbsplVitriolicS",effectName:"Lingering Acid",effectId:"WHhf4PFHQBDkCAyb",event:"turnEnd",damageActivity:"End of Turn Damage",damageActivityId:"dnd5eactivity200",damageFormula:"",saveActivity:"",oneShot:true,initialOutcome:"failure",endOnSuccess:false}
 };
 const SAVE_FIRST_DEFAULTS={

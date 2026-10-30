@@ -5,12 +5,13 @@ const turn=()=>game.combat?.started?`${game.combat.id}:${game.combat.round}:${ga
 export const joltFeature=actor=>Array.from(actor?.items??[]).find(i=>i.type==="feat"&&(identifier(i)==="arcane-jolt"||/^arcane jolt$/i.test(i.name??"")));
 const remaining=item=>Number(item?.system?.uses?.value??(Number(item?.system?.uses?.max)-Number(item?.system?.uses?.spent??0)))||0;
 export function joltContext(app){
- const activity=app.config?.subject,attacker=activity?.actor??activity?.item?.actor;
+ const activity=app.config?.subject,card=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(app),speaker=app.message?.data?.speaker??card?.speaker;
+ const attacker=(speaker?globalThis.ChatMessage?.getSpeakerActor?.(speaker):null)??card?.getAssociatedActor?.()??activity?.actor??activity?.item?.actor;
  let actor=attacker,defender=false;
  const origin=attacker?.getFlag?.("dnd5e","summon.origin"),source=origin?globalThis.fromUuidSync?.(origin,{strict:false}):null;
  if(source&&identifier(source)==="steel-defender"){actor=source.actor;defender=true;}
  const feature=joltFeature(actor),damage=Array.from(feature?.system?.activities?.values?.()??feature?.system?.activities??[]).find(a=>a.type==="damage");
- const data=app.message?.data??{},card=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(app),reference=data.system?.origin??card?.system?.origin;
+ const data=app.message?.data??{},reference=data.system?.origin??card?.system?.origin;
  const usage=typeof reference==="string"?game.messages.get(reference.replace(/^ChatMessage\./,"")):reference;
  const attackId=data.flags?.[ID]?.damageAttackId??card?.getFlag?.(ID,"damageAttackId");
  const attack=(attackId?game.messages.get(attackId):null)??(usage?.type==="attack"?usage:Array.from(usage?.getAssociatedRolls?.("attack")??[]).sort((a,b)=>b.timestamp-a.timestamp)[0]);

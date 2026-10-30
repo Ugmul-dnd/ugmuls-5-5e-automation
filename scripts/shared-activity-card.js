@@ -3,18 +3,18 @@ export function invalidateLinkedHpIndex(){hpIndex=null;}
 function indexedHpCards(origin){
  const collection=game.messages,size=collection?.size??collection?.length??0;
  if(!hpIndex||hpIndex.collection!==collection||hpIndex.size!==size){
-  const byOrigin=new Map();for(const card of collection??[]){if(!isDamageOrHealingCard(card))continue;const id=cardOrigin(card)?.id;if(!id)continue;if(!byOrigin.has(id))byOrigin.set(id,[]);byOrigin.get(id).push(card);}
+ const byOrigin=new Map();for(const card of collection?.values?.()??collection??[]){if(!isDamageOrHealingCard(card))continue;const id=cardOrigin(card)?.id;if(!id)continue;if(!byOrigin.has(id))byOrigin.set(id,[]);byOrigin.get(id).push(card);}
   hpIndex={collection,size,byOrigin};
  }return hpIndex.byOrigin.get(origin.id)??[];
 }
 // Shared cards retain D&D5e's native save and damage workflow.
 function cardOrigin(card) {
     const origin=card?.system?.origin;
-    return typeof origin==="string"?game.messages?.get(origin):origin;
+    return typeof origin==="string"?game.messages?.get(origin.replace(/^ChatMessage\./,'')):origin;
 }
 export function linkedHpCards(roll) {
     if(isDamageOrHealingCard(roll))return [roll];
-    const origin=cardOrigin(roll);
+    const origin=roll?.type==='usage'?roll:cardOrigin(roll);
     if(!origin)return [];
     const stunningId=(origin.getFlag?.("ugmuls-5-5e-automation","stunningStrike")??origin.getFlag?.("ugmuls-5-5e-automation","grappleStrike")??origin.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")??origin.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave")??origin.getFlag?.("ugmuls-5-5e-automation","deathStrikeSave"))?.damageId;
     const stunningDamage=stunningId?game.messages.get(stunningId):null;
@@ -42,7 +42,13 @@ export function isRollAdjustmentLocked(roll) {
         (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0||roll?.type==="save"&&effectsApplied(card)));
 }
 Hooks.once("ready",()=>{
-    for(const event of ["createChatMessage","updateChatMessage","deleteChatMessage"])Hooks.on(event,invalidateLinkedHpIndex);
+    for(const event of ["createChatMessage","deleteChatMessage"])Hooks.on(event,invalidateLinkedHpIndex);
+    Hooks.on('updateChatMessage',(card,changes)=>{
+        // Only type/origin changes affect the link index. Appending targets or
+        // adjusting HP must not force another history scan for every entrant.
+        if(!changes||Object.hasOwn(changes,'type')||Object.hasOwn(changes,'system.origin')||Object.hasOwn(changes,'system.-=origin')||Object.hasOwn(changes.system??{},'origin')||Object.hasOwn(changes.system??{},'-=origin'))invalidateLinkedHpIndex();
+        if(Object.hasOwn(changes??{},'system.targets')||Object.hasOwn(changes?.system??{},'targets'))refreshSharedTargets(card);
+    });
     Hooks.on("updateChatMessage",(card,changes)=>{
         const moduleId="ugmuls-5-5e-automation";
         if(!changes.flags?.[moduleId]&&!Object.keys(changes).some(key=>key.startsWith(`flags.${moduleId}.`)))return;
@@ -138,7 +144,12 @@ export function getSharedCardKey(trigger, spell, region, event, combat) {
     combat = event?.data?.combat ?? combat;
     const round = event?.data?.round ?? combat?.round;
     const turn = event?.data?.turn ?? combat?.turn;
-    if (!trigger.shareCardPerTurn || !combat?.id || round == null || turn == null) return null;
+    // Older Conjure Animals recipes enabled the per-creature turn limit but
+    // disabled shared damage cards. Attached packs use one roll for new targets
+    // on the same turn, including worlds retaining that older saved recipe.
+    const packSharing=trigger.oncePerTurn===true&&region?.flags?.["ugmuls-5-5e-automation"]?.conjuredAnimalsToken&&
+        (spell?.identifier??spell?.system?.identifier)==="conjure-animals";
+    if (!(trigger.shareCardPerTurn || packSharing) || !combat?.id || round == null || turn == null) return null;
     return JSON.stringify([combat.id, round, turn, spell.uuid, region.uuid, trigger.id]);
 }
 
@@ -162,20 +173,38 @@ export function mergeTargets(targets, descriptor) {
 
 export async function appendSharedTarget(message, descriptor) {
     // Do not change rolls, save outcomes, or damage-application records.
-    const messages = [message, ...(message.getAssociatedRolls?.("damage") ?? [])];
-    for (const card of messages) {
+    const updateTarget=async(card,additions=[descriptor])=>{
         const eligible = [];
         for (const target of card.system.targets ?? []) {
             const token = target.token ? await fromUuid(target.token) : null;
             if (!token || token.uuid !== target.token || isEligibleTarget(token)) eligible.push(target);
         }
-        const targets = mergeTargets(eligible, descriptor);
+        let targets=eligible;
+        for(const target of additions)targets=mergeTargets(targets,target);
         if (targets.length !== card.system.targets.length || targets.some((target, index) => target.token !== card.system.targets[index]?.token)) {
             const update = { "system.targets": targets };
-            if (eligible.length !== card.system.targets.length) update["flags.ugmuls-5-5e-automation.retargeted"] = true;
+            update["flags.ugmuls-5-5e-automation.retargeted"] = true;
             await card.update(update);
+            refreshSharedTargets(card);
         }
-    }
+    };
+    await updateTarget(message);
+    // Discover after the usage update: it can publish a pending damage card.
+    // The existing exact-origin index also covers cards absent from the native
+    // registry. Never match totals or borrow the current token selection.
+    const cards=[...(message.getAssociatedRolls?.('damage')??[]),...linkedHpCards(message).filter(c=>c.type==='damage')];
+    for(const card of new Map(cards.map(c=>[c.id,c])).values())await updateTarget(card,message.system.targets);
+}
+
+export function refreshSharedTargets(card){
+    const origin=card?.type==='usage'?card:cardOrigin(card);
+    if(origin?.getFlag?.('ugmuls-5-5e-automation','sharedCardPerTurn')!==true)return;
+    card._targetState??={checked:new Map(),mode:'targeted'};
+    // New entries default checked in the native tray; keep explicit unchecked
+    // states for earlier recipients, including already-applied damage targets.
+    card._targetState.mode='targeted';
+    globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
+    if(origin!==card)globalThis.Ugmuls55eAutomationChatRefresh?.card(origin);
 }
 
 export function createEventQueue() {

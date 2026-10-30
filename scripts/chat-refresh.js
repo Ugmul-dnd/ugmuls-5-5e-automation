@@ -1,6 +1,8 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ steelDeflect:{setting:"steelDeflectAutomation",types:["attack"],feature:"deflect-attack",all:true},
+ chemicalEruption:{setting:"chemicalMasteryAutomation",types:["damage"],feature:"chemical-mastery",own:true},
  ownLuck:{setting:"darkOnesOwnLuckAutomation",types:["check","save"],feature:"dark-ones-own-luck",own:true},
  beguilingDefenses:{setting:"beguilingDefensesAutomation",types:["damage"],feature:"beguiling-defenses",incoming:true},
  stalkersFlurry:{setting:"stalkersFlurryAutomation",types:["damage"],feature:"stalkers-flurry",own:true},

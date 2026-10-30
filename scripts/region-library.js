@@ -132,6 +132,8 @@ export const REGION_DEFAULTS=deepFreeze({
       {
         "name": "Entry and end-turn save",
         "activity": "Save",
+        "activityId": "dnd5eactivity100",
+        "preserveCastScaling": true,
         "events": [
           "tokenEnter",
           "tokenTurnEnd"
@@ -139,7 +141,7 @@ export const REGION_DEFAULTS=deepFreeze({
         "targeting": "hostilesOnly",
         "oncePerTurn": true,
         "id": "HZ3qmYwsSatPGvMS",
-        "shareCardPerTurn": false
+        "shareCardPerTurn": true
       }
     ],
     "regionEffects": []
@@ -199,7 +201,12 @@ export function resolveRegionTriggerActivity(trigger,spell,region=null){
   const ref=region?.flags?.dnd5e?.activity,id=typeof ref==="string"?ref.split(".").at(-1):ref?.id;
   const original=id&&activities.find(activity=>activity.id===id);if(original)return original;
  }
- return (trigger.activityId?activities.find(activity=>activity.id===trigger.activityId):undefined)??activities.find(activity=>activity.name===trigger.activity);
+ const configured=(trigger.activityId?activities.find(activity=>activity.id===trigger.activityId):undefined)??activities.find(activity=>activity.name===trigger.activity);
+ if(configured)return configured;
+ // The upgraded PHB's save label can differ from older saved recipes. An
+ // attached Conjure Animals Region records its exact native save activity.
+ if(region?.flags?.['ugmuls-5-5e-automation']?.conjuredAnimalsToken&&(spell?.identifier??spell?.system?.identifier)==='conjure-animals')return activities.find(a=>a.uuid===region.flags?.dnd5e?.activity&&a.type==='save');
+ return undefined;
 }
 export function buildRegionDamageSpellData(activity){
  if(!activity?.damage?.parts?.length)throw Error("The configured Region activity has no damage to roll.");

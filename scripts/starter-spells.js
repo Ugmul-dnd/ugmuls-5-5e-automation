@@ -29,7 +29,7 @@ export const STARTER_SPELLS = {
     },
     "Conjure Animals": {
         triggers: [{ name: "Entry and end-turn save", activity: "Save", events: ["tokenEnter", "tokenTurnEnd"],
-            targeting: "hostilesOnly", oncePerTurn: true }], regionEffects: []
+            targeting: "hostilesOnly", oncePerTurn: true, shareCardPerTurn: true }], regionEffects: []
     }
 };
 

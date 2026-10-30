@@ -3,7 +3,7 @@ let serial=Promise.resolve();
 const channel="module."+ID;
 const nonce=()=>foundry.utils.randomID();
 const pending=card=>card?.getFlag?.(ID,"pendingDamage");
-const resolveOrigin=value=>typeof value==="string"?game.messages.get(value):value;
+const resolveOrigin=value=>typeof value==="string"?game.messages.get(value.replace(/^ChatMessage\./,'')):value;
 export function damageAnimationSignature(rolls){
     const termState=term=>({number:term.number,faces:term.faces,operator:term.operator,
         results:term.results?.map(result=>[result.result,result.active!==false,!!result.discarded,!!result.rerolled]),
@@ -35,7 +35,12 @@ export async function damageOperation(action,card,payload,user){
     const update={};
     for(const key of ["rolls","system","flavor","speaker","whisper","blind"])if(data[key]!==undefined)update[key]=data[key];
     // Region triggers may append targets while the roll dialog is open. Keep the live shared list.
-    if(update.system&&card.system?.targets)update.system={...update.system,targets:foundry.utils.deepClone(card.system.targets)};
+    if(update.system&&card.system?.targets){
+        const source=resolveOrigin(card.system.origin),shared=source?.getFlag?.(ID,'sharedCardPerTurn')===true;
+        // The save card can gain recipients while this damage placeholder is
+        // being created/published. Its recorded shared list is authoritative.
+        update.system={...update.system,targets:foundry.utils.deepClone(shared&&source.system?.targets?source.system.targets:card.system.targets)};
+    }
     update.flags=foundry.utils.mergeObject(card.flags??{},data.flags??{},{inplace:false});
     update.flags[ID]??={};update.flags[ID].pendingDamageAnimation=damageAnimationSignature(data.rolls);update.flags[ID].pendingDamage=null;delete update.flags[ID].pendingDamageCard;delete update.flags[ID].pendingDamageSession;
     // DsN detects an empty -> populated rolls array as a fresh throw on every

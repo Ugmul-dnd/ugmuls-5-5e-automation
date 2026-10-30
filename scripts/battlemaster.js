@@ -177,7 +177,7 @@ export function addPrecisionButton(message,html){
 }
 const active=effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true;
 
-export function goadingEffects(actor,target){return target?.uuid?Array.from(actor?.effects??[]).filter(effect=>active(effect)&&effect.getFlag?.(ID,"goadingSource")&&effect.getFlag(ID,"goadingSource")!==target.uuid):[];}
+export function goadingEffects(actor,target){return target?.uuid?Array.from(actor?.effects??[]).filter(effect=>active(effect)&&(effect.getFlag?.(ID,"goadingSource")??effect.getFlag?.(ID,"thunderPulseSource"))&&(effect.getFlag(ID,"goadingSource")??effect.getFlag(ID,"thunderPulseSource"))!==target.uuid):[];}
 async function applyGoading(usage,actor,link){
     const caster=await fromUuid(link.casterActor),feature=maneuverFeature(caster,"goading");if(!feature)throw Error("Goading Attack's source feature is unavailable.");
     const effect=new CONFIG.ActiveEffect.documentClass({_id:feature.id??foundry.utils.randomID(),name:"Goading Attack",img:feature.img,disabled:false,transfer:false,statuses:[],duration:{expiry:"sourceEnd"},flags:{dnd5e:{isTemporary:false},[ID]:{goadingSource:caster.uuid}},system:{changes:[]}},{parent:feature});
@@ -230,7 +230,7 @@ let bridge=false;
 export function registerManeuverConditions(api=globalThis.ac5e?.usageRules){
     if(!game.modules?.get("automated-conditions-5e")?.active||typeof api?.register!=="function")return false;
     try{const distracting=!!api.register({key:"rsaDistractingStrike",scope:"universal",hook:"attack",target:"subject",mode:"advantage",name:"Distracting Strike",persistent:false,evaluate:sandbox=>{const attacker=fromUuidSync(sandbox.actorUuid,{strict:false}),target=fromUuidSync(sandbox.opponentUuid,{strict:false});return distractingEffects(target?.actor,attacker).length>0;}});
-        const goading=!!api.register({key:"rsaGoadingAttack",scope:"universal",hook:"attack",target:"subject",mode:"disadvantage",name:"Goading Attack",persistent:false,evaluate:sandbox=>{const attacker=fromUuidSync(sandbox.actorUuid,{strict:false}),target=fromUuidSync(sandbox.opponentActorUuid??sandbox.opponentUuid,{strict:false});return goadingEffects(attacker?.actor??attacker,target?.actor??target).length>0;}});bridge=distracting&&goading;}catch(error){bridge=false;console.warn("Ugmuls 5.5e Automation | Maneuver conditions:",error);}return bridge;
+        const goading=!!api.register({key:"rsaGoadingAttack",scope:"universal",hook:"attack",target:"subject",mode:"disadvantage",name:"Goading Attack / Thunder Pulse",persistent:false,evaluate:sandbox=>{const attacker=fromUuidSync(sandbox.actorUuid,{strict:false}),target=fromUuidSync(sandbox.opponentActorUuid??sandbox.opponentUuid,{strict:false});return goadingEffects(attacker?.actor??attacker,target?.actor??target).length>0;}});bridge=distracting&&goading;}catch(error){bridge=false;console.warn("Ugmuls 5.5e Automation | Maneuver conditions:",error);}return bridge;
 }
 export function distractingDefaults(config,dialog,message){
     if(bridge&&game.modules?.get("automated-conditions-5e")?.active||config.subject?.type!=="attack")return;

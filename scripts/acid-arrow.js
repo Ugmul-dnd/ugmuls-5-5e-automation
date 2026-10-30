@@ -1,5 +1,5 @@
 const ID="ugmuls-5-5e-automation";
-export function acidArrowAttack(activity){return activity?.type==="attack"&&(activity.item?.identifier??activity.item?.system?.identifier)==="melfs-acid-arrow";}
+export function acidArrowAttack(activity){return activity?.type==="attack"&&["melfs-acid-arrow","acid-arrow"].includes(activity.item?.identifier??activity.item?.system?.identifier);}
 export function acidArrowFactor(message,token){
  if(!acidArrowAttack(message?.getAssociatedActivity?.()))return null;
  const id=message.getFlag?.(ID,"damageAttackId"),ref=message.system?.origin;

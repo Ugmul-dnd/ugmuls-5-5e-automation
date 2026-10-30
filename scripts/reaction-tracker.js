@@ -1,8 +1,9 @@
+const effectiveCombatant=(actor,combat=game.combat)=>globalThis.Ugmuls55eAutomationCompanions?.effectiveCombatant(actor,combat)??(combat?.started?Array.from(combat.combatants??[]).find(c=>c.actor?.uuid===actor?.uuid):null);
 const ID="ugmuls-5-5e-automation",creating=new Set();
 const enabled=()=>game.settings.get(ID,"reactionTracker")===true;
 export function reactionUsed(actor) {
     const menacing=globalThis.Ugmuls55eAutomationRot?.menacingEffect(actor);if(menacing)return menacing;
-    if(!actor||!game.combat?.started||!Array.from(game.combat.combatants??[]).some(entry=>entry.actor?.uuid===actor.uuid))return;
+    if(!actor||!game.combat?.started||!effectiveCombatant(actor))return;
     return Array.from(actor?.effects??[]).find(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true&&
         (effect.getFlag?.(ID,"reactionUsed")===true||effect.name==="Reaction - used"));
 }
@@ -12,7 +13,7 @@ export function offTurn(activity) {
     const token=activity.getUsageToken?.();const doc=token?.document??token;
     const combatants=Array.from(combat.combatants??[]);
     const tokens=doc?combatants.filter(entry=>entry.token?.uuid===doc.uuid):[];
-    const matches=tokens.length?tokens:combatants.filter(entry=>entry.actor?.uuid===actor.uuid);
+    const matches=tokens.length?tokens:[effectiveCombatant(actor,combat)].filter(Boolean);
     return matches.length>0&&!matches.some(entry=>entry.id===combat.combatant.id);
 }
 function cleaveMessage(message){const data=message?.data??message,reference=data?.system?.origin,origin=typeof reference==="string"?game.messages?.get?.(reference):reference;return !!(data?.flags?.[ID]?.cleaveSource||origin?.getFlag?.(ID,"cleaveSource"));}
@@ -23,7 +24,7 @@ export function reactionActivity(activity) {
     // Searing Vengeance is a no-action rescue, even on another creature’s turn.
     if(activity?.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="searing-vengeance")return false;
     const actor=activity?.actor??activity?.item?.actor;
-    if(!actor||!game.combat?.started||!Array.from(game.combat.combatants??[]).some(entry=>entry.actor?.uuid===actor?.uuid))return false;
+    if(!actor||!game.combat?.started||!effectiveCombatant(actor))return false;
     return String(activity?.activation?.type??"").startsWith("reaction")||(offTurn(activity)&&activity?.activation?.type!=="bonus");
 }
 export function allowReactionUse(activity,usage,dialog,message) {
