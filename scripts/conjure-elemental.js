@@ -3,7 +3,10 @@ const ID='ugmuls-5-5e-automation',wrapped=new WeakSet(),values=v=>v?.values?Arra
 const resolve=r=>{try{return typeof r==='string'?globalThis.fromUuidSync?.(r,{strict:false}):r;}catch{return null;}};
 export function elementalEntry(item){const recipe=triggerKeyForSpell(item),entry=triggerEntry(recipe);return recipe?.startsWith('conjure-elemental-')&&entry?.enabled&&entry.sourceIdentifier?.endsWith('-element')&&entry.sourceSpellUuid?.includes('phb')&&entry.saveFirst&&item?.system?.source?.rules!=='2014'?entry:null;}
 export function prepareElementalActivity(activity){
- const item=activity?.item,entry=elementalEntry(item);if(!entry||activity?.type!=='save'||activity.name!=='Initial Save')return;
+ // Preparation runs for every activity, including chat-card clones. Reject
+ // unrelated activities before the trigger-library lookup.
+ if(activity?.type!=='save'||activity.name!=='Initial Save')return;
+ const item=activity.item,entry=elementalEntry(item);if(!entry)return;
  const effect=values(item.effects).find(e=>e.id===entry.effectId||e.name==='Restrained'&&values(e.statuses).includes('restrained'));if(!effect)return;
  if(!values(activity.effects).some(e=>(e._id??e.id)===effect.id))activity.effects=[...values(activity.effects),{_id:effect.id,onSave:false}];
 }

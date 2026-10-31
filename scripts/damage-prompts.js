@@ -482,7 +482,8 @@ Hooks.once("ready", () => {
         message.data??={};message.data.system??={};
         const origin=message.data.system.origin;
         const usage=typeof origin==="string"?game.messages.get(origin):origin;
-        if(usage?.system.targets?.length&&!message.data.flags?.[MODULE_ID]?.searingRescueHeal)message.data.system.targets=usage.system.targets;
+        // Chalice has an independently selected recipient; its source spell only groups the roll.
+        if(usage?.system.targets?.length&&!message.data.flags?.[MODULE_ID]?.searingRescueHeal&&!message.data.flags?.[MODULE_ID]?.starryChaliceSource)message.data.system.targets=usage.system.targets;
         if(activity.target?.affects?.type==="self") {
             const token=activity.getUsageToken?.()??usage?.getAssociatedToken?.();
             const document=token?.document??token;

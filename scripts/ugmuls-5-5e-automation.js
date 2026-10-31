@@ -13,6 +13,7 @@ import "./lands-aid.js";
 import "./wrath-of-the-sea.js";
 import "./oceanic-gift.js";
 import "./starry-form.js";
+import "./cosmic-omen.js";
 import "./life-transfer.js";
 import "./reanimator-summon.js";
 import "./faerie-fire.js";
@@ -125,6 +126,7 @@ import "./monster-swallow.js";
 import "./infernal-wounds.js";
 import "./monster-source-turn-damage.js";
 import "./inactive-effect-cleanup.js";
+import "./hit-effect-reapply.js";
 import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================

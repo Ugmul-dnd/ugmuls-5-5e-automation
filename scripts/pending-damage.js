@@ -117,10 +117,10 @@ export async function retryPendingDamage(card){
     if(!canRetryDamage(card))return;
     const state=await operate("claim",card);
     await cancelDamageDialog(card.id);game.socket.emit(channel,{action:"cancelPendingDamage",cardId:card.id});
-    const source=resolveOrigin(card.system?.origin),activity=globalThis.Ugmuls55eAutomationLandsAid?.part?.(card)==='healing'?await fromUuid(state.activityUuid):source?.getAssociatedActivity?.({scaled:true})??await fromUuid(state.activityUuid);
+    const source=resolveOrigin(card.system?.origin),activity=card.getFlag(ID,'starryChaliceSource')?card.getAssociatedActivity?.({scaled:true}):globalThis.Ugmuls55eAutomationLandsAid?.part?.(card)==='healing'?await fromUuid(state.activityUuid):source?.getAssociatedActivity?.({scaled:true})??await fromUuid(state.activityUuid);
     if(!activity?.item?.isOwner)throw Error("The casting actor or activity is unavailable.");
     const data={type:card.type,flavor:card.flavor,speaker:card.speaker,system:foundry.utils.deepClone(card.toObject().system),
-        flags:{[ID]:{pendingDamageCard:card.id,pendingDamageSession:state.session,...(card.getFlag(ID,"damageAttackId")?{damageAttackId:card.getFlag(ID,"damageAttackId")}:{} )}}};
+        flags:{...(card.getFlag(ID,'starryChaliceSource')?foundry.utils.deepClone(card.flags):{}),[ID]:{...(card.getFlag(ID,'starryChaliceSource')?foundry.utils.deepClone(card.flags?.[ID]??{}):{}),pendingDamageCard:card.id,pendingDamageSession:state.session,...(card.getFlag(ID,"damageAttackId")?{damageAttackId:card.getFlag(ID,"damageAttackId")}:{} )}}};
     const ammunition=state.ammunitionUuid?await fromUuid(state.ammunitionUuid):undefined;
     await activity.rollDamage({ability:state.ability,ammunition,attackMode:state.attackMode,isCritical:state.isCritical},
         globalThis.Ugmuls55eAutomationDamage.configurePromptDialog("damage",{configure:true,...(state.isCritical?{options:{defaultButton:"critical"}}:{})}),{data});
@@ -159,7 +159,7 @@ export function renderPendingDamage(message,html){
         // Keep native item header and properties, without a zero result or Apply tray.
         for(const sibling of Array.from(face.parentElement.children))if(sibling!==face)sibling.remove();
         face.querySelectorAll('.card-buttons,[data-rsa-undo-damage],[data-rsa-reprompt-damage]').forEach(node=>node.remove());
-        const button=document.createElement('button');button.type='button';button.dataset.rsaRepromptDamage=entry.card.id;button.textContent='---pending---';
+        const button=document.createElement('button');button.type='button';button.dataset.rsaRepromptDamage=entry.card.id;button.textContent=entry.card.getFlag(ID,'starryChaliceSource')?'Pending roll':'---pending---';
         button.dataset.tooltip='Click to roll this pending damage yourself';button.disabled=!canRetryDamage(entry.card);
         button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await retryPendingDamage(entry.card);}catch(error){report(error);}finally{button.disabled=!canRetryDamage(entry.card);}});
         face.append(button);

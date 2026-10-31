@@ -244,8 +244,8 @@ export async function applyManualHpWithUndo(tray,apply,event) {
             const record=damageUndoRecord(actor,{rsaUndoBefore:before});if(record)session.records.push(record);
         }
         const gm=game.users.activeGM;
-        if(gm&&gm.id!==game.user.id)game.socket.emit(`module.${MODULE_ID}`,{action:"recordManualHpApplication",messageId:message.id,records:session.records,actorUuids:[...session.actors.keys()],userId:game.user.id,gmId:gm.id});
-        else if(game.user.isGM)await enqueue(()=>storeManualHpApplication(message,session.records,[...session.actors.keys()]));
+        if(gm&&gm.id!==game.user.id)game.socket.emit(`module.${MODULE_ID}`,{action:"recordManualHpApplication",messageId:message.id,records:session.records,actorUuids:[...session.actors.keys()],reapplyHitEffects:!error,userId:game.user.id,gmId:gm.id});
+        else if(game.user.isGM){await enqueue(()=>storeManualHpApplication(message,session.records,[...session.actors.keys()]));if(!error)await globalThis.Ugmuls55eAutomationHitEffects?.afterDamage(message,[...session.actors.keys()],game.user);}
     }
     if(error)throw error;
     return result;
@@ -377,7 +377,7 @@ Hooks.once("ready",()=>{
         }
         if(!isDamageOrHealingCard(message))return;
         if(packet.action==="recordManualHpApplication") {
-            enqueue(()=>storeManualHpApplication(message,packet.records,packet.actorUuids,user)).catch(report);return;
+            enqueue(()=>storeManualHpApplication(message,packet.records,packet.actorUuids,user)).then(()=>packet.reapplyHitEffects===true?globalThis.Ugmuls55eAutomationHitEffects?.afterDamage(message,packet.actorUuids,user):undefined).catch(report);return;
         }
         if(packet.action==="recordDamageUndo")enqueue(()=>storeRecord(message,packet.record,user)).catch(report);
         else if(packet.action==="undoCardDamage"&&user.isGM)enqueue(()=>undoCardDamage(message)).catch(report);

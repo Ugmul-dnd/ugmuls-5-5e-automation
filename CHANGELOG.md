@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Damage Apply now also restores undone effects tied directly to that same attack’s recorded hits. Reuse native effect/Undo tracking after HP application is recorded, restrict player requests to owned damage recipients, preserve partial-target application, and leave save/healing effects separate. Effect failure does not repeat or roll back already applied damage.
+
+- Auto Apply Status on Hit: after Undo Effect, offer a manual Apply Effects control on the affected attack/damage card, including grouped cards. Reuse recorded hit targets and native effect/Undo application; preserve Region-managed and newer equivalent effects, allow Undo again after reapplication, and keep the automatic workflow stopped. Normalize the setting label from Autoapply to Auto Apply.
+
+- Starry Form: delete superseded applied forms when activating/changing constellations instead of retaining inactive copies. Keep the current form temporary and allow inactive applied Starry Forms through end-of-combat cleanup even when their source is an owned feat; preserve native grants and active forms. Restore prior effects if replacement fails.
+
+- Cosmic Omen: snapshot relative disposition with range. Offer Weal for friendly failed tests and Woe for hostile successful tests; no known DC/outcome remains a manual choice for the appropriate side. Neutral creatures have no side restriction. Use recorded hit/miss outcomes for attacks, and exclude kept natural 1s/20s without treating discarded advantage/disadvantage dice as the result. No movement/disposition-driven history refreshes.
+
+- Cosmic Omen: offer Weal/Woe only on failed D20 Tests when a numeric target DC is recorded. Hide successful tests, keep no-DC tests available for manual use, and enforce the same eligibility on the GM.
+
+- Cosmic Omen: store adjustment results with dot-free keys so Foundry does not expand Actor UUIDs into malformed result labels. Read older expanded records and show the signed Weal/Woe die result. Omit new icons when the Druid has no charge or available Reaction; resource recovery does not backfill older cards.
+- Cosmic Omen initiative: compare evaluated roll state rather than derived formula/default metadata, retain actual concurrent-roll checks, and link new initiative cards to their exact combatants. Update the chat total and tracker together, reject superseded initiative cards, and roll back tracker/resource changes on failure.
+
+- Stars Druid: Cosmic Omen adds a Long Rest note, rolls 1d2 after completion, and replaces the prior omen with Weal (even) or Woe (odd). Snapshot visible creatures within 30 feet when attack/save/check cards are created; show an owned Druid/GM icon using the native omen activity and charges. Preserve original dice/modes, spend a combat Reaction, roll back failed adjustments, and disable processed HP/effect cards until undone. No movement, resource, or turn-driven refresh of historical Omen cards.
+
+- Healing Chalice: open the native healing dice dialog on the clicking client and show a Pending roll chat card through the shared pending-damage workflow. Validate/reserve through the GM, refund canceled rolls, and preserve the Chalice activity/target when retrying a pending card.
+
+- Healing Chalice performance: display its available chat action without an additional all-client dice-animation handshake. Skip existing prompt offers before further work; preserve animation waits for actual healing application.
+
+- Reduce Starry Form/Archer preparation overhead: reject unrelated activities before Conjure Elemental trigger-library scans, and reserve Archer turn/initial-shot/window flags in one effect update instead of three. Preserve native effects, resource validation and rollback.
+
+- Healing Chalice: preserve the recipient selected when clicking its action instead of replacing it with the original healing spell’s recorded target.
+
+- Starry Chalice: after a slot-funded healing spell, post a private Healing Chalice chat action for owners and GMs. Require one selected creature within 30 feet; roll the native scaled bonus healing for that creature, retaining once-per-turn validation and grouping with the source spell.
+
+- Elemental Fury: Potent Spellcasting also recognizes the short Potent Spellcasting feature name/identifier. Offer its labeled Wisdom damage bonus, default Yes, on damaging cantrips regardless of spell class; retain native dice and damage type.
+
 - Stars Druid: choose Starry Form on activation with native Wild Shape consumption. Include owned Full of Stars resistances in all constellations; use native Dragon/Twinkling benefits and scaling. Offer a free initial Archer attack and private turn-start BA actions, slot-funded Chalice bonus healing once per turn, and a once-per-turn Twinkling constellation selector that preserves the original duration. Route player requests through the active GM and preserve native grouped rolls and resource cancellation.
 
 - Wrath/Oceanic Gift initial damage: after manifestation, confirm one optional enemy per bearer’s native range in one popup. Combine selected targets into a single native save group and shared damage roll/card, using the original Druid’s DC/Wisdom without another Bonus Action or Wild Shape cost. Suppress application-time BA prompt cards; retain private bearer turn-start cards. Keep recorded targets visible on Wrath save/damage summaries.

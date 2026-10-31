@@ -302,7 +302,7 @@ Hooks.once("init",()=>{
         ["autoApplyCardDamage","Auto Apply Damage","Apply damage after required saves and dice animations finish. Non-save attacks apply to hit targets only. Manual card interaction stops automation."],
         ["autoApplyCardHealing","Auto Apply Healing","Apply healing and temporary HP after the healing roll and dice animations finish. Manual card interaction stops automation."],
         ["autoApplySavedEffects","Auto Apply Saved Effects","After every required save and dice animation finishes, apply assigned activity effects on failed saves, and effects marked On Save on successful saves. Runs with automatic damage when enabled, or independently when damage is manual."],
-        ["autoApplyHitEffects","Autoapply Status on Hit","Apply configured attack activity effects to hit targets after the attack dice finish. Misses remain unaffected. Uses native effect durations and concentration."]
+        ["autoApplyHitEffects","Auto Apply Status on Hit","Apply configured attack activity effects to hit targets after the attack dice finish. Misses remain unaffected. Uses native effect durations and concentration."]
     ])game.settings.register(MODULE_ID,key,{name,hint,scope:"world",config:true,type:Boolean,default:true});
 });
 Hooks.once("ready",async()=>{

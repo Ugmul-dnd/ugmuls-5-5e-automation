@@ -11,7 +11,7 @@ export function druidOwner(actor){
  const original=actor?.getFlag?.('dnd5e','originalActor')??actor?.flags?.dnd5e?.originalActor;
  return actor?.isPolymorphed&&original?(game.actors.get(original)??actor):actor;
 }
-export function druidFeature(actor,kind){const id=kind==='form'?'lunar-form':kind==='lunar'?'improved-circle-forms':kind==='primal'?'elemental-fury-primal-strike':'elemental-fury-potent-spellcasting',name=kind==='form'?'Lunar Form':kind==='lunar'?'Improved Circle Forms':kind==='primal'?'Elemental Fury: Primal Strike':'Elemental Fury: Potent Spellcasting';return values(actor?.items).find(i=>i.type==='feat'&&i.system?.source?.rules!=='2014'&&(key(i)===id||i.name?.trim().toLowerCase()===name.toLowerCase()));}
+export function druidFeature(actor,kind){const id=kind==='form'?'lunar-form':kind==='lunar'?'improved-circle-forms':kind==='primal'?'elemental-fury-primal-strike':'elemental-fury-potent-spellcasting',name=kind==='form'?'Lunar Form':kind==='lunar'?'Improved Circle Forms':kind==='primal'?'Elemental Fury: Primal Strike':'Elemental Fury: Potent Spellcasting';return values(actor?.items).find(i=>i.type==='feat'&&i.system?.source?.rules!=='2014'&&(key(i)===id||i.name?.trim().toLowerCase()===name.toLowerCase()||kind==='potent'&&([i.identifier,i.system?.identifier].includes('potent-spellcasting')||/^potent\s+spellcasting$/i.test(i.name?.trim()??''))));}
 export function druidContext(app){
  const c=firearmContext(app),data=app.message?.data??{},card=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(app),origin=message(data.system?.origin??card?.system?.origin),attackId=data.flags?.[ID]?.damageAttackId??flag(card,'damageAttackId');
  // Never guess between multiple attacks from the same usage card.

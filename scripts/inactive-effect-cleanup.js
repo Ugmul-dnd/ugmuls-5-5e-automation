@@ -6,6 +6,9 @@ export function inactiveEffect(effect){return effect?.disabled===true||effect?.a
 function temporary(effect){return effect.isTemporary===true||dndFlag(effect,"isTemporary")===true||Number(effect.duration?.value)>0||Number(effect.duration?.seconds)>0||Number(effect.duration?.rounds)>0||Number(effect.duration?.turns)>0;}
 export function protectedFeatureEffect(effect,actor,sourceItem){
  if(effect.parent?.documentName==="Item"||effect.transfer===true||effect.type==="enchantment"||effect.isAppliedEnchantment)return true;
+ // Starry Form is an applied temporary buff, even though its source is an
+ // owned class feature. Never treat its inactive copies as persistent grants.
+ if(flag(effect,"starryForm")&&temporary(effect))return false;
  const statuses=Array.from(effect.statuses??[]),changes=effect.system?.changes??effect.changes??[];
  const applied=flag(effect,"recurringEffect")||flag(effect,"monsterFearFrightened")||flag(effect,"monsterFearImmunity")||effect.type==="condition"||statuses.length>0;
  if(sourceItem?.type==="spell")return false;
