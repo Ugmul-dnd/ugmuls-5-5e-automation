@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Infernal Wounds: use Foundry 14’s current messageMode setting for ongoing HP-loss cards, preserving public, GM, blind and self visibility without reading deprecated core.rollMode.
+
 ## v0.8.3 — Warlocks, Artificers, Druids & Reactive Combat (2026-10-31)
 
 - Graze correction: when a miss becomes a hit, retire and delete its unapplied Graze card, clear that target’s handled marker, and allow the normal hit-damage prompt immediately. Graze readiness and final HP application now require a current miss; retired/obsolete Graze cannot trigger hit effects or block the normal prompt. Preserve already-applied Graze transactions until Undo.
