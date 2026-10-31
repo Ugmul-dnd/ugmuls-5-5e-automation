@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## v0.8.3 — Warlocks, Artificers, Druids & Reactive Combat (2026-10-31)
+
 - Graze correction: when a miss becomes a hit, retire and delete its unapplied Graze card, clear that target’s handled marker, and allow the normal hit-damage prompt immediately. Graze readiness and final HP application now require a current miss; retired/obsolete Graze cannot trigger hit effects or block the normal prompt. Preserve already-applied Graze transactions until Undo.
 
 - Guiding Bolt: bridge its native marked effect into AC5E next-attack Advantage, with normal disadvantage cancellation and a native fallback. Snapshot the target application during roll configuration and consume it only after an attack is actually rolled (hit or miss), using active-GM validation. Canceling preserves the effect; newer applications and unrelated marked effects are protected.

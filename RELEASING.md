@@ -1,18 +1,18 @@
 # Releasing Ugmuls 5.5e Automation
 
-Prepared release: **v0.8.2**. Changes are in `CHANGELOG.md` and `RELEASE-NOTES-0.8.2.md`.
+Prepared release: **v0.8.3**. Changes are in `CHANGELOG.md` and `RELEASE-NOTES-0.8.3.md`.
 
-The notes and assets are prepared for v0.8.2. Merge and publish when ready.
-Compatibility: Foundry VTT 14 and D&D5e 6.0.6. Release validation results are recorded in RELEASE-NOTES-0.8.2.md. The archive includes all runtime scripts and feature guides.
+The notes and assets are prepared for v0.8.3. Merge and publish when ready.
+Compatibility: Foundry VTT 14 and D&D5e 6.0.6. Release validation results are recorded in RELEASE-NOTES-0.8.3.md. The archive includes all runtime scripts and feature guides.
 
 Tests and build tooling are local-only and ignored by Git. Restore your local
 tooling before running the commands below if those folders are absent.
 
 1. Run available local regression checks (`node tests/<name>.test.mjs`), then `./tools/build-release.ps1`. Local tests/tools are ignored and excluded from the ZIP.
 2. Review and commit the prepared changes, complete your branch merge, and push the intended release revision.
-3. Create a GitHub release from main with the exact tag **v0.8.2** (lowercase v).
-4. Use the title **Ugmuls 5.5e Automation v0.8.2** and the contents of
-   `RELEASE-NOTES-0.8.2.md` as the release description.
+3. Create a GitHub release from main with the exact tag **v0.8.3** (lowercase v).
+4. Use the title **Ugmuls 5.5e Automation v0.8.3** and the contents of
+   `RELEASE-NOTES-0.8.3.md` as the release description.
 5. Attach **both** `dist/module.json` and `dist/ugmuls-5-5e-automation.zip`.
    The generated dist folder is intentionally ignored by Git; upload assets manually.
 6. Publish the release, then test installation/update in a separate Foundry data directory.
