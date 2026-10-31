@@ -19,14 +19,14 @@ export const AUTOMATION_GROUPS=[
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
-    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
+    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},
     {id:"regions",name:"Regions",icon:"fa-draw-polygon",keys:["promptForSaveOnRegionTriggers","regionPlacementControls","autoAttachSelfEmanations","cleanupTargetingRegions"]},
     {id:"targeting",name:"Targeting",icon:"fa-bullseye",keys:["confirmAreaTargets","retargetActivityCards"]},
     {id:"rolls",name:"Rolls & Damage / Healing",icon:"fa-dice",keys:["promptForSaveOnSpellCasts","promptConcentrationChecks","autoBreakConcentration","promptDamageOnSave","promptDamageOnHit","adjustSavingThrowAdvantage","adjustAttackRollAdvantage","adjustDamageCritical"]},
-    {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
+    {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["reactiveAutoApply","autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
     {id:"chat",name:"Chat & Sheets",icon:"fa-comments",keys:["simplifyAttackCards","scrollChatOnOpen","sheetAddCompendiumBrowser","sheetLoadUnpreparedSpells"]}
 ];
 const settingPages=()=>SETTINGS_GROUPS.flatMap(group=>group.children??[group]);

@@ -3,7 +3,7 @@ import {inspiredRoll} from './bardic-inspiration.js';
 import {subtractCuttingWords} from './cutting-words.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {flashRange} from './flash-of-genius.js';
-const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),rests=new WeakSet(),wrapped=new WeakSet(),captured=new WeakSet();
+const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),rests=new WeakSet(),wrapped=new WeakSet(),captured=new WeakSet(),captureJobs=new WeakMap();
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
 const enabled=()=>game.settings.get(ID,'cosmicOmenAutomation')===true;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
@@ -54,12 +54,14 @@ export function omenSnapshot(card){
  }
  return {entries,...(initiativeLink(card)?{initiative:initiativeLink(card)}:{})};
 }
-export async function captureOmen(card){
+export function captureOmen(card){
+ if(captureJobs.has(card))return captureJobs.get(card);const job=(async()=>{
  if(!authority()||captured.has(card))return;captured.add(card);if(card.author?.isGM&&flag(card,'cosmicOmenSnapshot')!==undefined)return;const snapshot=omenSnapshot(card);if(!snapshot||!snapshot.entries.length&&!snapshot.initiative&&flag(card,'cosmicOmenSnapshot')===undefined)return;
  await card.setFlag(ID,'cosmicOmenSnapshot',snapshot);
  // The snapshot is added after a player's message arrives on the GM. Refresh
  // only that exact card so its owner sees the newly authorized controls.
  globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
+})();captureJobs.set(card,job);return job;
 }
 export function omenTestEligible(card,index=0,mode='weal'){
  const roll=card.rolls?.[index],dc=roll?.options?.target;
@@ -148,7 +150,7 @@ function report(error){console.error('Cosmic Omen',error);ui.notifications.error
 Hooks.once('init',()=>game.settings.register(ID,'cosmicOmenAutomation',{name:'Stars Druid: Cosmic Omen',hint:'After a Long Rest, roll an omen: even grants Weal; odd grants Woe. In the chatlog, the Druid’s owner and GM see a small Cosmic Omen icon on eligible attack, saving throw and ability check cards. Weal helps friendly failed tests; Woe penalizes hostile successful tests. Unknown DCs remain a manual choice. Attacks with a kept natural 1 or 20 get neither option. Disposition and range are captured when the card appears. Hover to see Weal/Woe and availability; click to roll the native bonus die and add it (Weal) or subtract it (Woe), spending one charge and your combat Reaction. No target selection is needed: the icon adjusts the test on that card. Range and sight are checked once when the card appears; moving does not add icons to old cards. Applied damage/effects disable the icon until the GM undoes them. No icon is added when charges or the Reaction are already spent, or the Druid is incapacitated.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
  installOmenRest(CONFIG.DND5E.restTypes?.long?.dialogClass);Hooks.on('dnd5e.restCompleted',(a,r,c)=>completedOmenRest(a,r,c).catch(report));
- Hooks.on('preCreateChatMessage',card=>{if(!authority())return;const snapshot=omenSnapshot(card);if(snapshot&&(snapshot.entries.length||snapshot.initiative||flag(card,'cosmicOmenSnapshot')!==undefined))card.updateSource({['flags.'+ID+'.cosmicOmenSnapshot']:snapshot});});
+ Hooks.on('preCreateChatMessage',card=>{if(!authority())return;const snapshot=omenSnapshot(card);if(snapshot)card.updateSource({['flags.'+ID+'.cosmicOmenSnapshot']:snapshot});});
  Hooks.on('createChatMessage',card=>captureOmen(card).then(()=>bindOmenInitiative(card)).catch(report));Hooks.on('dnd5e.renderChatMessage',renderOmen);
  // No movement, actor, item, effect or combat hooks refresh old Omen cards.
  game.socket.on('module.'+ID,packet=>{if(packet?.action==='cosmicOmenError'&&packet.user===game.user.id){ui.notifications.error(packet.error);const card=game.messages.get(packet.card);if(card)globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return;}if(packet?.action!=='cosmicOmen'||!authority()||packet.gm!==game.user.id)return;const user=game.users.get(packet.user),card=game.messages.get(packet.card);if(!user?.active||!card)return;applyOmen(card,packet.actor,packet.index,user).catch(error=>{game.socket.emit('module.'+ID,{action:'cosmicOmenError',user:user.id,card:card.id,error:error.message});});});

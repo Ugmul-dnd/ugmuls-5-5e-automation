@@ -17,6 +17,7 @@ import "./cosmic-omen.js";
 import "./life-transfer.js";
 import "./reanimator-summon.js";
 import "./faerie-fire.js";
+import "./guiding-bolt.js";
 import "./guided-precision.js";
 import "./steel-deflect.js";
 import "./companion-turns.js";
@@ -127,6 +128,7 @@ import "./infernal-wounds.js";
 import "./monster-source-turn-damage.js";
 import "./inactive-effect-cleanup.js";
 import "./hit-effect-reapply.js";
+import "./reactive-automation.js";
 import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================

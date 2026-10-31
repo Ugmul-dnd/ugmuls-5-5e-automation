@@ -1,4 +1,4 @@
-import {createEventQueue,describeTarget,isEligibleTarget} from "./shared-activity-card.js";
+import {createEventQueue,describeTarget,isEligibleTarget,linkedHpCards} from "./shared-activity-card.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
 const supported=new Set(["graze","sap","slow","topple","vex"]);
@@ -141,7 +141,15 @@ export async function syncSap(attack) {
 }
 export async function syncGraze(attack) {
     if(!authoritative()||masteryForAttack(attack)!=="graze")return;
-    const handled=new Set(attack.getFlag(MODULE_ID,"masteryActions")??[]);
+    const hits=new Set((attack.system.evaluatedTargets??[]).filter(t=>t.isMiss===false).map(t=>t.token)),retired=new Set();
+    for(const damage of linkedHpCards(attack)){
+        if(!damage.getFlag?.(MODULE_ID,"masteryGraze"))continue;const target=damage.getFlag(MODULE_ID,"masteryGrazeTarget")??damage.system?.targets?.[0]?.token;if(!hits.has(target))continue;
+        // Never discard a transaction that still needs Undo. Unapplied Graze
+        // belongs only to the old miss and must not block normal hit damage.
+        if(damage.getFlag(MODULE_ID,"hpApplicationRecorded")||damage.getFlag(MODULE_ID,"damageUndoHistory")?.length||damage.getFlag(MODULE_ID,"effectUndoHistory")?.length||(damage.getFlag(MODULE_ID,"automaticDamageTargets")??[]).length)continue;
+        await damage.setFlag(MODULE_ID,"masteryGrazeUndone",true);await damage.delete();retired.add(target);
+    }
+    const handled=new Set((attack.getFlag(MODULE_ID,"masteryActions")??[]).filter(t=>!retired.has(t)));if(retired.size)await attack.setFlag(MODULE_ID,"masteryActions",[...handled]);
     if(!(attack.system.evaluatedTargets??[]).some(target=>target.isMiss===true&&!handled.has(target.token)))return;
     await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(attack);
     // Re-read results after animation/reactions; corrections can turn a miss

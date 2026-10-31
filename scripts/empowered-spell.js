@@ -71,7 +71,7 @@ export async function applyEmpowered(message,keys,expected,user=game.user) {
     if(!Array.isArray(keys)||!keys.length||keys.length>empowerLimit(actor)||new Set(keys).size!==keys.length||keys.some(key=>typeof key!=="string"))throw Error("Choose between 1 and "+empowerLimit(actor)+" damage dice.");
     if(signature(message)!==expected)throw Error("The damage roll changed. Open Empowered Spell again.");
     const available=new Set(damageDice(message.rolls).map(entry=>entry.key));if(keys.some(key=>!available.has(key)))throw Error("Invalid damage die selection.");
-    await message.setFlag(ID,"manualDamageWorkflow",true);
+    if(globalThis.Ugmuls55eAutomationReactive?.enabled())await globalThis.Ugmuls55eAutomationReactive.stop(message);else await message.setFlag(ID,"manualDamageWorkflow",true);
     const result=await rerollDamageDice(message.rolls,keys);
     if(!canEmpower(message,user)||signature(message)!==expected)throw Error("The damage card changed before the reroll could finish.");
     const resource=sorceryResource(actor),spent=Number(resource?.system.uses.spent??0);let charged=false,committed=false,charge;
@@ -85,15 +85,17 @@ export async function applyEmpowered(message,keys,expected,user=game.user) {
             catch(error){console.warn("Ugmuls 5.5e Automation | Empowered dice animation failed:",error);}
         }
         if(isRollAdjustmentLocked(message)||signature(message)!==expected)throw Error("The damage card changed during the reroll. The Sorcery Point was refunded.");
-        await message.update({rolls:result.rolls,["flags."+ID+".empoweredSpellUsed"]:true,["flags."+ID+".manualDamageWorkflow"]:true});committed=true;
+        await message.update({rolls:result.rolls,["flags."+ID+".empoweredSpellUsed"]:true,...(globalThis.Ugmuls55eAutomationReactive?.enabled()?{}:{["flags."+ID+".manualDamageWorkflow"]:true})});committed=true;
         const origin=originOf(message);
         if(origin&&origin!==message) {
             try {await origin.setFlag(ID,"empoweredSpellUsed",true);await origin.system?.onDescendentRefresh?.(message);await ui.chat?.updateMessage?.(origin);}
             catch(error){console.error("Ugmuls 5.5e Automation | Empowered origin refresh failed:",error);}
         }
     } catch(error){if(charged&&!committed){if(charge)await charge.refund();else await resource.update({"system.uses.spent":spent});}throw error;}
+    if(committed&&globalThis.Ugmuls55eAutomationReactive?.enabled())await message.setFlag(ID,"empoweredSpellSettled",true);
 }
 async function pauseAutomation(message) {
+    if(globalThis.Ugmuls55eAutomationReactive?.enabled())return;
     const gm=game.users.activeGM;
     if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"pauseEmpoweredSpell",messageId:message.id,userId:game.user.id,gmId:gm.id});
     else await message.setFlag(ID,"manualDamageWorkflow",true);
@@ -160,6 +162,7 @@ Hooks.once("ready",()=>{
             if(packet.action==="applyEmpoweredSpell")game.socket.emit("module."+ID,{action:"empoweredSpellError",userId:user.id,error:"Empowered Spell is no longer available. Undo applied damage and reopen the picker."});
             return;
         }
+        if(packet.action==="pauseEmpoweredSpell"&&globalThis.Ugmuls55eAutomationReactive?.enabled())return;
         enqueue(()=>packet.action==="pauseEmpoweredSpell"?card.setFlag(ID,"manualDamageWorkflow",true):applyEmpowered(card,packet.keys,packet.expected,user)).catch(error=>{
             report(error);game.socket.emit("module."+ID,{action:"empoweredSpellError",userId:user.id,error:error.message});
         });

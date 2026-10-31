@@ -50,7 +50,7 @@ export async function castShield(actor,attack) {
     return activity.use(usage,{configure:false},{data:{flags:{[MODULE_ID]:{shieldReactionAttack:attack.id}}}});
 }
 
-export async function refreshShieldAttack(attack) {
+export async function refreshShieldAttack(attack,{settledSource=null}={}) {
     if (!attack || attack.type !== "attack" || (!game.user.isGM && !attack.isOwner)) return;
     const targets=[];
     for (const descriptor of attack.system.targets ?? []) {
@@ -60,11 +60,15 @@ export async function refreshShieldAttack(attack) {
         if(valor&&Number.isFinite(target.ac))target.ac+=Number(valor.bonus)||0;
         targets.push(target);
     }
-    await attack.update({"system.targets":targets, [`flags.${MODULE_ID}.shieldRechecked`]:true},{rsaRetarget:true});
+    const settled=settledSource&&game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
+    await attack.update({"system.targets":targets, [`flags.${MODULE_ID}.shieldRechecked`]:true,...(settled?{[`flags.${MODULE_ID}.shieldReactionSettled`]:settledSource}:{})},{rsaRetarget:true});
 }
 
 export function damageMissedAfterAttack(damage) {
     if (damage?.type !== "damage") return false;
+    // A later miss must never conceal an HP/effect transaction that still
+    // needs Undo. These flags are live, so Undo can hide the empty card again.
+    if(damage.getFlag?.(MODULE_ID,"hpApplicationRecorded")||damage.getFlag?.(MODULE_ID,"damageUndoHistory")?.length||damage.getFlag?.(MODULE_ID,"effectUndoHistory")?.length)return false;
     if(damage.getFlag?.(MODULE_ID,"masteryGraze")||globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(damage.getAssociatedActivity?.()))return false;
     const origin=damage.system?.origin;
     const card=typeof origin === "string" ? game.messages.get(origin) : origin;
@@ -75,6 +79,7 @@ export function damageMissedAfterAttack(damage) {
         .filter(attack=>attack.timestamp <= damage.timestamp)
         .sort((a,b)=>b.timestamp-a.timestamp)[0];
     if(attack?.type!=="attack")return false;
+    if(attack.getFlag?.(MODULE_ID,"effectUndoHistory")?.length||card?.getFlag?.(MODULE_ID,"effectUndoHistory")?.length)return false;
     const targets=attack.system.evaluatedTargets ?? [];
     return targets.length>0 && targets.every(target=>target.isMiss === true);
 }
@@ -159,6 +164,8 @@ Hooks.once("ready",()=>{
         try {addShieldButtons(message,html);} catch(err) {console.error("Ugmuls 5.5e Automation | Shield controls failed:",err);}
     });
     Hooks.on("updateChatMessage",(message,changes)=>{
+        const shieldSource=message.getFlag?.(MODULE_ID,"shieldReactionAttack");
+        if(shieldSource&&((message.getFlag(MODULE_ID,"buffAutoApplied")&&(changes.flags?.[MODULE_ID]?.buffAutoApplied===true||changes[`flags.${MODULE_ID}.buffAutoApplied`]===true))||(message.getFlag(MODULE_ID,"outcomeEffectsApplied")&&(changes.flags?.[MODULE_ID]?.outcomeEffectsApplied===true||changes[`flags.${MODULE_ID}.outcomeEffectsApplied`]===true)))){refreshShieldAttack(game.messages.get(shieldSource),{settledSource:message.id}).catch(console.error);return;}
         if (message.type !== "attack") return;
         if (!Object.hasOwn(changes,"system.targets") && !changes.system?.targets && !changes.rolls) return;
         const origin=message.system.origin;
@@ -172,6 +179,6 @@ Hooks.once("ready",()=>{
     for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateCombat","deleteCombat","updateActor","updateItem"])Hooks.on(event,refreshReactions);
     Hooks.on("ugmuls55eAutomation.buffEffectsApplied",(cast)=>{
         const id=cast.getFlag(MODULE_ID,"shieldReactionAttack");
-        if (id) refreshShieldAttack(game.messages.get(id)).catch(console.error);
+        if (id) refreshShieldAttack(game.messages.get(id),{settledSource:cast.id}).catch(console.error);
     });
 });

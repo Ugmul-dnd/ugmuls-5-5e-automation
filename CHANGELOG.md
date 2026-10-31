@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- Graze correction: when a miss becomes a hit, retire and delete its unapplied Graze card, clear that target’s handled marker, and allow the normal hit-damage prompt immediately. Graze readiness and final HP application now require a current miss; retired/obsolete Graze cannot trigger hit effects or block the normal prompt. Preserve already-applied Graze transactions until Undo.
+
+- Guiding Bolt: bridge its native marked effect into AC5E next-attack Advantage, with normal disadvantage cancellation and a native fallback. Snapshot the target application during roll configuration and consume it only after an attack is actually rolled (hit or miss), using active-GM validation. Canceling preserves the effect; newer applications and unrelated marked effects are protected.
+
+- Move Auto Apply Status on Hit for damaging attacks to the actual HP Apply step, for automatic and manual damage independently of the reactive governor. Rolling a hit alone no longer applies those effects. Use only recipients whose damage was processed, retain current hit filtering, native durations/concentration and separate Undo, and preserve save-based/effect-only workflows. Failed effects remain retryable without repeating damage.
+
+- Fix reactive Shield timing: an early utility-use refresh no longer resumes damage while the AC buff is still being applied. Resume only from the applied Shield cast, then revalidate recorded hits after the final async boundary and immediately before automatic HP changes. Keep damage cards with HP/effect Undo history visible even when a later correction makes the attack miss.
+
+- Expand the reactive governor to Empowered/Seeking Spell, Precision Attack, Dark One’s Own Luck, Fanatical Focus, Indomitable, Disciplined Survivor, Shared Resilience, Homing Strikes, Peerless Skill, Combat Inspiration AC, Uncanny Dodge, Investment resistance, Superior Hunter’s Defense, Elemental Rebuke and Beguiling Defenses. Check actual usable controls/resources, not already-consumed flags. Empowered Spell settles the cast-wide reroll limit before requesting a fresh check, while preserving explicit manual/Undo decisions.
+- Under reactive logic, defer effects until the ordinary damage roll exists/is evaluated, so damage-stage adjustments can be offered before Apply. This uses existing roll events without polling or a persistent reaction stop for an unrolled damage card.
+
+- Add the opt-in Automate Damage and Effects with Reactive Logic governor above the existing auto-apply options. Usable Shield, Flash of Genius, Cosmic Omen and supported inspiration/deflection/reduction controls terminate that card’s automatic attempt with no polling or reaction timeout. Committed adjustments request one coalesced recheck of only the linked workflow; remaining reactions stop it again. Keep manual Apply and Undo authoritative.
+- With the reactive governor enabled, manual damage Apply also handles the same activity’s native hit/save effects, including first applications. Respect recorded hits, failed saves and On Save profiles, partial recipients, player ownership, Region-managed effects, newer equivalent effects and separate effect Undo. Preserve the previous attack-only reapply behavior when the governor is off.
+
 - Damage Apply now also restores undone effects tied directly to that same attack’s recorded hits. Reuse native effect/Undo tracking after HP application is recorded, restrict player requests to owned damage recipients, preserve partial-target application, and leave save/healing effects separate. Effect failure does not repeat or roll back already applied damage.
 
 - Auto Apply Status on Hit: after Undo Effect, offer a manual Apply Effects control on the affected attack/damage card, including grouped cards. Reuse recorded hit targets and native effect/Undo application; preserve Region-managed and newer equivalent effects, allow Undo again after reapplication, and keep the automatic workflow stopped. Normalize the setting label from Autoapply to Auto Apply.

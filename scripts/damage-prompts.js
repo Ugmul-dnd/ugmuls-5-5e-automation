@@ -141,6 +141,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationWeird?.prepareWeirdButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationOutlined?.prepareOutlinedButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationGuidingBolt?.prepareGuidingButtons(this,prepared);
                 return prepared;
             }
             _onRender(context,options) {
@@ -400,6 +401,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         // attack animation played. Avoid opening a redundant dialog.
         const existingDamage = message.getAssociatedRolls?.("damage") ?? [];
         if (existingDamage.some(damage => damage.rolls?.length && !damage.getFlag?.(MODULE_ID,"masteryGrazeUndone")&&
+            !(attack&&damage.getFlag?.(MODULE_ID,"masteryGraze")&&!damage.getFlag(MODULE_ID,"hpApplicationRecorded")&&!damage.getFlag(MODULE_ID,"damageUndoHistory")?.length&&!damage.getFlag(MODULE_ID,"effectUndoHistory")?.length&&!(damage.getFlag(MODULE_ID,"automaticDamageTargets")??[]).length&&attack.system.evaluatedTargets?.some(t=>t.token===(damage.getFlag(MODULE_ID,"masteryGrazeTarget")??damage.system?.targets?.[0]?.token)&&t.isMiss===false))&&
             (!attack || (damage.timestamp ?? Infinity) >= (attack.timestamp ?? 0)))) return;
         opened.add(key);
         const {ability, ammunitionItem: ammunition, mode: attackMode} = attack?.system ?? {};

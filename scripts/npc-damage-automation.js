@@ -1,4 +1,4 @@
-import {createEventQueue,isEligibleTarget,hasEquivalentActiveEffect,regionOwnsEffect,isDamageOrHealingCard,isHealingCard,isEligibleHealingTarget} from "./shared-activity-card.js";
+import {createEventQueue,linkedHpCards,isEligibleTarget,hasEquivalentActiveEffect,regionOwnsEffect,isDamageOrHealingCard,isHealingCard,isEligibleHealingTarget} from "./shared-activity-card.js";
 import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
@@ -8,6 +8,7 @@ const runningEffects=new Set();
 const queuedEffects=new Set();
 const liveEffectUsages=new Set();
 const appliedNow=new Map();
+const appliedActorsNow=new Map();
 const cancelled=new Set();
 const waitingReasons=new Map();
 const animationRequests=new Map();
@@ -47,6 +48,7 @@ export async function readyDamageTargets(message) {
     if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");
     if(message.getFlag?.(MODULE_ID,"protectiveFieldPending"))return waiting(message,"Waiting for Protective Field.");
     if(!isDamageOrHealingCard(message)||message.getFlag?.(MODULE_ID,"pendingDamage"))return null;
+    if(await globalThis.Ugmuls55eAutomationReactive?.stop(message))return null;
     if(message.getFlag(MODULE_ID,"masteryGrazeUndone")||message.getFlag(MODULE_ID,"grappleNoDamage"))return null;
     if(globalThis.Ugmuls55eAutomationBattleMaster?.maneuverSaveReady(message)===false)return waiting(message,"Waiting for the maneuver saving throw.");
     if(globalThis.Ugmuls55eAutomationGrapple?.grappleSaveReady(message)===false)return waiting(message,"Waiting for the Grapple / Prone saving throw.");
@@ -74,17 +76,27 @@ export async function readyDamageTargets(message) {
         waitingReasons.delete(message.id);
         return remaining(targets);
     }
-    if(activity?.type==="attack"&&!isHealingCard(message)&&!message.getFlag(MODULE_ID,"masteryGraze")) {
+    if(message.getFlag(MODULE_ID,"masteryGraze")){
+        const attack=attackForDamage(message);if(!attack)return null;const misses=new Set((attack.system.evaluatedTargets??[]).filter(t=>t.isMiss===true).map(t=>t.token));return remaining(targets.filter(t=>misses.has(t.token)));
+    }
+    if(activity?.type==="attack"&&!isHealingCard(message)) {
         const attack=attackForDamage(message);if(!attack)return null;
         const hits=new Set((attack.system.evaluatedTargets??[]).filter(target=>target.isMiss===false||target.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)).map(target=>target.token));
         return remaining(targets.filter(target=>hits.has(target.token)));
     }
     return remaining(targets);
 }
+export function automaticHitStillValid(message,tokenUuid){
+ if(isHealingCard(message))return true;
+ if(message.getFlag?.(MODULE_ID,'masteryGraze')){const attack=attackForDamage(message);return !message.getFlag(MODULE_ID,'masteryGrazeUndone')&&attack?.system?.evaluatedTargets?.some(t=>t.token===tokenUuid&&t.isMiss===true)===true;}
+ const activity=message.getAssociatedActivity?.();if(activity?.type!=='attack'&&!message.getFlag?.(MODULE_ID,'damageAttackId'))return true;
+ const attack=attackForDamage(message);if(!attack)return false;const target=(attack.system?.evaluatedTargets??[]).find(t=>t.token===tokenUuid);
+ return target?.isMiss===false||target?.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)===true;
+}
 export async function applyAutomaticDamage(message) {
     if(!authority()||!autoApplyHpEnabled(message)||running.has(message.id))return;
     const targets=await readyDamageTargets(message);if(!targets)return;
-    running.add(message.id);appliedNow.set(message.id,new Set());
+    running.add(message.id);appliedNow.set(message.id,new Set());appliedActorsNow.set(message.id,new Set());
     let holder;
     try {
         await waitForWorkflowAnimations(message);
@@ -115,11 +127,13 @@ export async function applyAutomaticDamage(message) {
         tray.getMergedOptions=uuid=>({...options(uuid),rsaAutomaticDamage:true,rsaAutoDamageToken:uuid});
         // Claim before applying so rerenders/save updates cannot apply twice.
         await message.setFlag(MODULE_ID,"automaticDamageDone",true);
-        if(isManual(message))return;
+        if(isManual(message)||await globalThis.Ugmuls55eAutomationReactive?.stop(message))return;
+        const commitTargets=await readyDamageTargets(message);if(!commitTargets||commitTargets.map(t=>t.token).join()!==targets.map(t=>t.token).join())return;
         console.log(`Ugmuls 5.5e Automation | Applying automatic ${isHealingCard(message)?"healing":"damage"}`,{card:message.id,targets:targets.length});
         await tray._onApplyDamage({preventDefault(){}});
         const completed=appliedNow.get(message.id);
         await message.setFlag(MODULE_ID,"automaticDamageTargets",[...new Set([...(message.getFlag(MODULE_ID,"automaticDamageTargets")??[]),...completed])]);
+        if(completed.size&&!isHealingCard(message))await globalThis.Ugmuls55eAutomationHitEffects?.afterDamage(message,[...appliedActorsNow.get(message.id)],game.user,{automatic:true});
         if(completed.size<targets.length && !isManual(message)) {
             console.warn("Ugmuls 5.5e Automation | Automatic damage stopped before all targets were applied",{card:message.id,expected:targets.length,applied:completed.size});
             await stopAutomaticDamage(message);
@@ -129,7 +143,7 @@ export async function applyAutomaticDamage(message) {
         await message.setFlag(MODULE_ID,"manualDamageWorkflow",true);
         console.error("Ugmuls 5.5e Automation | Automatic damage application failed:",err);
         ui.notifications.error("Automatic damage/healing stopped. Check the card and apply any remaining amounts manually.");
-    } finally {holder?.remove();running.delete(message.id);appliedNow.delete(message.id);}
+    } finally {holder?.remove();running.delete(message.id);appliedNow.delete(message.id);appliedActorsNow.delete(message.id);}
 }
 export async function waitForDamageAnimation(message,extraAnimation) {
     if(globalThis.Ugmuls55eAutomationWaitForAnimation){
@@ -184,6 +198,7 @@ export async function applyOutcomeEffects(card) {
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;
+    if(await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
     if(globalThis.Ugmuls55eAutomationBeguiling?.isCard?.(usage))return globalThis.Ugmuls55eAutomationBeguiling.applySavedChoice(usage);
     if(usage.getFlag?.(MODULE_ID,"smiteSave"))return globalThis.Ugmuls55eAutomationSmite?.resolveSmiteSave(usage);
     if(usage.getFlag?.(MODULE_ID,"grappleStrike"))return globalThis.Ugmuls55eAutomationGrapple?.applyGrappleOutcome(usage);
@@ -191,6 +206,9 @@ export async function applyOutcomeEffects(card) {
     if(usage.getFlag?.(MODULE_ID,"maneuverStrike"))return globalThis.Ugmuls55eAutomationBattleMaster?.applyTripOutcome(usage);
     const activity=usage.getAssociatedActivity?.({scaled:true});
     const saving=activity?.type==="save";
+    // Damaging attacks couple effects to HP Apply. Effect-only attacks have
+    // no damage application to wait for; saves keep their existing workflow.
+    if(!saving&&((activity?.damage?.parts?.length??0)>0||activity?.damage?.includeBase&&activity.item?.system?.offersBaseDamage&&activity.item.system.damage.base?.formula||linkedHpCards(card).some(c=>c.type==="damage")))return;
     const setting=saving?"autoApplySavedEffects":"autoApplyHitEffects";
     if((!saving&&card.type!=="attack")||game.settings.get(MODULE_ID,setting)!==true)return;
     const effects=(await activity?.getApplicableEffects?.()??[]).filter(effect=>!regionManagesCardEffect(activity,effect));
@@ -216,7 +234,7 @@ export async function applyOutcomeEffects(card) {
     runningEffects.add(card.id);
     try {
         await waitForWorkflowAnimations(card);
-        if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true)return;
+        if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
         const currentTargets=(saving?usage:card).system.targets??[];
         if(targets.some(({descriptor})=>!currentTargets.some(target=>target.token===descriptor.token)))return;
         if(saving&&currentTargets.some(target=>!["success","failure"].includes(usage.system.outcomes?.get(target.token))))return;
@@ -231,7 +249,7 @@ export async function applyOutcomeEffects(card) {
                 if(saving&&usage.system.outcomes.get(descriptor.token)==="success"&&profile?.onSave!==true)continue;
                 const key=JSON.stringify([descriptor.token,effect.uuid]);
                 if(ledger.has(key))continue;
-                if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true)return;
+                if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
                 // Persist after each effect so partial progress cannot duplicate
                 // successful applications on the next card refresh.
                 const token=await fromUuid(descriptor.token);
@@ -251,11 +269,11 @@ export async function applyOutcomeEffects(card) {
         ui.notifications.error("Automatic effects stopped. Use the card's Apply Effect control for any remaining effects.");
     } finally {runningEffects.delete(card.id);}
 }
-function scheduleEffects(message) {
+function scheduleEffects(message,onlyCard=null) {
     if(!authority()||!automationEnabled())return;
     const usage=message.type==="usage"?message:originOf(message);
     if(!usage)return;
-    const cards=usage.getAssociatedActivity?.()?.type==="save"?[usage]:usage.getAssociatedRolls?.("attack")??[];
+    const cards=onlyCard?[onlyCard]:usage.getAssociatedActivity?.()?.type==="save"?[usage]:usage.getAssociatedRolls?.("attack")??[];
     for(const card of cards) {
         if(queuedEffects.has(card.id))continue;
         queuedEffects.add(card.id);
@@ -302,14 +320,14 @@ Hooks.once("init",()=>{
         ["autoApplyCardDamage","Auto Apply Damage","Apply damage after required saves and dice animations finish. Non-save attacks apply to hit targets only. Manual card interaction stops automation."],
         ["autoApplyCardHealing","Auto Apply Healing","Apply healing and temporary HP after the healing roll and dice animations finish. Manual card interaction stops automation."],
         ["autoApplySavedEffects","Auto Apply Saved Effects","After every required save and dice animation finishes, apply assigned activity effects on failed saves, and effects marked On Save on successful saves. Runs with automatic damage when enabled, or independently when damage is manual."],
-        ["autoApplyHitEffects","Auto Apply Status on Hit","Apply configured attack activity effects to hit targets after the attack dice finish. Misses remain unaffected. Uses native effect durations and concentration."]
+        ["autoApplyHitEffects","Auto Apply Status on Hit","Apply configured attack effects together with damage Apply, automatically or manually, to the recorded hit targets receiving that damage. Rolling a hit alone does not apply effects. Misses remain unaffected; native durations, concentration and Undo are preserved."]
     ])game.settings.register(MODULE_ID,key,{name,hint,scope:"world",config:true,type:Boolean,default:true});
 });
 Hooks.once("ready",async()=>{
     // Seed the new healing preference once from the former combined setting.
     const worldSettings=game.settings.storage?.get?.("world");
     if(authority()&&worldSettings&&!worldSettings.has(MODULE_ID+".autoApplyCardHealing"))await game.settings.set(MODULE_ID,"autoApplyCardHealing",game.settings.get(MODULE_ID,"autoApplyCardDamage"));
-    globalThis.Ugmuls55eAutomationNpcDamage={shouldAutoRollNpc,waitForWorkflowAnimations,waitForDamageAnimation};
+    globalThis.Ugmuls55eAutomationNpcDamage={shouldAutoRollNpc,waitForWorkflowAnimations,waitForDamageAnimation,resumeReactive:card=>{if(!authority()||isManual(card))return;const source=manualKey(card);for(const hp of source?.type==="attack"?linkedHpCards(source):[...(source?.getAssociatedRolls?.("damage")??[]),...(source?.getAssociatedRolls?.("healing")??[])])schedule(hp);scheduleEffects(card,source?.type==="attack"?source:null);}};
 
     Hooks.on("dnd5e.preRollD20TestV2",(config,dialog)=>{if(config.rsaAutoNpcSave)dialog.configure=false;});
     for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,(message)=>{
@@ -334,20 +352,22 @@ Hooks.once("ready",async()=>{
     });
     Hooks.on("dnd5e.applyDamage",(actor,amount,options)=>{
         const message=options.origin??options.originatingMessage;
-        if(options.rsaAutomaticDamage&&options.rsaAutoDamageToken)appliedNow.get(message?.id)?.add(options.rsaAutoDamageToken);
+        if(options.rsaAutomaticDamage&&options.rsaAutoDamageToken){appliedNow.get(message?.id)?.add(options.rsaAutoDamageToken);appliedActorsNow.get(message?.id)?.add(actor.uuid);}
     });
     Hooks.on("dnd5e.preApplyDamage",(actor,amount,updates,options)=>{
         const message=options.origin??options.originatingMessage;
         // The linked automatic rescue heal must not mark the main burst as manually stopped.
         if(options.rsaSearingRescueGrant===true&&message?.getFlag?.(MODULE_ID,"searingRescueHeal"))return;
         if(!isDamageOrHealingCard(message))return;
-        if(options.rsaAutomaticDamage) {if(isManual(message)||!autoApplyHpEnabled(message))return false;}
+        if(message.getFlag?.(MODULE_ID,'masteryGraze')&&!automaticHitStillValid(message,options.rsaAutoDamageToken??message.getFlag(MODULE_ID,'masteryGrazeTarget')??message.system?.targets?.[0]?.token))return false;
+        if(options.rsaAutomaticDamage) {if(isManual(message)||!autoApplyHpEnabled(message)||!automaticHitStillValid(message,options.rsaAutoDamageToken))return false;}
         else stopAutomaticDamage(message).catch(console.error);
     });
     const manualInteraction=event=>{
         if(event.isTrusted===false)return;
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
         // Retrying an unanswered save continues the automatic workflow.
+        if(globalThis.Ugmuls55eAutomationReactive?.enabled()&&globalThis.Ugmuls55eAutomationReactive?.isControl(interactive))return;
         if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;
         const id=interactive.closest("[data-message-id]")?.dataset.messageId;
         const message=game.messages.get(id);if(message)stopAutomaticDamage(message).catch(console.error);
