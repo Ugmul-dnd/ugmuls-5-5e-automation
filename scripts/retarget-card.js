@@ -2,6 +2,7 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
+    const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);if(landPart)return ['usage','healing'].includes(landPart);
     if (!["usage","attack"].includes(message?.type)) return false;
     if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(message.getAssociatedActivity?.()))return false;
@@ -37,6 +38,7 @@ export async function receiveStrideRetarget(packet){
 export async function retargetSpellCard(message, targets = game.user.targets) {
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
     if (!supportsRetarget(message) || !canRetargetCard(message) || pendingCards.has(message)) return;
+    if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)){pendingCards.add(message);try{return await globalThis.Ugmuls55eAutomationLandsAid.retarget(message,targets);}finally{pendingCards.delete(message);}}
     const descriptors = [...new Map(Array.from(targets).filter(isHealingCard(message)?isEligibleHealingTarget:isEligibleTarget).map(target => {
         const token = target.document ?? target;
         return [token.uuid, describeTarget(token)];
@@ -92,12 +94,21 @@ export async function retargetSpellCard(message, targets = game.user.targets) {
 export function addRetargetButton(message, html) {
     hideRemovedTargetSummaries(message, html);
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
+    const container=html instanceof HTMLElement?html:html?.[0];
+    if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)==='usage'){
+        for(const summary of container?.querySelectorAll?.('.card-summary[data-message-id]')??[]){const card=game.messages.get(summary.dataset.messageId);if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(card)==='healing')addRetargetButton(card,summary);}
+    }
+    if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)==='damage'){for(const button of container?.querySelectorAll?.('[data-rsa-retarget]')??[])button.remove?.();return;}
     if (!supportsRetarget(message) || !canRetargetCard(message)) return;
     if (message.type === "usage" && message.getAssociatedActivity?.()?.type === "attack" &&
         game.settings.get("ugmuls-5-5e-automation","simplifyAttackCards") === true) return;
     const root = html instanceof HTMLElement ? html : html?.[0];
     if (!root) return;
-    const existingButton=root.querySelector("[data-rsa-retarget]");
+    // Inline healing controls belong to their own summary, not the save usage.
+    const owns=node=>{const summary=node.closest?.('.card-summary[data-message-id]');return !summary||summary===root;};
+    const landBranch=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);
+    const ownQuery=selector=>landBranch?Array.from(root.querySelectorAll(selector)).find(owns):root.querySelector(selector);
+    const existingButton=ownQuery('[data-rsa-retarget]');
     if (existingButton && message.type !== "attack") return;
     let controls;
     if (message.type === "attack") {
@@ -111,7 +122,7 @@ export function addRetargetButton(message, html) {
         }
     } else {
         controls=root.querySelector(".chat-card > .icon-row:last-child ul") ??
-            root.querySelector(".card-buttons") ?? root.querySelector(".chat-card");
+            root.querySelector(".card-buttons") ?? root.querySelector(".chat-card") ?? (globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)?root:null);
     }
     if (!controls) return;
     if (existingButton) {
@@ -123,7 +134,8 @@ export function addRetargetButton(message, html) {
     const button = document.createElement("button");
     button.type = "button";
     button.dataset.rsaRetarget = "";
-    button.dataset.tooltip = "Replace targets with your current map targets and refresh attack results using current AC";
+    const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);
+    button.dataset.tooltip = landPart ? "Replace only this "+landPart+" result’s targets" : "Replace targets with your current map targets and refresh attack results using current AC";
     button.innerHTML = '<i class="fa-solid fa-bullseye" aria-hidden="true"></i> Retarget';
     button.addEventListener("click", async event => {
         event.preventDefault(); event.stopPropagation();

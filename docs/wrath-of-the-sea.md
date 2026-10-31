@@ -1,0 +1,11 @@
+# Wrath of the Sea
+
+Wrath’s emanation is a targeting range, not an automatic area attack. No Region, template, entry event or turn event is created. Select one other visible creature within the native `@scale.sea.wrath-range` (5 feet, increased natively to 10 with Aquatic Affinity). Initial manifestation may have no target. Later Bonus Action Save requires an active tracking buff and exactly one valid target. Targets are recorded separately from the bearer buff and revalidated before native consumption, including visibility, scene identity and range from occupied token space.
+
+Native preparation retains the Constitution save/DC, Wisdom-based Cold dice, no damage on success, Bonus Action activation, and existing Wild Shape consumption (one on manifestation, zero on the later save). Source items and compendiums are unchanged. Push movement remains manual: on a failed save, Large or smaller creatures may be pushed up to 15 feet.
+
+Manifesting applies the native 10-minute Ocean Spray effect to the caster. When Stormborn is owned, copy its native flight and Cold/Lightning/Thunder resistance changes into the same buff. The flag records caster and bearer separately for future Oceanic Gift work. Replacement refreshes the tracked manifestation rather than stacking buffs. Cancellation restores the previous manifestation using the existing pending-cast refund workflow; a manifestation without a target commits after its tracking effect succeeds. Incapacitated disables the tracked buff under active-GM authority. Dismissal can be performed by disabling/removing that buff. Native duration expiry ends the buff.
+
+Effect writes are serialized briefly; interactive damage prompts run outside the queue. Incapacitated cleanup filters to affected actors with an active Wrath effect before queuing. No chat-history scans or render-time writes are introduced.
+
+Automated tests cover native scaling/resources/dice, visibility, range, large-token space, one target, no-target manifestation, no template, follow-up activation requirements, caster-only native effect, Stormborn changes, idempotency, replacement cancellation and Incapacitated. Live GM/player verification remains pending. Oceanic Gift recipient selection is not implemented in this step.

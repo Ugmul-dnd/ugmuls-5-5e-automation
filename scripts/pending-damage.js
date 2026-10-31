@@ -117,7 +117,7 @@ export async function retryPendingDamage(card){
     if(!canRetryDamage(card))return;
     const state=await operate("claim",card);
     await cancelDamageDialog(card.id);game.socket.emit(channel,{action:"cancelPendingDamage",cardId:card.id});
-    const source=resolveOrigin(card.system?.origin),activity=source?.getAssociatedActivity?.({scaled:true})??await fromUuid(state.activityUuid);
+    const source=resolveOrigin(card.system?.origin),activity=globalThis.Ugmuls55eAutomationLandsAid?.part?.(card)==='healing'?await fromUuid(state.activityUuid):source?.getAssociatedActivity?.({scaled:true})??await fromUuid(state.activityUuid);
     if(!activity?.item?.isOwner)throw Error("The casting actor or activity is unavailable.");
     const data={type:card.type,flavor:card.flavor,speaker:card.speaker,system:foundry.utils.deepClone(card.toObject().system),
         flags:{[ID]:{pendingDamageCard:card.id,pendingDamageSession:state.session,...(card.getFlag(ID,"damageAttackId")?{damageAttackId:card.getFlag(ID,"damageAttackId")}:{} )}}};

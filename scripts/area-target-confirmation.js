@@ -11,6 +11,7 @@ export function excludesIntimidatingCaster(activity,token){
 }
 
 export function automaticTargetMode(activity, config) {
+    if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))return 'hostilesOnly';
     if(globalThis.Ugmuls55eAutomationSearing?.isActivity(activity))return "hostilesOnly";
     const type = activity.target?.affects?.type;
     const selfExcludedActivities={"unsettling-visage":"USxIbGZPLvfPnnoI","haunting-glare":"kIxd4BuhFya6117b","intimidating-presence":"ZRHT8mOlea6T8XpP"};
@@ -211,6 +212,7 @@ export function prepareAreaConfirmation(activity, usage, dialog, message) {
     message.data.flags ??= {};
     message.data.flags[MODULE_ID] = { ...message.data.flags[MODULE_ID], targetsConfirmationPending: true,
         resumeAreaDamage: usage.subsequentActions !== false };
+    if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity)){usage.create??={};usage.create.measuredTemplate=true;}
     usage.subsequentActions = false; // Damage waits for the confirmed target list.
 }
 
@@ -255,7 +257,7 @@ export async function confirmCastTargets(activity, usage, results) {
     const banneret=globalThis.Ugmuls55eAutomationBanneret;
     if(!banneret?.isActivity(activity))canvas.tokens.setTargets(targets.map(token => token.id));
     let confirmed;
-    try { if(banneret?.isActivity(activity))confirmed=await banneret.chooseTargets(activity,message,caster,results.templates??[]);else {const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose();} }
+    try { if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))confirmed=await globalThis.Ugmuls55eAutomationLandsAid.chooseTargets(activity,message,caster,results.templates??[]);else if(banneret?.isActivity(activity))confirmed=await banneret.chooseTargets(activity,message,caster,results.templates??[]);else {const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose();} }
     catch (err) {
         if(await globalThis.Ugmuls55eAutomationPendingCast?.cancel(message)){pendingCards.delete(message.id);throw err;}
         await message.update({ [`flags.${MODULE_ID}.targetsConfirmationPending`]: false,
@@ -307,6 +309,7 @@ export async function finishConfirmedCast(activity, message, targets) {
             await activity.rollDamage({}, globalThis.Ugmuls55eAutomationDamage?.configurePromptDialog("damage",{configure:true})??{configure:true}, { data: { system: { origin: message.id, targets } } });
         }
     }
+    await globalThis.Ugmuls55eAutomationLandsAid?.heal(activity,message);
 }
 
 Hooks.once("init", () => game.settings.register(MODULE_ID, "confirmAreaTargets", {

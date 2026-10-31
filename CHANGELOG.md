@@ -2,6 +2,33 @@
 
 ## Unreleased
 
+- Stars Druid: choose Starry Form on activation with native Wild Shape consumption. Include owned Full of Stars resistances in all constellations; use native Dragon/Twinkling benefits and scaling. Offer a free initial Archer attack and private turn-start BA actions, slot-funded Chalice bonus healing once per turn, and a once-per-turn Twinkling constellation selector that preserves the original duration. Route player requests through the active GM and preserve native grouped rolls and resource cancellation.
+
+- Wrath/Oceanic Gift initial damage: after manifestation, confirm one optional enemy per bearer’s native range in one popup. Combine selected targets into a single native save group and shared damage roll/card, using the original Druid’s DC/Wisdom without another Bonus Action or Wild Shape cost. Suppress application-time BA prompt cards; retain private bearer turn-start cards. Keep recorded targets visible on Wrath save/damage summaries.
+
+- Register the Sea main-item activation interception with libWrapper as MIXED when available, preserving Monk’s Combat Details’ Item.use chain and avoiding its direct-wrapper conflict warning. Retain the fallback for installations without libWrapper.
+
+- Oceanic Gift / Wrath of the Sea: unify main-card and activity activation into a small recipient popup. Before Oceanic Gift, confirm Self Target; afterward choose a friendly creature within 60 feet and optionally include self for two native Wild Shape uses. Route grants through the active GM, share the original Druid’s DC/Wisdom/range and native Stormborn benefits, and replace prior manifestations.
+- Post a private BA - Wrath of the Sea chat action for the bearer’s owners and GMs when the buff is applied and at the bearer’s turn start. Validate one visible target in the native range, deduplicate prompt/use requests, preserve the manifestation’s initial damage opportunity without charging another Bonus Action, and use the bearer’s normal Bonus Action on later turns.
+
+- Wrath of the Sea: use a single visible target within the native scaled range, without an aura/Region. Preserve native save, Cold dice and Wild Shape cost; later Bonus Action saves require the active buff and cost no additional Wild Shape use. Apply the 10-minute tracking buff to the caster, include owned Stormborn benefits, replace prior manifestations, and clear on Incapacitated.
+
+- Land’s Aid: restore Retarget to the save usage card and propagate only to its exact linked damage results. Keep healing’s Retarget and targets independent, including when healing has already been applied. Scope grouped control lookup so healing’s button never replaces the save card’s button.
+
+- Land’s Aid: restrict healing selection to friendlies; show recorded targets on its usage/damage/healing cards so save results follow the confirmed recipients. Move Retarget from the shared usage to separate damage/healing results, preserving sibling targets, dice and save outcomes. Retry pending healing with its recorded native healing activity.
+
+- Conjure Elemental: register restrained targets from all four native summon variants for turn-start repeat Dexterity saves, native recurring damage only on failure, and restraint removal on success. Keep initial saves manual, correct Fire’s missing restraint link in prepared activity data, and connect restraints to the original spell’s concentration.
+
+- Land’s Aid: confirm enemies for saves/damage on the left and choose one healing recipient from the same area on the right. Follow native damage with the native scaled healing roll under the same usage origin, without a second Wild Shape use or area placement.
+
+- Nature’s Sanctuary: add a friendly-only Region recipe using one native Half Cover effect with the caster’s selected Nature’s Ward resistance, or Half Cover alone if no Ward applies. Reuse native Region entry/exit cleanup and the existing Simple Cover/AC5E duplicate-cover correction.
+
+- Natural Recovery: recalculate each Short Rest slot dropdown from the remaining shared spell-level budget. Retain selected quantities, show zero-only choices when exhausted, and restore options when another selection is reduced.
+
+- Natural Recovery: select expended level 1–5 spell slots in Short Rest, within half the Druid level rounded up. Add slot restoration and spending of the native recovery activity use to the same rest update. Free Circle Spell casting remains manual and independent.
+
+- Circle of the Land: add a Long Rest land selection, automatically prepare level-appropriate native Circle Spells, replace only dedicated subclass grants, and enable the matching native Nature’s Ward resistance. Remember the last land and preserve ordinary spell preparation and other resistances.
+
 - Moonlight Step: apply the native transport buff to the caster, integrate next-attack Advantage with AC5E, and consume after a completed attack or expire at turn end.
 
 - Moon Druid: Lunar Form adds native 2d10 Radiant damage to Wild Shape attack configuration, default Yes, disabled after once-per-turn use. Preserves critical hits and refunds failed rolls.

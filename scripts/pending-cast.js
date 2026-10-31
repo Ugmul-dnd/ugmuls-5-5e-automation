@@ -99,7 +99,7 @@ export function renderPendingCast(card,html){
  if(!root.querySelector('.rsa-pending-cast')){const label=document.createElement('p');label.className='rsa-pending-cast';label.textContent='Pending — choosing targets or preparing the roll';(root.querySelector('.chat-card')??root).append(label);}
 }
 Hooks.once("ready",()=>{
- globalThis.Ugmuls55eAutomationPendingCast={cancel:cancelPendingCast,track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
+ globalThis.Ugmuls55eAutomationPendingCast={cancel:cancelPendingCast,commit:card=>castState(card)?.canceling?undefined:settlePendingCast(card),track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
  for(const type of Object.values(CONFIG.DND5E.activityTypes))installPendingCast(type.documentClass);
  Hooks.on("dnd5e.preUseActivity",preparePendingCast);
  Hooks.on("dnd5e.postActivityConsumption",(activity,usage,message)=>{const state=stateFor(message.data);if(state)state.deltas=foundry.utils.deepClone(message.data?.system?.deltas);});

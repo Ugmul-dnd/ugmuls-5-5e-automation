@@ -1,10 +1,18 @@
 import "./conjure-animals-movement.js";
 import "./conjure-animals.js";
+import "./conjure-elemental.js";
 import "./wild-shape-flow.js";
 import "./wild-shape-concentration.js";
 import "./beast-spells.js";
 import "./druid-damage.js";
 import "./moonlight-step.js";
+import "./land-rest.js";
+import "./natural-recovery.js";
+import "./natures-sanctuary.js";
+import "./lands-aid.js";
+import "./wrath-of-the-sea.js";
+import "./oceanic-gift.js";
+import "./starry-form.js";
 import "./life-transfer.js";
 import "./reanimator-summon.js";
 import "./faerie-fire.js";
@@ -1100,12 +1108,8 @@ Hooks.once("ready", () => {
                     : [];
 
 
-            const regionEffects =
-                Array.isArray(
-                    config.regionEffects
-                )
-                    ? config.regionEffects
-                    : [];
+            const configuredRegionEffects = Array.isArray(config.regionEffects) ? config.regionEffects : [];
+            const regionEffects = await globalThis.Ugmuls55eAutomationSanctuary?.regionEffects?.(config,item,configuredRegionEffects) ?? configuredRegionEffects;
 
 
             if (
