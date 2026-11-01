@@ -55,12 +55,14 @@ Hooks.once("ready",()=>{
 Hooks.on("canvasReady",()=>installPlacementControls(canvas.regions));
 
 export function prepareSelfEmanation(activity,config) {
+    const warping=globalThis.Ugmuls55eAutomationWarping?.isActivity?.(activity)===true;
+    if(warping&&game.settings.get(MODULE_ID,"autoAttachSelfEmanations")===true&&config.shapes?.length)for(const shape of config.shapes)shape.type="emanation";
     if (game.settings.get(MODULE_ID,"autoAttachSelfEmanations") !== true ||
         !["spell","feat"].includes(activity.item?.type) || !config.shapes?.length ||
         !config.shapes.every(shape=>shape.type === "emanation")) return;
     const self=activity.target?.affects?.type === "self" || activity.range?.units === "self" ||
         activity.item?.system?.range?.units === "self";
-    if (!self) return;
+    if (!self&&!warping) return;
     const usage=activity.getUsageToken?.();
     const token=usage?.document ?? usage;
     // Never guess from a different controlled token or ambiguous actor copies.

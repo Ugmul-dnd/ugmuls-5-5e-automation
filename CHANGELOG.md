@@ -2,6 +2,74 @@
 
 ## Unreleased
 
+- Keep normal Wild Magic Surge checks available for slot-funded Sorcerer casts regardless of attack hit/miss or damage publication. Anchor the footer to the latest completed visible attack/save/damage result, ignoring empty pending-damage placeholders, and refresh that exact result on GM/player clients. Preserve once-per-turn limits and suppress checks for guaranteed Tides surges.
+
+- Suppress the normal Wild Magic Surge Check and Resolve Tides controls whenever that casting triggers a guaranteed Tides surge, including during animation and after completion. Revalidate check eligibility on the GM and refresh the exact displayed footer host so stale standalone damage-card buttons disappear.
+
+- Remove Tides of Chaos roll-button highlighting, color/class overrides and default-button changes to avoid competing with other modules. Keep the selection checkbox, Advantage/Disadvantage cancellation at roll time, resource tracking and surge workflows unchanged.
+
+- Show the Wild Magic Surge table's d100 roll through Dice So Nice before publishing its result. Synchronize the throw with the casting's visibility, wait for animation completion, and mark the result card to avoid a duplicate animation. Keep the original stored roll for retries and leave Tides active until the surge finishes.
+
+- Make Tides selection visibly move the recommended roll-button highlight even when AC5E applies inline button colors. Restore the prior AC5E colors/classes on deselection, leave frozen dialog options unchanged, and apply the visual update without window rendering or repositioning.
+
+- Fix aborted Tides dialog rendering caused by assigning to ApplicationV2's frozen options. Update only button visuals and the returned button context; preserve the Tides checkbox without re-rendering or repositioning the window. Add a regression covering native frozen options through field insertion and checkbox changes.
+
+- Fix missing attack/save roll buttons when Tides of Chaos is available: return the native button context after adjusting the recommended mode, preserving later module button extensions. Verify both GM and player configurations against the installed native D20 button method.
+
+- Wild Magic presentation: selecting Tides immediately highlights Advantage from Normal or Normal from Disadvantage on attack/save and other D20 configuration dialogs; deselection restores the original default. Keep the final roll consistent with the starting Disadvantage even when the Normal button is selected. Place one Wild Magic footer after grouped spell results, or on the latest standalone result. Defer automatic Tides surges until initial spell damage is posted, without waiting for damage application or reactions; all misses and successful no-damage saves do not require a damage roll.
+
+- Wild Magic: offer Tides of Chaos in D20 Test configuration, spending only when the test is rolled and preserving normal Advantage/Disadvantage cancellation with AC5E. Apply a waiting Tides of Chaos marker; slot-funded Sorcerer spells resolve its guaranteed native table surge, then remove the marker and restore the use. Add a class setting, enabled by default, to allow a spell attack that spends Tides to trigger that casting's surge; when disabled it waits for the next qualifying casting. Offer a separate once-per-turn surge-check button to the caster/GM on qualifying spell-slot cards, rolling on the native table on a natural 20. Preserve source-cast identity, native slot evidence, privacy, dice sequencing, cancellation/refunds, stored-result retries, duplicate protection and Long Rest cleanup without movement-driven or independent chat scans.
+
+- Skip the cast-time Select Metamagic confirmation for Shield and other Reaction spell activities. Preserve ordinary casting/resource consumption, including native spell-slot payment rather than deferring Psionic payment to a skipped window. Action and Bonus Action spell choices remain available.
+
+- Crown of Spellfire: share the Innate Sorcery activation choice with Umbral Form, defaulting to No and offering an available free use or 5 Sorcery Points. Include the native 60-foot flight/hover changes in one Innate Sorcery buff with one spell DC bonus and shared expiry/Effect Undo. Offer Burning Life Force on unapplied attack-hit damage cards: select available class Hit Point Dice up to Charisma modifier, spend once per turn, and apply a defender-specific reduction through the Bastion/Protective Field ledger without rerolling original damage. Include reactive automation blocking/resumption, GM/player authority, animation ordering and failed-adjustment refunds. Annotate saves with Spell Avoidance while Crown is active and reuse Evasion's per-target zero/half damage handling for qualifying magical half-damage saves of any ability, excluding Incapacitated actors.
+
+- Umbral Form: add a default-No choice to Innate Sorcery activation for characters with the feature. Offer Yes - Free only with a remaining native use and Yes - 6 Sorc Points only when affordable. Preserve Innate Sorcery's original cost, consume the selected additional resource through native activity consumption, and apply one shared native buff with Umbral resistances and a single spell DC bonus. Support switching back to normal Innate Sorcery, Effect Undo and failed-application refunds without editing source items.
+
+- Beasts of Ill Omen: attach a moving 5-foot aura to native Summon Beast summons for Sorcerers with the feature, including higher-level spell-slot castings. Enemies inside receive Disadvantage only against that caster's spells, through AC5E with normal Advantage cancellation. Preserve native summon duration, scaling and concentration; recover existing native beasts on refresh and clean up removed summon auras without writing effects or refreshing historical cards.
+
+- Strength of the Grave: offer a chat action when applied damage from a damage card drops the Sorcerer to 0 HP without outright death. Use the applied damage as the Charisma save DC, spend the native daily use only on success, and apply the native recovery healing with Undo support. Ignore manual HP edits, cancel stale offers after recovery or damage Undo, and preserve the original save when a roll adjustment changes its outcome.
+
+- Clockwork Cavalcade: choose the native free use or 7 Sorcery Points, place its template, and select recipients in a shared-pool healing window. Show one slider/number control per selected creature with live remaining-budget limits; require the full native 100-HP pool to be allocated before confirmation. Create one grouped native healing result with per-recipient application amounts instead of healing every target for 100. Preserve normal maximum HP limits, healing automation and Undo/reapply; provide an allocation editor after Undo rather than allowing ordinary Retarget to duplicate the pool. Cancellation retains native resource/template refunds.
+
+- Trance of Order: share the native free-use/5-Sorcery-Point activation picker with Warping Implosion, repair missing Long Rest recovery, and retain native one-minute buff application and Bonus Action spending. While the buff is active, register AC5E incoming-attack no-Advantage and apply the native minimum d20 result of 10 to all standard D20 Tests before evaluation. Preserve stronger minimums, other dice and normal Disadvantage behavior. Keep Foundry’s count-adjusted minimum dice through existing mode changes, cached pools and Seeking/Focus-family rerolls rather than mistaking them for discarded reroll history.
+
+- Bastion of Law: select a visible recipient within 30 feet and 1–5 Sorcery Points when creating a ward. Track remaining native ward dice on the buff and in its name; replace that caster’s previous ward and clear it on their Long Rest. Offer a damage-card dice picker, roll the selected dice, and record a per-recipient reduction using the existing damage ledger and breakdown while preserving original rolls, HP Undo/reapply, other reductions and reactive automation. Route player creation on other actors and ward expenditure through active-GM validation, with replay guards and failed-application refunds.
+
+- Clockwork Restore Balance: snapshot eligible Sorcerers within 60 feet when attack/save cards are created and offer their owners/GM a roll-card action. Spend one native feature use and the available combat Reaction, then force Normal using the first original d20 through the shared mode-adjustment workflow. Preserve bonus dice, cached dice pools and critical results; lock further mode changes, respect applied HP/effects until Undo, refund failed adjustments, and integrate reactive automation with a settled completion check. No movement/resource-driven historical card refreshes or repeated range lookups.
+
+- Warping Implosion: initialize the missing once-per-Long-Rest feature tracker and add a free-use / 5-Sorcery-Point payment selector to the native activation dialog alongside measured-template placement. Revalidate the choice before native consumption, preserve the free charge when paying points, and keep native pending-cast cancellation/refund handling.
+
+- Warping Implosion: automatically center its native 30-foot burst on the caster and exclude the caster from targets. Keep the burst stationary at departure. When available, reuse the Automated Animations Misty Step teleport preset with a cast-only 120-foot range after target confirmation; preserve separately configured Warping animations and the original Misty Step preset.
+
+- Revelation in Flesh: replace top-level activation with four benefit checkboxes, current Sorcery Points and a live confirmation cost. Spend through the native activity, apply only selected native ten-minute buffs with effect Undo, and preserve Bonus Action tracking, cancellation and failed-application refunds. Correct applied Glistening Flight to Speed rather than twice Speed without changing the source feature.
+
+- Show current Sorcery Points in the Select Metamagic window title for standard and Psionic casts.
+
+- Select Metamagic: highlight current Sorcery Points and show the selected cost and points remaining after the cast, including Psionic Sorcery payment.
+
+- Arms of Hadar: exclude the caster from automatic area targeting while retaining other creatures in the area.
+
+- Aberrant Psionic Sorcery: add a Use Sorcery Points toggle above the targets in Select Metamagic for eligible Psionic Spells. Pay the selected casting level in points instead of a spell slot, combine the cost with selected Metamagic without using an option, and preserve cancellation refunds. Support empty spell slots and record component exemptions on the casting without changing the source spell.
+
+- Aberrant Psychic Defenses: recommend Advantage on saves linked to Charmed/Frightened effects and repeat saves to end them. Reuse the condition-source lookup with Fortifying Soul, integrate with AC5E and normal cancellation, and leave native Psychic resistance and unrelated/unidentified saves unchanged.
+
+- Font of Magic: top-level feature use opens a budget-aware conversion popup. Select quantities by spell level to create slots with Sorcery Points or recover points from slots, with live shared limits and confirmation-time validation. Use one native conversion card/resource workflow per confirmed batch; slot creation respects Sorcerer-level limits and one available Bonus Action during combat.
+
+- Draconic Elemental Affinity: replace top-level feature use with an element picker. Maintain its selected resistance/effect and native subclass choice, preserving unrelated resistance grants. Offer the native Charisma bonus on one matching spell damage roll per casting through the existing damage preview/submission pipeline, with GM/player claims, critical-safe flat damage and failed-roll rollback.
+
+- Twinned Spell: offer the option for native spells whose next effective level increases creature targets. Keep original targets and allow the player to add the extra creature on the map, validate the expanded list, spend 1 Sorcery Point through normal Metamagic/Apotheosis rules, and increase only the recorded casting’s effective scaling. Confirmed targets share the spell’s existing save/effect workflow without consuming a higher-level slot; source items remain unchanged.
+
+- Slow: clear its targeting-only Region at the end of the caster’s turn, preserving Slowed effects, concentration and repeat saves through the existing cleanup workflow.
+
+- Compact Select Metamagic: show one or two option dropdowns according to the active casting limit, with inline target/type choices only for selected options. Prevent duplicate choices, retain target confirmation, clear replaced choices, and show Sorcery Points required on Confirm. Preserve existing costs, Apotheosis, Bonus Action checks and cancellation refunds.
+
+- Rename the casting Metamagic hub to Select Metamagic. Offer owned Subtle, Distant and Extended Spell as declaration checkboxes, charging their Sorcery Point costs through existing limits, Apotheosis and cancellation handling. Record choices on casting/damage cards; range, duration and component changes remain manual. Twinned Spell remains separate future work.
+
+- Sorcerous Restoration: offer an optional Short Rest checkbox showing the recoverable Sorcery Points. Use the native recovery formula and daily feature pool, cap at missing points, and merge recovery/spending into the rest’s item updates so previews and cancellation spend nothing.
+
+- Quickened Spell: add a checkbox to the casting Metamagic hub for action spells. Spend 2 Sorcery Points (or the available Arcane Apotheosis free use), count toward the one/two casting-option limit, and mark the shared Bonus Action used. Disable unavailable/off-turn choices, revalidate on confirmation, refund canceled/failed casts, and retain a Quickened tag on linked damage.
+
 - Infernal Wounds: use Foundry 14’s current messageMode setting for ongoing HP-loss cards, preserving public, GM, blind and self visibility without reading deprecated core.rollMode.
 
 ## v0.8.3 — Warlocks, Artificers, Druids & Reactive Combat (2026-10-31)

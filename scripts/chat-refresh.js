@@ -1,6 +1,9 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ wildMagic:{setting:"wildMagicAutomation",types:["usage"],feature:"wild-magic-surge",own:true},
+ crownSpellfire:{setting:"crownSpellfireAutomation",types:["damage","usage","save"],feature:"crown-of-spellfire",incoming:true,own:true},
+ bastion:{setting:"bastionLawAutomation",types:["damage"],effect:/^Bastion Shield\b/,incoming:true},
  steelDeflect:{setting:"steelDeflectAutomation",types:["attack"],feature:"deflect-attack",all:true},
  chemicalEruption:{setting:"chemicalMasteryAutomation",types:["damage"],feature:"chemical-mastery",own:true},
  ownLuck:{setting:"darkOnesOwnLuckAutomation",types:["check","save"],feature:"dark-ones-own-luck",own:true},

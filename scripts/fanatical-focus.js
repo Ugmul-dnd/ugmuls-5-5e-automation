@@ -1,3 +1,4 @@
+import {finalD20Results,d20ResultValue} from "./d20-results.js";
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {failureState,inspiredRoll} from "./bardic-inspiration.js";
 import {animateNewSaveDice} from "./save-roll-controls.js";
@@ -31,13 +32,13 @@ export async function rerollFocus(original,bonus){
     const die=new CONFIG.Dice.D20Die({number:1,faces:20});
     die.applyAdvantage?.(mode);die.applyFlag?.("halflingLucky",original.options?.halflingLucky===true);
     die.applyRange?.({minimum:original.options?.minimum,maximum:original.options?.maximum});await die.evaluate({allowInteractive:false});
-    const results=foundry.utils.deepClone(die.results.filter(result=>!result.rerolled));
+    const results=foundry.utils.deepClone(finalD20Results(die.results));
     if(results.length!==1)throw Error("Fanatical Focus did not produce the expected d20 results.");
     // Fanatical Focus uses one replacement d20, independent of the original mode.
     adjusted.options.advantageMode=0;adjusted.options.advantage=false;adjusted.options.disadvantage=false;
     adjusted.d20.applyAdvantage?.(0);adjusted.d20.number=1;
-    const winner=mode===-1?Math.min(...results.map(result=>result.result)):Math.max(...results.map(result=>result.result));
-    const winningIndex=results.findIndex(result=>result.result===winner);
+    const winner=mode===-1?Math.min(...results.map(d20ResultValue)):Math.max(...results.map(d20ResultValue));
+    const winningIndex=results.findIndex(result=>d20ResultValue(result)===winner);
     for(const result of adjusted.d20.results){result.active=false;result.discarded=true;result.rerolled=true;}
     adjusted.d20.results.push(...results.map((result,index)=>({...result,active:index===winningIndex,discarded:index!==winningIndex})));
     adjusted.options.rsaSaveDicePool=results;adjusted.resetFormula();adjusted._total=adjusted._evaluateTotal();

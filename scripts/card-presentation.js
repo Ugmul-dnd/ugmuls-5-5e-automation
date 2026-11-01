@@ -94,6 +94,8 @@ export function styleActivityCard(message,html) {
         }
     }
 }
+const declarationTags=meta=>[["psionicPoints","Psionic Sorcery"],["twinned","Twinned"],["subtle","Subtle"],["distant","Distant"],["extended","Extended"]].filter(([key])=>meta?.[key]).map(([key,label])=>({key,label,hint:label+" Spell selected for this casting."}));
+export const metamagicDeclarationTags=message=>message?.type==="usage"?declarationTags(message.getFlag?.(MODULE_ID,"metamagic")):[];
 // Cast-time choices belong to every damage roll; result-time choices belong to the specific roll.
 export function metamagicDamageTags(message) {
     if(message?.type!=="damage")return [];
@@ -107,6 +109,8 @@ export function metamagicDamageTags(message) {
     const targetName=id=>targets.find(target=>target.token===id)?.name??"selected target";
     const conversion=flag("transmutedSpell"),element=meta.transmuted??Object.values(conversion??{})[0];
     if(element)tags.push({key:"transmuted",label:"Transmuted",hint:"Damage changed to "+element+"."});
+    tags.push(...declarationTags(meta));
+    if(meta.quickened)tags.push({key:"quickened",label:"Quickened",hint:"Cast as a Bonus Action with Quickened Spell."});
     if(meta.heightened)tags.push({key:"heightened",label:"Heightened",hint:"Disadvantage on saves against this casting: "+targetName(meta.heightened)+"."});
     if(meta.careful?.length)tags.push({key:"careful",label:"Careful",hint:"Protected by Careful Spell: "+meta.careful.map(targetName).join(", ")+"."});
     if(message.getFlag?.(MODULE_ID,"empoweredSpellUsed"))tags.push({key:"empowered",label:"Empowered",hint:"Selected damage dice were rerolled with Empowered Spell."});
@@ -121,9 +125,9 @@ export function metamagicDamageTags(message) {
     return tags;
 }
 export function addMetamagicTags(message,root) {
-    const entries=message.type==="damage"?[{message,root}]:[];
+    const entries=message.type==="damage"||metamagicDeclarationTags(message).length?[{message,root}]:[];
     for(const summary of root.querySelectorAll('.card-summary[data-message-id]')){
-        const card=game.messages.get(summary.dataset.messageId);if(card?.type==="damage")entries.push({message:card,root:summary});
+        const card=game.messages.get(summary.dataset.messageId);if(card?.type==="damage"||metamagicDeclarationTags(card).length)entries.push({message:card,root:summary});
     }
     for(const entry of entries){
         entry.root.querySelectorAll('[data-rsa-metamagic-tag]').forEach(tag=>tag.remove());
@@ -131,7 +135,7 @@ export function addMetamagicTags(message,root) {
         const face=entry.root.querySelector('.chat-card');
         const properties=face?.querySelector('.icon-row .fa-tag')?.closest('.icon-row')?.querySelector('ul.pills');
         if(!properties)continue;
-        for(const tag of metamagicDamageTags(entry.message)){
+        for(const tag of [...metamagicDamageTags(entry.message),...metamagicDeclarationTags(entry.message)]){
             const pill=document.createElement('li');pill.className='pill transparent';pill.dataset.rsaMetamagicTag=tag.key;
             pill.dataset.tooltip=tag.hint;
             const label=document.createElement('span');label.className='label';label.textContent=tag.label;pill.append(label);properties.append(pill);

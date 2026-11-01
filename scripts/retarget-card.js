@@ -2,6 +2,7 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
+    if(globalThis.Ugmuls55eAutomationCavalcade?.isCard(message))return false; // Use its budget-preserving allocation editor.
     const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);if(landPart)return ['usage','healing'].includes(landPart);
     if (!["usage","attack"].includes(message?.type)) return false;
     if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;

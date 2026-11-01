@@ -1,3 +1,4 @@
+import {finalD20Results,d20ResultValue} from "./d20-results.js";
 import { createEventQueue, isRollAdjustmentLocked } from "./shared-activity-card.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const channel = `module.${MODULE_ID}`;
@@ -27,7 +28,7 @@ export async function waitForTrackedRollAnimation(message) {
     await Promise.all(Array.from(visualAnimations.get(message.id)??[]));
 }
 
-export function saveModeLocked(message,index=0){return !!message?.getFlag?.(MODULE_ID,"disciplinedSurvivor")?.[index];}
+export function saveModeLocked(message,index=0){return !!message?.getFlag?.(MODULE_ID,"disciplinedSurvivor")?.[index]||!!message?.getFlag?.(MODULE_ID,"restoreBalanceUsed")?.[index];}
 
 export function canAdjustSave(message, user, index=0) {
     return !saveModeLocked(message,index) && !message?.getFlag?.(MODULE_ID,"carefulSpell") && !message?.getFlag?.(MODULE_ID,"automaticGrappleFailure") && !isRollAdjustmentLocked(message) && ["save", "attack"].includes(message?.type) && Boolean(user?.isGM || message.author?.id === user?.id ||
@@ -42,7 +43,7 @@ export async function changeSaveMode(roll, mode) {
     // original roll object before the message update succeeds.
     const adjusted = roll.constructor.fromData(foundry.utils.deepClone(roll.toJSON()));
     const pool = foundry.utils.deepClone(roll.options.rsaSaveDicePool ??
-        roll.d20.results.filter(result => !result.rerolled && Number.isFinite(result.result)));
+        finalD20Results(roll.d20.results));
     if (!pool.length) throw new Error("No original d20 result is available.");
     const count = mode === 0 ? 1 : mode === 1 && roll.options.elvenAccuracy ? 3 : 2;
     if (pool.length < count) {
@@ -51,13 +52,13 @@ export async function changeSaveMode(roll, mode) {
         extra.applyRange({ minimum: roll.options.reliableTalent ? Math.max(10, roll.options.minimum ?? 10) : roll.options.minimum,
             maximum: roll.options.maximum });
         await extra.evaluate({ allowInteractive: false });
-        const newResults = extra.results.filter(result => !result.rerolled && Number.isFinite(result.result));
+        const newResults = finalD20Results(extra.results);
         pool.push(...newResults);
         adjusted._rsaNewD20Results = foundry.utils.deepClone(newResults);
     }
     const candidates = pool.slice(0, count);
-    const winningValue = mode === -1 ? Math.min(...candidates.map(result => result.result)) : Math.max(...candidates.map(result => result.result));
-    const winner = mode === 0 ? 0 : candidates.findIndex(result => result.result === winningValue);
+    const winningValue = mode === -1 ? Math.min(...candidates.map(d20ResultValue)) : Math.max(...candidates.map(d20ResultValue));
+    const winner = mode === 0 ? 0 : candidates.findIndex(result => d20ResultValue(result) === winningValue);
     adjusted.options.advantageMode = mode;
     adjusted.options.advantage = mode === 1;
     adjusted.options.disadvantage = mode === -1;
@@ -70,7 +71,7 @@ export async function changeSaveMode(roll, mode) {
     return adjusted;
 }
 
-export async function updateSaveMode(message, mode, index, user = game.user) {
+export async function updateSaveMode(message, mode, index, user = game.user, {updates = {}, validate = () => true} = {}) {
     if (!canAdjustSave(message, user, index)) throw new Error("You cannot adjust this roll.");
     const roll = message.rolls?.[index];
     const adjusted = await changeSaveMode(roll, mode);
@@ -85,8 +86,9 @@ export async function updateSaveMode(message, mode, index, user = game.user) {
     if(adjusted._rsaNewD20Results?.length&&game.dice3d?.showForRoll&&game.user.isGM) {
         await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
     }
-    if(!canAdjustSave(message,user,index))return;
-    await message.update({ rolls, flavor });
+    if(!canAdjustSave(message,user,index)||!validate())return;
+    await message.update({ ...updates, rolls, flavor });
+    return true;
 }
 
 export async function animateNewSaveDice(message, results, user = game.user) {
@@ -160,8 +162,8 @@ export function addSaveControls(message, html) {
             continue;
         }
         const index = entry.message.rolls?.findIndex(roll => roll instanceof CONFIG.Dice.D20Roll) ?? -1;
-        const modeLocked=saveModeLocked(entry.message,index);
-        if(modeLocked)for(const control of entry.root.querySelectorAll('[data-rsa-save-modes] button, .nd5t-retro-advantage button')){control.disabled=true;control.title="Disciplined Survivor: keep the new roll.";}
+        const modeLocked=saveModeLocked(entry.message,index),lockReason=entry.message.getFlag?.(MODULE_ID,"restoreBalanceUsed")?.[index]?"Restore Balance: this roll is Normal.":"Disciplined Survivor: keep the new roll.";
+        if(modeLocked)for(const control of entry.root.querySelectorAll('[data-rsa-save-modes] button, .nd5t-retro-advantage button')){control.disabled=true;control.title=lockReason;}
         if (!adjustmentEnabled(entry.message) || (!modeLocked&&!canAdjustSave(entry.message,game.user,index)) || !entry.message.isContentVisible) continue;
         if (index < 0 || entry.root.querySelector("[data-rsa-save-modes]")) continue;
         const rollElement = entry.root.querySelector(".dice-roll");
@@ -181,7 +183,7 @@ export function addSaveControls(message, html) {
             button.classList.toggle("active", active);
             button.setAttribute("aria-pressed", String(active));
             button.disabled = active || modeLocked;
-            if(modeLocked)button.title="Disciplined Survivor: keep the new roll.";
+            if(modeLocked)button.title=lockReason;
             button.addEventListener("click", event => {
                 event.preventDefault(); event.stopPropagation();
                 for (const control of menu.querySelectorAll("button")) control.disabled = true;

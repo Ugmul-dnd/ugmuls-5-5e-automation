@@ -76,7 +76,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted,{preview:true})??transmuted;
                 const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave,{preview:this._rsaPreview===true})??grave;
                 const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant,{preview:this._rsaPreview===true})??radiant;
-                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,savant,{preview:true})??savant;
+                const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant,{preview:this._rsaPreview===true})??savant;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,affinity,{preview:true})??affinity;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
             }
@@ -124,7 +125,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted)??transmuted;
                     const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave)??grave;
                     const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant)??radiant;
-                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,savant)??savant;
+                const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant)??savant;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,affinity)??affinity;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
                 }
@@ -181,6 +183,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationAffinity?.addAffinityChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationRadiantSoul?.addRadiantTarget(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBattleMaster?.addManeuverChoice(this);
@@ -233,12 +236,14 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationFormOfDread?.commitFear(this,options);
                         await globalThis.Ugmuls55eAutomationGraveTouched?.commitGrave(this,options);
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,options);
+                        await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,options);
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,options);
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,{});
+                        await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,{});
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,{});
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,{});
                         await globalThis.Ugmuls55eAutomationLifedrinker?.commitLifedrinker(this,{});

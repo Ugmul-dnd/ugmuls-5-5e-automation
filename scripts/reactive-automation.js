@@ -1,3 +1,5 @@
+import {bastionCandidates} from "./bastion-of-law.js";
+import {balanceCandidates,balanceDisabled,captureBalance} from "./restore-balance.js";
 import {beguilingCandidates} from './beguiling-defenses.js';
 import {canEmpower} from './empowered-spell.js';
 import {canSeek} from './seeking-spell.js';
@@ -52,13 +54,14 @@ export function availableReactions(card){
   for(let index=0;index<(test.rolls?.length??0);index++){
    if(canUseLuck(test,game.user,index))found.add('Dark One’s Own Luck');if(canFocus(test,game.user,index))found.add('Fanatical Focus');if(canIndomitable(test,game.user,index))found.add('Indomitable');if(canDisciplinedSurvivor(test,game.user,index))found.add('Disciplined Survivor');if(sharedResilienceCandidates(test,game.user,index).length)found.add('Shared Resilience');if(canHoming(test,game.user,index))found.add('Homing Strikes');if(canPeerless(test,game.user,index))found.add('Peerless Skill');
    if(flashCandidates(test,game.user,index).length)found.add('Flash of Genius');
+   if(balanceCandidates(test,index,game.user).length&&!balanceDisabled(test))found.add('Restore Balance');
    if(omenCandidates(test,index,game.user).some(e=>!omenDisabled(test,e,index)))found.add('Cosmic Omen');
    if(canInspire(test,game.user,index))found.add('Bardic Inspiration');
    if(cuttingCandidates(test,game.user,index).length)found.add('Cutting Words');
   }
  }
  for(const damage of hp){
-  if(damage.type!=='damage')continue;if(beguilingCandidates(damage,game.user).length)found.add('Beguiling Defenses');if(canEmpower(damage,game.user))found.add('Empowered Spell');if(uncannyCandidates(damage,game.user).length)found.add('Uncanny Dodge');if(chainResistanceCandidates(damage,game.user).length)found.add('Investment Resistance');if(defenseCandidates(damage,game.user).length)found.add('Superior Hunter’s Defense');if(rebukeCandidates(damage,game.user).length)found.add('Elemental Rebuke');if(parryCandidate(damage,game.user))found.add('Parry');if(deflectCandidates(damage,game.user).length)found.add('Deflect Attacks');if(fieldCandidates(damage,game.user).length)found.add('Protective Field');
+  if(damage.type!=='damage')continue;if(globalThis.Ugmuls55eAutomationCrown?.candidates?.(damage,game.user)?.length)found.add('Burning Life Force');if(bastionCandidates(damage,game.user).length)found.add('Bastion of Law');if(beguilingCandidates(damage,game.user).length)found.add('Beguiling Defenses');if(canEmpower(damage,game.user))found.add('Empowered Spell');if(uncannyCandidates(damage,game.user).length)found.add('Uncanny Dodge');if(chainResistanceCandidates(damage,game.user).length)found.add('Investment Resistance');if(defenseCandidates(damage,game.user).length)found.add('Superior Hunter’s Defense');if(rebukeCandidates(damage,game.user).length)found.add('Elemental Rebuke');if(parryCandidate(damage,game.user))found.add('Parry');if(deflectCandidates(damage,game.user).length)found.add('Deflect Attacks');if(fieldCandidates(damage,game.user).length)found.add('Protective Field');
   for(let index=0;index<(damage.rolls?.length??0);index++)if(cuttingCandidates(damage,game.user,index).length)found.add('Cutting Words');
  }
  return [...found];
@@ -69,9 +72,9 @@ export function reactiveDamageRollPending(card){
  return hp.some(c=>c.type==='damage'&&(flag(c,'pendingDamage')||!c.rolls?.length))||!!expectsDamage&&!hp.some(c=>c.type==='damage');
 }
 export async function stopForReactions(card){
- if(!authority()||!reactiveEnabled()||card?.type==='healing')return false;const {root}=reactiveScope(card);if(!root||flag(root,'manualDamageWorkflow')||flag(origin(root),'manualDamageWorkflow'))return false;
+ if(!authority()||!reactiveEnabled()||card?.type==='healing')return false;if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false)return true;const {root}=reactiveScope(card);if(!root||flag(root,'manualDamageWorkflow')||flag(origin(root),'manualDamageWorkflow'))return false;
  if(stopped.has(root.id)||flag(root,'reactiveAutomationStopped'))return true;
- for(const test of reactiveScope(card).tests)if(live.has(test))await captureOmen(test);
+ for(const test of reactiveScope(card).tests)if(live.has(test)){await captureOmen(test);await captureBalance(test);}
  const reasons=availableReactions(card);if(!reasons.length)return reactiveDamageRollPending(card);
  // A terminal stop, not a waiting task. Later ordinary renders return here
  // without more reaction/range checks. Only explicit completion can restart it.
@@ -88,20 +91,20 @@ function completedChange(card,changes){
  if(card.type==='damage'&&changed(changes,'empoweredSpellSettled')&&flag(card,'empoweredSpellSettled'))return true;
  if(['shieldReactionSettled','flashOfGenius','cosmicOmenUsed','bardicUsed','cuttingWords','parry','seekingSpellUsed','darkOnesOwnLuck','fanaticalFocus','indomitable','disciplinedSurvivor','sharedResilience','homingStrikes','peerlessSkill','valorDefense','uncannyDodges','chainResistance','superiorHunterDefense','elementalRebukes'].some(k=>changed(changes,k)&&flag(card,k)))return true;
  let pending=pendingReactions.get(card);if(!pending)pendingReactions.set(card,pending=new Map());let completed=false;
- for(const [key,record]of [['steelDeflectAdjusting','steelDeflections'],['deflectPending','protectiveFields'],['protectiveFieldPending','protectiveFields']]){
+ for(const [key,record]of [['restoreBalanceAdjusting','restoreBalanceUsed'],['steelDeflectAdjusting','steelDeflections'],['deflectPending','protectiveFields'],['protectiveFieldPending','protectiveFields']]){
   if(!changed(changes,key))continue;const signature=JSON.stringify(flag(card,record)??null);if(flag(card,key))pending.set(key,signature);else if(pending.has(key)){if(pending.get(key)!==signature)completed=true;pending.delete(key);}
  }
  return completed;
 }
-export function isReactiveControl(node){return !!node?.closest?.('[data-rsa-shield],.rsa-flash-actions,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-deflect,[data-rsa-empowered],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling');}
+export function isReactiveControl(node){return !!node?.closest?.('[data-rsa-shield],.rsa-flash-actions,.rsa-restore-balance,.rsa-bastion,.rsa-burning-life,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-deflect,[data-rsa-empowered],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling');}
 Hooks.once('init',()=>game.settings.register(ID,'reactiveAutoApply',{name:'Automate Damage and Effects with Reactive Logic',hint:'Use the existing auto-apply options, but end that automation attempt when a supported roll/reaction adjustment is available. No polling or reaction timeout. Completing an adjustment checks that card again; otherwise the GM can apply damage and its eligible hit/save effects manually. Undo remains manual.',scope:'world',config:true,type:Boolean,default:false}));
 Hooks.once('ready',()=>{
  globalThis.Ugmuls55eAutomationReactive={enabled:reactiveEnabled,stop:stopForReactions,completed:reactionCompleted,isControl:isReactiveControl};
  Hooks.on('createChatMessage',card=>{if(!authority()||!reactiveEnabled())return;live.add(card);if(['autoApplyCardDamage','autoApplySavedEffects','autoApplyHitEffects'].some(k=>game.settings.get(ID,k)===true)&&['attack','save','damage'].includes(card.type)){
   // Prime a stop immediately, before the normal short auto-apply scheduling
   // window. Capture Omen once on player-created cards before checking it.
-  const probe=async()=>{await captureOmen(card);await stopForReactions(card);};probe().catch(console.error);
+  const probe=async()=>{await captureOmen(card);await captureBalance(card);await stopForReactions(card);};probe().catch(console.error);
  }});
- Hooks.on('updateChatMessage',(card,changes)=>{if(!authority()||!reactiveEnabled())return;if(completedChange(card,changes)){reactionCompleted(card).catch(console.error);return;}if(live.has(card)&&(changed(changes,'cosmicOmenSnapshot')||Object.hasOwn(changes??{},'rolls'))&&!flag(card,'pendingDamage'))stopForReactions(card).catch(console.error);});
+ Hooks.on('updateChatMessage',(card,changes)=>{if(!authority()||!reactiveEnabled())return;if(completedChange(card,changes)){reactionCompleted(card).catch(console.error);return;}if(live.has(card)&&(changed(changes,'restoreBalanceSnapshot')||changed(changes,'cosmicOmenSnapshot')||Object.hasOwn(changes??{},'rolls'))&&!flag(card,'pendingDamage'))stopForReactions(card).catch(console.error);});
  Hooks.on('deleteChatMessage',card=>stopped.delete(card.id));
 });

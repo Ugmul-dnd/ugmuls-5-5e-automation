@@ -44,6 +44,7 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(globalThis.Ugmuls55eAutomationBalance?.ready(message)===false)return waiting(message,"Finishing Restore Balance.");
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(message)===false)return waiting(message,"Waiting for Steel Defender Deflect Attack.");
     if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");
     if(message.getFlag?.(MODULE_ID,"protectiveFieldPending"))return waiting(message,"Waiting for Protective Field.");
@@ -194,6 +195,7 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(card)===false)return;
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;
     const usage=card.type==="usage"?card:originOf(card);
@@ -234,7 +236,7 @@ export async function applyOutcomeEffects(card) {
     runningEffects.add(card.id);
     try {
         await waitForWorkflowAnimations(card);
-        if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
+        if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||globalThis.Ugmuls55eAutomationBalance?.ready(card)===false||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
         const currentTargets=(saving?usage:card).system.targets??[];
         if(targets.some(({descriptor})=>!currentTargets.some(target=>target.token===descriptor.token)))return;
         if(saving&&currentTargets.some(target=>!["success","failure"].includes(usage.system.outcomes?.get(target.token))))return;

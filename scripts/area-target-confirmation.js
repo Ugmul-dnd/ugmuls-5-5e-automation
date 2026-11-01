@@ -11,6 +11,8 @@ export function excludesIntimidatingCaster(activity,token){
 }
 
 export function automaticTargetMode(activity, config) {
+    if(globalThis.Ugmuls55eAutomationWarping?.isActivity?.(activity))return "excludeSelf";
+    if((activity.item?.identifier??activity.item?.system?.identifier)==="arms-of-hadar"&&activity.target?.template?.type)return "excludeSelf";
     if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))return 'hostilesOnly';
     if(globalThis.Ugmuls55eAutomationSearing?.isActivity(activity))return "hostilesOnly";
     const type = activity.target?.affects?.type;
@@ -58,27 +60,42 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
         window: { title: "Confirm Targets" }, position: { width: 420, height: "auto" }
     };
     constructor(message) {
-        super({ id: `rsa-confirm-targets-${message.id}` });
+        super({ id: `rsa-confirm-targets-${message.id}`,window:{title:globalThis.Ugmuls55eAutomationMetamagic?.dialogTitle?.(message.getAssociatedActivity?.())??(globalThis.Ugmuls55eAutomationMetamagic?.needsMetamagic(message.getAssociatedActivity?.())?"Select Metamagic":"Confirm Targets")} });
         this.message = message;
         this.castTargets=Array.from(game.user.targets);
-        this.metamagicSelection={transmuted:"",heightened:"",careful:[]};
+        this.twinnedTargets=new Map();
+        this.metamagicSelection={transmuted:"",heightened:"",careful:[],quickened:false,subtle:false,distant:false,extended:false,twinned:false,twinnedBaseTargets:this.castTargets.map(t=>(t.document??t).uuid),slots:[]};
+        Object.assign(this.metamagicSelection,globalThis.Ugmuls55eAutomationPsionic?.initial(message,this.activityForMetamagic()?.actor)??{});
         this.confirmAfter = Date.now() + 300;
     }
-    get canChooseTargets(){return this.message.getAssociatedActivity?.()?.target?.affects?.choice===true;}
+    get title(){return globalThis.Ugmuls55eAutomationMetamagic?.dialogTitle?.(this.message?.getAssociatedActivity?.())??super.title;}
+    activityForMetamagic(){
+        const source=this.message.getAssociatedActivity?.(),scaling=this.message.system?.scaling??0,stamp=JSON.stringify([scaling,source?.item?._stats?.modifiedTime,source?.actor?._stats?.modifiedTime]);
+        if(this.scaledActivity?.source===source&&this.scaledActivity.stamp===stamp)return this.scaledActivity.value;
+        const value=scaling?this.message.getAssociatedActivity?.({scaled:true})??source:source;this.scaledActivity={source,stamp,value};return value;
+    }
+    get isTwinned(){return this.metamagicSelection.slots?.includes("twinned")===true;}
+    get canChooseTargets(){return this.isTwinned||this.activityForMetamagic()?.target?.affects?.choice===true;}
     async _renderHTML() {
         const escape = foundry.utils.escapeHTML;
-        const targets = this.eligibleTargets(),editable=this.canChooseTargets,rowTag=editable?"button":"div";
+        const targets = this.eligibleTargets(),editable=this.canChooseTargets;
+        const activity=this.activityForMetamagic(),metamagic=globalThis.Ugmuls55eAutomationMetamagic;
+        const psionicMarkup=globalThis.Ugmuls55eAutomationPsionic?.markup(activity,this.metamagicSelection)??"";
+        const markup=metamagic?.metamagicMarkup?.(activity,this.metamagicSelection,targets.map(token=>describeTarget(token.document??token)))??"";
+        const cost=markup?metamagic.selectionSummary(activity.actor,this.metamagicSelection).cost:0;
+        const confirmLabel=markup?`Confirm Metamagic (${cost} Sorcery Point${cost===1?"":"s"})`:`Confirm Targets (${targets.length})`;
         return `<div style="padding:8px;">
-            <p>${editable?"Target tokens on the map to add them. Click a listed name to remove it.":"This spell affects the listed creatures. Choose Metamagic options below."}</p>
+            ${psionicMarkup}
+            <p>${this.isTwinned?"Keep the original targets and target an additional creature on the map. Confirm below when ready.":editable?"Target tokens on the map to add them. Click a listed name to remove it.":"This spell affects the listed creatures. Choose Metamagic options below."}</p>
             <div class="rsa-confirm-target-list ${targets.length>4?"rsa-two-columns":""}">
-                ${targets.length ? targets.map(token => `<${rowTag} ${editable?'type="button"':""} data-rsa-target="${escape(token.id)}" ${editable?'data-rsa-remove-target="'+escape(token.id)+'"':""}
+                ${targets.length ? targets.map(token => {const removable=editable&&(!this.isTwinned||!this.castTargets.some(t=>(t.document??t).uuid===(token.document??token).uuid)),tag=removable?"button":"div";return `<${tag} ${removable?'type="button"':""} data-rsa-target="${escape(token.id)}" ${removable?'data-rsa-remove-target="'+escape(token.id)+'"':""}
                     class="rsa-confirm-target-row">
                     <img src="${escape(token.document?.texture?.src ?? token.texture?.src ?? "icons/svg/mystery-man.svg")}" alt=""
                         style="width:24px;height:24px;flex:0 0 24px;object-fit:contain;border:0;border-radius:3px;">
-                    <span style="flex:1;min-width:0;overflow-wrap:anywhere;">${escape(token.name)}</span> ${editable?'<i class="fa-solid fa-xmark" aria-hidden="true"></i>':""}</${rowTag}>`).join("") : (editable?"<p>No targets. You can add targets on the map.</p>":"<p>No affected creatures.</p>")}
+                    <span style="flex:1;min-width:0;overflow-wrap:anywhere;">${escape(token.name)}</span> ${removable?'<i class="fa-solid fa-xmark" aria-hidden="true"></i>':""}</${tag}>`;}).join("") : (editable?"<p>No targets. You can add targets on the map.</p>":"<p>No affected creatures.</p>")}
             </div>
-            ${globalThis.Ugmuls55eAutomationMetamagic?.metamagicMarkup(this.message.getAssociatedActivity?.(),this.metamagicSelection,targets.map(token=>describeTarget(token.document??token)))??""}
-            <button type="button" data-rsa-confirm-targets>${editable?"Confirm Targets":"Confirm Metamagic"} (${targets.length})</button>
+            ${markup}
+            <button type="button" data-rsa-confirm-targets>${confirmLabel}</button>
             <button type="button" data-rsa-cancel-targets style="margin-top:8px;">Cancel Cast</button>
         </div>`;
     }
@@ -101,10 +118,18 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
             button.addEventListener("click", () => {
                 if(this.committing||!this.canChooseTargets)return;
                 this.clearTokenHighlight();
-                const token = Array.from(game.user.targets).find(target => target.id === button.dataset.rsaRemoveTarget);
+                const token = this.eligibleTargets().find(target => target.id === button.dataset.rsaRemoveTarget);
+                if(this.isTwinned&&this.castTargets.some(original=>(original.document??original).uuid===(token?.document??token)?.uuid))return;
+                if(this.isTwinned)this.twinnedTargets.delete((token?.document??token)?.uuid);
                 token?.setTarget(false, { user: game.user, releaseOthers: false });
             });
         }
+        this.element.querySelector('[data-psionic-points]')?.addEventListener('change',event=>{if(this.committing)return;this.metamagicSelection.psionicPoints=event.target.checked;this.render({force:true});});
+        for(const select of this.element.querySelectorAll('[data-rsa-meta-slot]'))select.addEventListener('change',()=>{
+            try{const wasTwinned=this.isTwinned;globalThis.Ugmuls55eAutomationMetamagic.chooseMetamagic(this.activityForMetamagic(),this.metamagicSelection,Number(select.dataset.rsaMetaSlot),select.value);
+                if(wasTwinned!==this.isTwinned){this.twinnedTargets.clear();globalThis.canvas?.tokens?.setTargets?.(this.castTargets.map(t=>t.id));}this.render({force:true});}
+            catch(error){ui.notifications.warn(error.message);}
+        });
         for(const select of this.element.querySelectorAll('[data-rsa-meta]'))select.addEventListener('change',()=>{
             this.metamagicSelection[select.dataset.rsaMeta]=select.value;this.render({force:true});
         });
@@ -112,14 +137,15 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
             const selected=new Set(this.metamagicSelection.careful);if(checkbox.checked)selected.add(checkbox.dataset.rsaCareful);else selected.delete(checkbox.dataset.rsaCareful);
             this.metamagicSelection.careful=[...selected];this.render({force:true});
         });
-        const metamagic=globalThis.Ugmuls55eAutomationMetamagic,activity=this.message.getAssociatedActivity?.();
+        const metamagic=globalThis.Ugmuls55eAutomationMetamagic,activity=this.activityForMetamagic();
         const descriptors=this.eligibleTargets().map(token=>describeTarget(token.document??token));
-        const valid=selection=>{try{metamagic?.validateSelection(activity,selection,descriptors);return true;}catch{return false;}};
+        const valid=(selection,details=true)=>{try{metamagic?.validateSelection(activity,selection,descriptors,{details});return true;}catch{return false;}};
         for(const select of this.element.querySelectorAll('[data-rsa-meta]'))for(const option of select.options){
-            if(!option.value)continue;option.disabled=!valid({...this.metamagicSelection,[select.dataset.rsaMeta]:option.value});
+            if(!option.value)continue;option.disabled=!valid({...this.metamagicSelection,[select.dataset.rsaMeta]:option.value},false);
         }
         for(const checkbox of this.element.querySelectorAll('[data-rsa-careful]'))if(!checkbox.checked)
-            checkbox.disabled=!valid({...this.metamagicSelection,careful:[...this.metamagicSelection.careful,checkbox.dataset.rsaCareful]});
+            checkbox.disabled=!valid({...this.metamagicSelection,careful:[...this.metamagicSelection.careful,checkbox.dataset.rsaCareful]},false);
+        const psionicToggle=this.element.querySelector('[data-psionic-points]');if(psionicToggle)psionicToggle.disabled=!psionicToggle.checked&&!valid({...this.metamagicSelection,psionicPoints:true},false);
         const confirmButton = this.element.querySelector("[data-rsa-confirm-targets]");
         const delay = Math.max(0, this.confirmAfter - Date.now());
         confirmButton.disabled = delay > 0||!valid(this.metamagicSelection);
@@ -129,7 +155,7 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
             event?.preventDefault?.(); event?.stopPropagation?.();
             if(this.committing)return;this.committing=true;confirmButton.disabled=true;
             try {
-                await globalThis.Ugmuls55eAutomationMetamagic?.commitCastMetamagic(this.message.getAssociatedActivity?.(),this.message,this.metamagicSelection,
+                await globalThis.Ugmuls55eAutomationMetamagic?.commitCastMetamagic(this.activityForMetamagic(),this.message,this.metamagicSelection,
                     this.eligibleTargets().map(token=>describeTarget(token.document??token)),this.castRegions??[]);
             }catch(error){this.committing=false;confirmButton.disabled=false;ui.notifications.warn(error.message);return;}
             this.confirmed = true;
@@ -151,8 +177,10 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
     async choose() {
         return new Promise((resolve, reject) => {
             this.finish = resolve;
-            if(this.canChooseTargets)this.targetHook = Hooks.on("targetToken", (user) => {
-                if (user.id === game.user.id && this.rendered) this.render({ force: true });
+            this.targetHook = Hooks.on("targetToken", (user,token,targeted) => {
+                if(user.id!==game.user.id)return;
+                if(this.isTwinned&&token){const uuid=(token.document??token).uuid;if(!this.castTargets.some(t=>(t.document??t).uuid===uuid)){if(targeted)this.twinnedTargets.set(uuid,token);else this.twinnedTargets.delete(uuid);}}
+                if(this.rendered&&this.canChooseTargets)this.render({force:true});
             });
             this.statusHooks = ["updateActor", "updateToken", "updateCombatant", "createActiveEffect", "updateActiveEffect", "deleteActiveEffect"]
                 .map(name => [name, Hooks.on(name, () => { if (this.rendered) this.render({ force: true }); })]);
@@ -173,10 +201,11 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
     }
     eligibleTargets() {
         const targets = [];
-        for (const token of (this.canChooseTargets?Array.from(game.user.targets):this.castTargets)) {
-            const activity=this.message.getAssociatedActivity?.(),searing=globalThis.Ugmuls55eAutomationSearing;
+        const selected=this.isTwinned?[...new Map([...this.castTargets,...this.twinnedTargets.values()].map(t=>[(t.document??t).uuid,t])).values()]:this.canChooseTargets?Array.from(game.user.targets):this.castTargets;
+        for (const token of selected) {
+            const activity=this.activityForMetamagic(),searing=globalThis.Ugmuls55eAutomationSearing;
             if(searing?.isActivity(activity)&&!searing.validateTargets(activity,this.message,[describeTarget(token.document??token)]).length){if(this.canChooseTargets)token.setTarget(false,{user:game.user,releaseOthers:false});continue;}
-            if (!excludesIntimidatingCaster(this.message.getAssociatedActivity?.(),token)&&(this.message.getAssociatedActivity?.()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
+            if (!excludesIntimidatingCaster(this.activityForMetamagic(),token)&&(this.activityForMetamagic()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
             else if(this.canChooseTargets)token.setTarget(false, { user: game.user, releaseOthers: false });
         }
         return targets;
@@ -184,6 +213,7 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
 }
 
 export function requiresTargetConfirmation(activity) {
+    if(globalThis.Ugmuls55eAutomationCavalcade?.isActivity(activity))return true;
     if(globalThis.Ugmuls55eAutomationBanneret?.isActivity(activity))return true;
     return ["spell","feat"].includes(activity.item?.type)&&
         (activity.target?.affects?.choice===true||globalThis.Ugmuls55eAutomationMetamagic?.needsMetamagic(activity)===true);
@@ -212,7 +242,7 @@ export function prepareAreaConfirmation(activity, usage, dialog, message) {
     message.data.flags ??= {};
     message.data.flags[MODULE_ID] = { ...message.data.flags[MODULE_ID], targetsConfirmationPending: true,
         resumeAreaDamage: usage.subsequentActions !== false };
-    if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity)){usage.create??={};usage.create.measuredTemplate=true;}
+    if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity)||globalThis.Ugmuls55eAutomationCavalcade?.isActivity(activity)){usage.create??={};usage.create.measuredTemplate=true;}
     usage.subsequentActions = false; // Damage waits for the confirmed target list.
 }
 
@@ -257,7 +287,7 @@ export async function confirmCastTargets(activity, usage, results) {
     const banneret=globalThis.Ugmuls55eAutomationBanneret;
     if(!banneret?.isActivity(activity))canvas.tokens.setTargets(targets.map(token => token.id));
     let confirmed;
-    try { if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))confirmed=await globalThis.Ugmuls55eAutomationLandsAid.chooseTargets(activity,message,caster,results.templates??[]);else if(banneret?.isActivity(activity))confirmed=await banneret.chooseTargets(activity,message,caster,results.templates??[]);else {const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose();} }
+    try { if(globalThis.Ugmuls55eAutomationCavalcade?.isActivity(activity))confirmed=await globalThis.Ugmuls55eAutomationCavalcade.chooseTargets(activity,message,caster,results.templates??[]);else if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))confirmed=await globalThis.Ugmuls55eAutomationLandsAid.chooseTargets(activity,message,caster,results.templates??[]);else if(banneret?.isActivity(activity))confirmed=await banneret.chooseTargets(activity,message,caster,results.templates??[]);else {const chooser=new TargetConfirmation(message);chooser.castRegions=results.templates??[];confirmed = await chooser.choose();} }
     catch (err) {
         if(await globalThis.Ugmuls55eAutomationPendingCast?.cancel(message)){pendingCards.delete(message.id);throw err;}
         await message.update({ [`flags.${MODULE_ID}.targetsConfirmationPending`]: false,
@@ -276,10 +306,12 @@ export async function confirmCastTargets(activity, usage, results) {
 }
 
 export async function finishConfirmedCast(activity, message, targets) {
+    if(message.getFlag?.(MODULE_ID,"metamagic")?.twinned)activity=message.getAssociatedActivity?.({scaled:true})??activity;
     const eligible = [],tokens=[];
     for (const descriptor of targets) {
         const token = await fromUuid(descriptor.token);
         if(excludesIntimidatingCaster(activity,token))continue;
+        if(globalThis.Ugmuls55eAutomationWarping?.isActivity?.(activity)){const source=activity.getUsageToken?.();if(token?.uuid===(source?.document??source)?.uuid)continue;}
         if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}
     }
@@ -301,6 +333,7 @@ export async function finishConfirmedCast(activity, message, targets) {
         Hooks.callAll("ugmuls55eAutomation.castReady",scaled,message);
         await scaled.rollAttack({}, {}, {data:{system:{origin:message.id}}});return;
     }
+    if(globalThis.Ugmuls55eAutomationCavalcade?.isActivity(activity)){await globalThis.Ugmuls55eAutomationCavalcade.heal(activity,message);return;}
     const hasRoll=activity.type==="heal"?!!activity.healing?.formula:!!activity.damage?.parts?.length;
     if (message.getFlag?.(MODULE_ID, "resumeAreaDamage") !== false && targets.length && hasRoll && typeof activity.rollDamage === "function") {
         if (activity.type === "save" && globalThis.Ugmuls55eAutomationDamage) {

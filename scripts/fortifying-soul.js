@@ -2,20 +2,23 @@ const ID="ugmuls-5-5e-automation",BOOK="hofWiwFortifying",EFFECT="yOsSorHfe1rU5l
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
 const live=e=>e&&!e.disabled&&e.active!==false&&!e.isSuppressed&&!e.duration?.expired&&!e.system?.expired;
 const resolve=ref=>typeof ref==="string"?(game.messages?.get(ref.replace(/^ChatMessage\./,""))??globalThis.fromUuidSync?.(ref,{strict:false})):ref;
-const fear=e=>values(e?.statuses).includes("frightened")||e?.system?.type==="frightened";
+const hasCondition=(effect,conditions)=>values(effect?.statuses).some(status=>conditions.has(status))||conditions.has(effect?.system?.type);
 export function fortifyingWard(actor){return values(actor?.effects).find(e=>live(e)&&(flag(e,"fortifyingSoul")||e.id===EFFECT||e.name==="Fortifying Soul"||[e.origin,e.system?.origin?.item,e._stats?.compendiumSource].some(r=>r?.includes("."+BOOK))));}
-export function fearSaveSource(actor,origin){
+export function conditionSaveSource(actor,origin,types){
+ const conditions=new Set(types);
  const card=resolve(origin);if(!card)return false;
  const recurring=flag(card,"recurringTrigger");
  if(recurring?.effect&&!["damage","healing","condition","check","manualCheck"].includes(recurring.phase)){
-  const effect=resolve(recurring.effect);if(effect&&live(effect)&&(effect.parent?.uuid===actor?.uuid||effect.actor?.uuid===actor?.uuid)&&fear(effect))return true;
+  const effect=resolve(recurring.effect);if(effect&&live(effect)&&(effect.parent?.uuid===actor?.uuid||effect.actor?.uuid===actor?.uuid)&&hasCondition(effect,conditions))return true;
  }
  const activity=card.getAssociatedActivity?.({scaled:true});if(activity?.type!=="save")return false;
  const item=activity.item??card.getAssociatedItem?.();
  // Inspect only effects linked to this save, not every effect on the item.
- const refs=[...values(activity.effects).filter(r=>r.onSave!==true),...values(activity.appliedEffects)];
- return refs.some(ref=>{const id=typeof ref==="string"?ref:ref._id??ref.id;const e=typeof ref==="object"&&ref.statuses?ref:values(item?.effects).find(e=>(e.id??e._id)===id);return fear(e);});
+ const idOf=ref=>typeof ref==="string"?ref:ref._id??ref.id,successOnly=new Set(values(activity.effects).filter(r=>r.onSave===true).map(idOf));
+ const refs=[...values(activity.effects).filter(r=>r.onSave!==true),...values(activity.appliedEffects).filter(r=>!successOnly.has(idOf(r)))];
+ return refs.some(ref=>{const id=typeof ref==="string"?ref:ref._id??ref.id;const e=typeof ref==="object"&&ref.statuses?ref:values(item?.effects).find(e=>(e.id??e._id)===id);return hasCondition(e,conditions);});
 }
+export const fearSaveSource=(actor,origin)=>conditionSaveSource(actor,origin,["frightened"]);
 export function fortifyingSave(actor,origin){return game.settings.get(ID,"fortifyingSoulAutomation")===true&&!!fortifyingWard(actor)&&fearSaveSource(actor,origin);}
 export function fortifyingDefaults(config,dialog,message){
  if(bridge&&game.modules?.get?.("automated-conditions-5e")?.active)return;

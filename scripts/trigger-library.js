@@ -277,6 +277,7 @@ const REPEAT_SAVE_DEFAULTS={
   },
   "slow": {
     "name": "Slow",
+    "targetingRegionCleanup": "casterTurnEnd",
     "enabled": true,
     "attachment": "creature",
     "sourceIdentifier": "slow",

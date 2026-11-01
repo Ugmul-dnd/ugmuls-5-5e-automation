@@ -1,3 +1,4 @@
+import {finalD20Results} from "./d20-results.js";
 import {createEventQueue} from "./shared-activity-card.js";
 import {sorceryResource} from "./empowered-spell.js";
 import {animateNewSaveDice} from "./save-roll-controls.js";
@@ -29,7 +30,7 @@ export async function seekingRoll(roll) {
     die.applyFlag?.("halflingLucky",roll.options.halflingLucky===true);
     die.applyRange?.({minimum:roll.options.minimum,maximum:roll.options.maximum});
     await die.evaluate({allowInteractive:false});
-    const results=die.results.filter(result=>result.active!==false&&!result.rerolled);
+    const results=finalD20Results(die.results).filter(result=>result.active!==false);
     if(results.length!==1)throw Error("Seeking Spell did not produce one final d20 result.");
     for(const result of adjusted.d20.results){if(result.active!==false)result.rerolled=true;result.active=false;result.discarded=true;}
     const replacement={...foundry.utils.deepClone(results[0]),active:true,discarded:false};adjusted.d20.results.push(replacement);

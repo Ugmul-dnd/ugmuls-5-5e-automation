@@ -198,7 +198,7 @@ export function damageUndoRecord(actor,options) {
     const changes=hpKeys.map(key=>({key,before:options.rsaUndoBefore[key],after:Number(actor.system.attributes.hp[key]??0)}))
         .filter(change=>Number.isFinite(change.before)&&Number.isFinite(change.after)&&change.before!==change.after);
     const guardianDamageAmount=options.rsaGuardianDamageAmount;
-    return changes.length||guardianDamageAmount>0?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
+    return changes.length||guardianDamageAmount>0?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(options.rsaStrengthGrave?{strengthGrave:{...options.rsaStrengthGrave}}:{}),...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
 }
 export function captureAppliedHpUndo(actor,options) {
     const record=damageUndoRecord(actor,options);
