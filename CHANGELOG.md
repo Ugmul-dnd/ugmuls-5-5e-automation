@@ -2,6 +2,27 @@
 
 ## Unreleased
 
+- Wild Magic table results offer targeted Apply Effect and Undo controls for the caster/GM, including player application through GM authority. Add native conditions, +2 AC, all-damage resistance/vulnerability and piercing vulnerability; retain rules text as visible reminders for complex results. Preserve selected Controlled Chaos gating, source-specific Undo and cached poison duration.
+- Recurring Wild Magic adds a one-minute effect and one owner/GM surge prompt at turn start. Reuse synchronized d100/Controlled Chaos selection without changing Tides resources, ignore repeated recurrence results, and reject stale/expired prompts. Invisibility ends on an attack, successful spell use or applied damage without consuming newer buffs from old-card refreshes.
+
+- Fix Tamed Surge selection for passive features without activities and activity data keyed by ID. Show result descriptions when native names are blank, and exclude the final Wild Magic table row from selection and activation.
+
+- Tamed Surge opens a Wild Magic table selector with result previews. Confirm uses the native feature and posts only the chosen result; cancel preserves its use.
+
+- Prevent deferred chat refreshes from restoring deleted Controlled Chaos result cards. Verify the unselected result was removed before completing selection or restoring Tides; canceled deletion remains retryable.
+
+- Fix Controlled Chaos d100 playback requests arriving before the corresponding choice flags reach a client. Wait briefly for the matching authoritative message update before validating/playing the stored roll, then remove the temporary listeners. Do not cache failed playback permanently, so retrying the saved surge works without rerolling the table.
+
+- Controlled Chaos: when owned, a prompted Wild Magic Surge stores two native table rolls, waits for both Dice So Nice animations, and publishes both result cards with Select controls for the caster/GM. Choosing a result keeps that card, deletes only the matching unchosen card and removes both controls. Retain Tides until selection completes, preserve private audiences, refresh the exact result cards across clients, and make duplicate clicks, publication retries and selection cleanup idempotent.
+
+- Bend Luck: snapshot visible eligible Sorcerers when another creature's D20 card is created. Offer the native d4 as a bonus for failed player-controlled tests and a penalty for successful enemy tests; exclude opposite/unknown outcomes, self-use and natural attack 1/20. Spend one Sorcery Point plus the combat Reaction, preserve original dice/pools, show the signed result, and refund failed adjustments. Respect damage/effect Undo locks, targeted shared refreshes, GM/player authority and reactive automation stop/resume without movement-driven historical lookups.
+
+- Make Wild Magic table surges user-triggered: qualifying Tides casts and natural-20 surge checks create a Roll Wild Magic Surge button instead of automatically rolling the d100. Reserve each waiting Tides trigger to its source casting, retain the buff/spent use until resolution, and validate the owner/GM click before using the existing synchronized dice/result pipeline. Keep prompt creation idempotent and reject duplicate/unauthorized rolls.
+
+- Restore Tides of Chaos on attack-roll dialogs after other attacks have populated the prompt cache. Cache positioned dialogs by both roll kind and incoming base class, preserving per-roll feature extensions rather than replacing them with the first cached dialog. Use weak base-class keys and retain ordinary dialog reuse; cover warmed-cache Tides submission and return to normal attacks.
+
+- Finish Wild Magic d100 sequencing: wait for Dice So Nice's actual simultaneous-roll batch and animation queue, including when its immediate-chat setting resolves playback early. Play once per viewing client without DSN rebroadcast, require viewing-client completion acknowledgments before table publication, and preserve private/blind audiences, inactive-tab skipping, disconnect handling, cached-result retries and bounded failure cleanup.
+
 - Keep normal Wild Magic Surge checks available for slot-funded Sorcerer casts regardless of attack hit/miss or damage publication. Anchor the footer to the latest completed visible attack/save/damage result, ignoring empty pending-damage placeholders, and refresh that exact result on GM/player clients. Preserve once-per-turn limits and suppress checks for guaranteed Tides surges.
 
 - Suppress the normal Wild Magic Surge Check and Resolve Tides controls whenever that casting triggers a guaranteed Tides surge, including during animation and after completion. Revalidate check eligibility on the GM and refresh the exact displayed footer host so stale standalone damage-card buttons disappear.

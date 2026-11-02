@@ -1,6 +1,7 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ bendLuck:{setting:"bendLuckAutomation",types:["attack","save","check"],feature:"bend-luck",candidates:"bendLuckSnapshot"},
  wildMagic:{setting:"wildMagicAutomation",types:["usage"],feature:"wild-magic-surge",own:true},
  crownSpellfire:{setting:"crownSpellfireAutomation",types:["damage","usage","save"],feature:"crown-of-spellfire",incoming:true,own:true},
  bastion:{setting:"bastionLawAutomation",types:["damage"],effect:/^Bastion Shield\b/,incoming:true},
@@ -68,10 +69,11 @@ export async function flushChatRefresh(){
    const mounted=requests.length&&globalThis.document?.querySelectorAll?new Set(Array.from(document.querySelectorAll('[data-message-id]'),node=>node.dataset?.messageId).filter(Boolean)):null;
    if(requests.length)for(const card of Array.from(game.messages??[]).slice(-100)){
     if(mounted&&!mounted.has(card.id))continue;
-    if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))))cards.set(card.id,card);
+    if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))))cards.set(card.id,card);
    }
    const list=Array.from(cards.values());for(let index=0;index<list.length;index+=8){
-    await Promise.allSettled(list.slice(index,index+8).map(card=>Promise.resolve().then(()=>ui.chat?.updateMessage?.(game.messages?.get?.(card.id)??card))));
+    // Resolve again at render time: a queued Controlled Chaos/Undo card may have been deleted.
+    await Promise.allSettled(list.slice(index,index+8).map(card=>Promise.resolve().then(()=>{const current=game.messages?.get?.(card.id);if(current)return ui.chat?.updateMessage?.(current);})));
     if(index+8<list.length)await new Promise(resolve=>setTimeout(resolve,0));
    }
   }

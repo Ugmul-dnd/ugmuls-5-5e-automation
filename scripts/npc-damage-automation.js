@@ -95,6 +95,7 @@ export function automaticHitStillValid(message,tokenUuid){
  return target?.isMiss===false||target?.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)===true;
 }
 export async function applyAutomaticDamage(message) {
+    if(globalThis.Ugmuls55eAutomationBendLuck?.ready(message)===false)return;
     if(!authority()||!autoApplyHpEnabled(message)||running.has(message.id))return;
     const targets=await readyDamageTargets(message);if(!targets)return;
     running.add(message.id);appliedNow.set(message.id,new Set());appliedActorsNow.set(message.id,new Set());
@@ -195,6 +196,7 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationBendLuck?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(card)===false)return;
     if(!authority()||runningEffects.has(card.id)||isManual(card))return;

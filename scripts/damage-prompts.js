@@ -43,7 +43,11 @@ export function addDamageChoice(app, {key, label, value, disabled=false, used=fa
 export function configurePromptDialog(kind, dialog = {}) {
     const base = dialog.applicationClass ?? globalThis.CONFIG?.Dice?.[kind === "damage" ? "DamageRoll" : "D20Roll"]?.DefaultConfigurationDialog;
     if (!base) return dialog;
-    let PositionedDialog = dialogClasses.get(kind);
+    // Preserve per-roll extensions (such as Tides) instead of reusing a wrapper
+    // built from another actor's earlier dialog. Weak keys keep transient classes collectible.
+    let byBase = dialogClasses.get(kind);
+    if (!byBase) dialogClasses.set(kind, byBase = new WeakMap());
+    let PositionedDialog = byBase.get(base);
     if (!PositionedDialog) {
         PositionedDialog = class extends base {
             get rolls() {
@@ -281,7 +285,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 return super.close(options);
             }
         };
-        dialogClasses.set(kind, PositionedDialog);
+        byBase.set(base, PositionedDialog);
     }
     const saved = game.settings.get(MODULE_ID,"promptDialogPositions")?.[kind];
     const position = {top:null,left:null};
