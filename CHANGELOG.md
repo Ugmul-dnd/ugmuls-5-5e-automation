@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Add live target preview while manually placing or rotating spell/feature Regions. Reuse the casting target filters and native Region geometry, including enemy/ally/all-creature rules, healing eligibility and caster exclusions. Coalesce movement to one update per animation frame and skip unchanged target sets. Restore prior selection on completion/cancellation, cancel queued work and leave existing post-placement targeting/confirmation unchanged. Add a Targeting option to disable the preview.
+
+- Wizard: Make Signature gives each marked level-3 spell one use recovered on Short/Long Rest and a separate native Signature Cast/Use activity. The duplicate preserves targeting, damage, saves and effects, casts at base level, and consumes only the spell’s charge. Original activities keep normal slot casting/upcasting even after that charge is spent. Remove the casting-method dropdown, preserve native cancellation/refunds, migrate existing enchantments without recharging them, refresh duplicate activities on source edits, and remove generated activities when the enchantment ends.
+
+- Wizard: spells with a live native Mastered enchantment default Consume Spell Slot off at base level. Selecting an upcast level enables consumption; returning to base level disables it. Preserve native manual overrides, action/resource consumption and dialog behavior, skip follow-up/free-cast workflows, and withdraw an automatic waiver if the enchantment is removed during configuration.
+
+- Hide Retarget on native item-enchantment activity cards; inventory selection handles the recipient. Remove stale controls only from the enchantment face, preserving grouped attack controls, and reject direct retarget attempts for those cards.
+
+- Wizard: add Arcane Recovery slot selection to Short Rest when its native feature use is available. Share Natural Recovery’s live budget controls, limit recovery to expended level 1–5 slots within half Wizard level rounded up, and apply slots plus the feature use through the native bulk rest update. Cancel/no selection spends nothing; keep Wizard and Land Druid multiclass counters independent.
+
 - Wild Magic table results offer targeted Apply Effect and Undo controls for the caster/GM, including player application through GM authority. Add native conditions, +2 AC, all-damage resistance/vulnerability and piercing vulnerability; retain rules text as visible reminders for complex results. Preserve selected Controlled Chaos gating, source-specific Undo and cached poison duration.
 - Recurring Wild Magic adds a one-minute effect and one owner/GM surge prompt at turn start. Reuse synchronized d100/Controlled Chaos selection without changing Tides resources, ignore repeated recurrence results, and reject stale/expired prompts. Invisibility ends on an attack, successful spell use or applied damage without consuming newer buffs from old-card refreshes.
 

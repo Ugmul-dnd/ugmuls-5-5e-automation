@@ -1,0 +1,6 @@
+import {createRestSlotRecovery} from './natural-recovery.js';
+const ID='ugmuls-5-5e-automation';
+const recovery=createRestSlotRecovery({setting:'arcaneRecoveryAutomation',feature:'arcane-recovery',classId:'wizard',minimumLevel:1,activityId:'eSo3M84A3t6rwozM',activityName:'Recover',pool:'item',field:'rsaArcaneRecovery',label:'Arcane Recovery'});
+export const arcaneRecovery=recovery.context,validateArcaneRecovery=recovery.validate,arcaneRecoveryFields=recovery.fields,installArcaneRecoveryRest=recovery.install,prepareArcaneRecovery=recovery.prepare;
+Hooks.once('init',()=>game.settings.register(ID,'arcaneRecoveryAutomation',{name:'Wizard: Arcane Recovery',hint:'Choose expended level 1–5 spell slots during Short Rest, up to half your Wizard level rounded up. Uses the native once-per-Long-Rest feature counter; canceling or choosing no slots spends nothing.',scope:'world',config:true,type:Boolean,default:true}));
+Hooks.once('ready',()=>{installArcaneRecoveryRest(CONFIG.DND5E.restTypes?.short?.dialogClass);Hooks.on('dnd5e.preRestCompleted',(actor,result,config)=>{try{return prepareArcaneRecovery(actor,result,config);}catch(error){console.error('Arcane Recovery',error);ui.notifications.error(error.message);return false;}});});

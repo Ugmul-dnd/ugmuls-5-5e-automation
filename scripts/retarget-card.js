@@ -5,6 +5,8 @@ export function supportsRetarget(message) {
     if(globalThis.Ugmuls55eAutomationCavalcade?.isCard(message))return false; // Use its budget-preserving allocation editor.
     const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);if(landPart)return ['usage','healing'].includes(landPart);
     if (!["usage","attack"].includes(message?.type)) return false;
+    const activity=message.getAssociatedActivity?.();
+    if(activity?.type==="enchant")return false; // Native item selection handles enchantment recipients.
     if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(message.getAssociatedActivity?.()))return false;
@@ -96,6 +98,11 @@ export function addRetargetButton(message, html) {
     hideRemovedTargetSummaries(message, html);
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
     const container=html instanceof HTMLElement?html:html?.[0];
+    if(message?.type==='usage'&&message.getAssociatedActivity?.()?.type==='enchant'){
+        // Remove stale controls only from this face, preserving linked roll summaries.
+        for(const button of container?.querySelectorAll?.('[data-rsa-retarget]')??[]){const summary=button.closest?.('.card-summary[data-message-id]');if(summary&&summary!==container&&summary.dataset.messageId!==message.id)continue;const entry=button.closest?.('li');button.remove();if(entry&&!entry.children.length)entry.remove();}
+        return;
+    }
     if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)==='usage'){
         for(const summary of container?.querySelectorAll?.('.card-summary[data-message-id]')??[]){const card=game.messages.get(summary.dataset.messageId);if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(card)==='healing')addRetargetButton(card,summary);}
     }

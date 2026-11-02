@@ -8,7 +8,7 @@ Compatibility: Foundry VTT 14 and D&D5e 6.0.6. Release validation results are re
 Tests and build tooling are local-only and ignored by Git. Restore your local
 tooling before running the commands below if those folders are absent.
 
-1. Run available local regression checks (`node tests/<name>.test.mjs`), then `./tools/build-release.ps1`. Local tests/tools are ignored and excluded from the ZIP.
+1. Run relevant local checks with `node tools/run-tests.mjs --filter <feature>`, then the full suite and syntax/manifest/import checks with `node tools/run-tests.mjs --checks`. Fix failures before running `./tools/build-release.ps1`. Default concurrency is four isolated processes; use `--serial` to diagnose a failure. Local tests/tools are ignored and excluded from the ZIP. If they are absent, restore the local tooling before claiming release verification.
 2. Review and commit the prepared changes, complete your branch merge, and push the intended release revision.
 3. Create a GitHub release from main with the exact tag **v0.8.3** (lowercase v).
 4. Use the title **Ugmuls 5.5e Automation v0.8.3** and the contents of

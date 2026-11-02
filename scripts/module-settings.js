@@ -12,7 +12,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Rogue",keys:["sneakAttackAutomation","cunningStrikeAutomation","uncannyDodgeAutomation","assassinateAutomation","envenomWeaponsAutomation","deathStrikeAutomation","homingStrikesAutomation","rendMindAutomation","thiefsReflexesAutomation"]},
     {name:"Sorcerer",keys:["bendLuckAutomation","wildMagicAutomation","tidesSurgeSameSpell","crownSpellfireAutomation","umbralFormAutomation","beastsIllOmenAutomation","strengthGraveAutomation","clockworkCavalcadeAutomation","tranceOrderAutomation","bastionLawAutomation","restoreBalanceAutomation","warpingImplosionAutomation","revelationFleshAutomation","psionicSorceryAutomation","psychicDefensesAutomation","fontOfMagicAutomation","elementalAffinityDamageAutomation","sorcerousRestorationAutomation","innateSorceryAutomation","empoweredSpellAutomation","seekingSpellAutomation","transmutedSpellAutomation","heightenedSpellAutomation","carefulSpellAutomation","quickenedSpellAutomation","subtleSpellAutomation","distantSpellAutomation","extendedSpellAutomation","twinnedSpellAutomation"]},
     {name:"Warlock",keys:["eldritchSmiteAutomation","lifedrinkerAutomation","chainInvestmentAutomation","psychicSpellsAutomation","clairvoyantCombatantAutomation","thoughtShieldAutomation","createThrallAutomation","feyStepsAutomation","beguilingDefensesAutomation","radiantSoulAutomation","celestialResilienceAutomation","searingVengeanceAutomation","darkOnesBlessingAutomation","darkOnesOwnLuckAutomation","fiendishResilienceAutomation","semblanceOfLifeAutomation","formOfDreadAutomation","graveTouchedAutomation"]},
-    {name:"Wizard",keys:[]}
+    {name:"Wizard",keys:["arcaneRecoveryAutomation","spellMasteryAutomation","signatureSpellsAutomation"]}
 ];
 export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
@@ -24,7 +24,7 @@ export const AUTOMATION_GROUPS=[
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},
     {id:"regions",name:"Regions",icon:"fa-draw-polygon",keys:["promptForSaveOnRegionTriggers","regionPlacementControls","autoAttachSelfEmanations","cleanupTargetingRegions"]},
-    {id:"targeting",name:"Targeting",icon:"fa-bullseye",keys:["confirmAreaTargets","retargetActivityCards"]},
+    {id:"targeting",name:"Targeting",icon:"fa-bullseye",keys:["confirmAreaTargets","retargetActivityCards","previewRegionTargets"]},
     {id:"rolls",name:"Rolls & Damage / Healing",icon:"fa-dice",keys:["promptForSaveOnSpellCasts","promptConcentrationChecks","autoBreakConcentration","promptDamageOnSave","promptDamageOnHit","adjustSavingThrowAdvantage","adjustAttackRollAdvantage","adjustDamageCritical"]},
     {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["reactiveAutoApply","autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
     {id:"chat",name:"Chat & Sheets",icon:"fa-comments",keys:["simplifyAttackCards","scrollChatOnOpen","sheetAddCompendiumBrowser","sheetLoadUnpreparedSpells"]}
