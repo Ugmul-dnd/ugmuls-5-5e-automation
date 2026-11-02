@@ -12,9 +12,9 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 0.8.3
+## Version 0.8.4
 
-Expanded Warlock, Artificer and Druid support brings transformations, rest choices, companion actions and subclass features into native chat cards. Optional reactive automation pauses damage and effects when usable roll adjustments are available, while preserving manual Apply and Undo. See [0.8.3 release notes](RELEASE-NOTES-0.8.3.md) for highlights and updating instructions.
+Expanded Sorcerer support brings Metamagic choices, subclass actions and Wild Magic into native casting and chat cards. Wizards gain rest-based Arcane Recovery, Mastered spell defaults and separate per-spell Signature casts. Live Region previews show eligible targets before placement, while existing final targeting stays in place. See [0.8.4 release notes](RELEASE-NOTES-0.8.4.md) for highlights and updating instructions.
 
 ## Main features
 

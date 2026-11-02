@@ -155,7 +155,7 @@ import "./monster-auras.js";
 import {getRegionSpellTable,resolveRegionTriggerActivity,buildRegionDamageSpellData} from "./region-library.js";
 // ============================================================
 // Ugmuls 5.5e Automation
-// v0.8.3
+// v0.8.4
 // Foundry VTT v14 / D&D5e 6.0.5+ (tested with 6.0.6)
 //
 // Features:
@@ -191,7 +191,7 @@ const oncePerTurnHistory =
 
 
 console.log(
-    "Ugmuls 5.5e Automation | v0.8.3 JS loaded"
+    "Ugmuls 5.5e Automation | v0.8.4 JS loaded"
 );
 
 
@@ -1043,7 +1043,7 @@ Hooks.once("ready", () => {
         }).catch(err => console.error("Ugmuls 5.5e Automation | Confirmed target registration failed:", err));
     });
 
-    console.log("Ugmuls 5.5e Automation | Installing v0.8.3 Region hook");
+    console.log("Ugmuls 5.5e Automation | Installing v0.8.4 Region hook");
 
 
     // ========================================================
@@ -1636,7 +1636,7 @@ await globalThis.Ugmuls55eAutomation.handleRegionEvent({
         }
     });
     console.log(
-        "Ugmuls 5.5e Automation | v0.8.3 Ready"
+        "Ugmuls 5.5e Automation | v0.8.4 Ready"
     );
 });
 
