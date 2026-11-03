@@ -69,7 +69,7 @@ export function damageMissedAfterAttack(damage) {
     // A later miss must never conceal an HP/effect transaction that still
     // needs Undo. These flags are live, so Undo can hide the empty card again.
     if(damage.getFlag?.(MODULE_ID,"hpApplicationRecorded")||damage.getFlag?.(MODULE_ID,"damageUndoHistory")?.length||damage.getFlag?.(MODULE_ID,"effectUndoHistory")?.length)return false;
-    if(damage.getFlag?.(MODULE_ID,"masteryGraze")||globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(damage.getAssociatedActivity?.()))return false;
+    if(damage.getFlag?.(MODULE_ID,"masteryGraze")||(globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(damage.getAssociatedActivity?.())||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(damage.getAssociatedActivity?.())))return false;
     const origin=damage.system?.origin;
     const card=typeof origin === "string" ? game.messages.get(origin) : origin;
     if (!card&&!damage.getFlag?.(MODULE_ID,"damageAttackId")) return false;

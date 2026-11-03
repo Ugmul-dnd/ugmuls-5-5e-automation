@@ -2,7 +2,85 @@
 
 ## Unreleased
 
-No changes yet.
+- Fix Master Transmuter rolling back the Stone after publishing Panacea healing: native rollDamage returns dice rolls, so resolve the actual healing message through the usage card’s native linked-roll index. Complete healing/condition cleanup against that card, leaving a consumed Stone disabled and a slot-preserved Stone active. Add full action-flow regression coverage for both costs.
+
+- Fix Master Transmuter rejecting native healing cards whose target UUID field resolves to a Token document. Accept resolved token references as well as stored UUID strings, allowing healing/condition cleanup to complete and the consumed Stone to remain disabled; preserve the Stone when a level 7+ slot is used.
+
+- Transmuter: Master Transmuter uses the active Stone effect for Panacea, Restore Life and Restore Youth. Consume/disable the Stone or spend an available level 7+ slot to preserve it. Panacea heals half the target’s maximum HP and clears Poisoned/Petrified; Restore Youth clears Exhaustion; Restore Life uses native Raise Dead healing and resurrection penalties, recovering one penalty per Long Rest. Add the missing Restore Youth action, validate player requests on the active GM and refund canceled actions. Major Transformation, age changes and cursed items remain manual.
+
+- Fix Empowered Transmutation with Magic Weapon: native enchantment availability uses effective casting level while item.system.level remains the base spell level. Preserve the native filtered choices instead of rejecting them with a second base-level filter. Effective level 3 selects +2; effective level 6 selects +3, preserving selected slot cost.
+
+- Transmuter: Empowered Transmutation appears in eligible spell casting dialogs. Spend one native feature use and the selected level 1–8 slot while applying the next level’s native scaling. Fly opens editable target confirmation with the enhanced limit; Magic Weapon switches to the correct higher-level enchantment profile. Preserve normal slot/resource selections, concentration and canceled-cast refunds, including rebuilt Activity instances in the shared pending-cast workflow.
+
+- Transmuter: completing Long Rest prompts for Transmuter’s Stone benefits and creates one indefinite actor effect representing possession of the stone. Include native Constitution save proficiency plus one benefit, or up to two distinct benefits with Potent Stone, including different resistances. Reuse native changes, replace prior stone benefits, preserve cancellation and unequip native inventory stones to prevent duplicate transfer bonuses. Deleting the effect removes the stone and its benefits for later Master Transmuter integration.
+
+- Fix Extinguish Undead damage scaling being one Hit Die too high. The lookup/display were correct, but native @scaling adds one to the usage increase. Convert remaining HD to that native increase so 12 HD rolls 6d6 and 2 HD rolls 1d6, preserving odd-HD rounding and the minimum die.
+
+- Necromancer: Undead reduced to 0 HP offer Owned- Extinguish or Other - Extinguish actions. Owned triggers use no Reaction or slot; Other requires an available Reaction and a selected level 5+ ordinary/Pact slot, consumed through native casting. Snapshot remaining Hit Dice, preserve the native rounded-up half-HD damage formula/minimum, center the save/damage area on the dead token and mark failed-save Extinguished effects as blocking Reactions until target turn start. Guard repeated deaths, revival, Undo and duplicate corpse use; support player/GM casting, native cancellation/refunds and targeted resource refreshes.
+
+- Animate Dead now places one Skeleton/Zombie per casting placement or later Summon click, as requested for table-managed corpses and control. Preserve spell targeting, resource consumption, summon stats and native upcast/control capacity; other summoning spells are unchanged.
+
+- Compatibility: repair the malformed native Undead Thralls (Animate Dead) summon-profile override on the temporary casting copy. Preserve the official Skeleton/Zombie profile IDs, counts and HP/damage bonuses, and synchronize the summon dialog’s profile choices so placement does not fail with “Cannot find summoning profile.” Saved spells and installed content are unchanged.
+
+- Necromancer: Grave Power creates an Overwhelming Necrosis effect that lets Wizard spell/feature damage ignore Necrotic Resistance while preserving immunity and other damage types. Respect effect disabling and feature removal. Arcane Recovery’s Short Rest section notes Grave Resilience and reduces Exhaustion by 1 in the same native bulk recovery update; no selection/cancellation spends or recovers anything.
+
+- Necromancer: slot-funded Necromancy casts offer an Undead Vitality action to the owner/GM. Require exactly one currently targeted visible Undead within 60 feet, warning before invalid use. Run the native Wizard-level plus spent-slot-level healing with separate usage/target links and normal Apply/Undo; preserve original spell targets, prevent duplicate use, and validate player requests on the active GM.
+
+- Illusionist: Illusory Self appears on incoming hit cards for the wizard/GM while a charge and Reaction are available. Spend both to make that wizard’s target result automatically miss, including critical hits, preserving original dice and other targets. Keep the miss through AC refreshes and integrate reactive automation, grouped cards, GM validation, locks, shared refreshes and failure refunds. As requested, automatically recharge a spent use after any completed spell cast using a level 2+ slot, with an Illusory Self Recharged note on the cast card.
+
+- Enchanter: Split Enchantment automatically adds one creature to qualifying Enchantment spells that gain targets when upcast. Stack the extra target with normal spell-slot scaling, without spending a feature charge or a higher/additional slot. Modify only the temporary cast’s target formula; preserve concentration, damage scaling and source spell data.
+
+- Enchanter: a completed, slot-funded Enchantment spell restores spent Instinctive Charm and adds “Instinctive Charm Recharged” to that cast card. Ignore free, pending and recurring casts; handle ordinary/Pact slots once per cast, avoid retroactive recharge from old cards and leave the wizard’s Reaction spent.
+
+- Fix Instinctive Charm Retarget presentation for player clients viewing enemy attacks as grouped inline summaries. Render the existing scoped Retarget control on the correct attack face and refresh that attack/parent when the authoritative save state changes. Unrelated players retain no Retarget permission.
+
+- Enchanter: Instinctive Charm appears on qualifying single-target hit cards for the wizard/GM when a charge and Reaction are available. Spend both, prompt the attacker’s native Wisdom save and, on failure, mark the original target missed and grant the wizard scoped Retarget access. Choose one other creature within the attack’s range; preserve original attack dice and linked-card targeting. Snapshot eligibility on creation, respect damage/effect locks and integrate reactive auto-apply stops/resumption, shared refresh batching, GM validation and failure refunds.
+
+- Fix Hypnotic Presence range expiry after player movement. Check native movement completion as well as coordinate updates, measure saved token positions instead of animated coordinates, and route owned player movement to the active GM for authoritative range validation and cleanup.
+
+- Enchanter: Hypnotic Presence ends when the target takes damage or movement puts the caster and target more than 10 feet apart. Track the source/target tokens, recover existing native effects and use a targeted movement index with active-GM expiration. Preserve unrelated effects, native saves/duration and manual visibility/hearing decisions.
+
+- Fix Third Eye rest cleanup for native activity-origin and copied-effect UUIDs. Recognize Darkvision, Greater Comprehension and See Invisibility applied from Third Eye, including existing buffs, and preserve Short/Long Rest expiry when reapplying them.
+
+- Diviner: applied Third Eye benefits expire on Short or Long Rest, including previously applied buffs. Preserve manual Bonus Action activation, source-item effect templates and unrelated See Invisibility spells.
+
+- Diviner: Long Rest clears previous Portent reminders and posts a private Roll Portent button for the owner and GM. Click to roll two d20s, or three with Greater Portent, then record each result as a separate Portent effect after dice animation. Disable/delete results when used at the table; no automatic D20 Test changes. Reject stale prompts and prevent duplicate rolls/effects.
+
+- All native concentration-based summons now link their placed tokens to the cast’s concentration, across classes and both immediate/later Summon placement. Ending or disabling concentration removes only that cast’s summons, with active-GM cleanup and per-scene deletion batches. Preserve non-concentration summons and existing Splintered Summons handling; reject stale Summon buttons after concentration ends. New placements only; no retroactive scene/chat scans.
+
+- Fix Splintered Summons interrupting the cast with a concentration error. Reprepare the temporary spell item after adding feature consumption so native inherited concentration remains available.
+
+- Conjurer: Splintered Summons adds a checkbox to eligible summon casting dialogs. Spend one native feature use with the spell slot, place two matching spirits, halve their scaled current/max HP and remove both when concentration ends. Keep Durable Summons temporary HP at full strength; canceled or incomplete placement refunds the cast and removes partial summons.
+
+- Conjurer: Focused Conjuration suppresses damage concentration prompts for the character’s Conjuration spells. In mixed concentration checks, keep other schools eligible and exclude protected spells from automatic failure cleanup. Use the concentration effect’s native spell/source links; preserve manual concentration rolls and ordinary concentration ending.
+
+- Conjurer: Durable Summons automatically grants its native temporary HP and conditional resistance effect to creatures placed by slot-funded Conjuration spells. Apply per-token ActorDelta changes during summoning, preserving higher temporary HP, existing scaling/effects, source actors and concentration links. Support both immediate placement and later Summon chat actions with isolated source-card context; exclude slot-free casts and spell-area markers.
+
+- Bladesong compatibility: keep the native actor buff and all its bonuses, but prevent the redundant Heroes of Faerûn weapon-enchantment loop when this module handles Intelligence weapons. This avoids its deprecated numeric-effect API call and repeated weapon-effect scrolling text. Silently remove only old generated Bladework enchantments on the affected actor; preserve custom enchantments and normalize legacy buff reactivation/Undo without editing the official module.
+
+- Song of Defense now records eligible recipients, active Bladesong, available slots/Reaction and the combat turn when the damage card is created. Empty snapshots and older cards remain ineligible after later buff activations or reaction resets. Revalidate current resources and active Bladesong on use, retain existing reductions/Undo, and restrict resource-driven refreshes to snapshot candidates.
+
+- Bladesong eligibility now requires an active actor-applied buff. An enabled effect template on the feature can no longer enable Intelligence weapon overrides or Song of Defense while the actor’s Bladesong is inactive. Recheck the same condition on the GM before spending a spell slot or Reaction.
+
+- Bladesinger: Song of Defense appears as an incoming damage-card Reaction during Bladesong. Its spell-slot dropdown shows level, remaining slots and native damage reduction, including Pact slots. Confirm spends one slot and Reaction, then uses the existing recipient-specific reduction breakdown without rerolling shared damage. Integrate reactive automation, HP Undo, cancellation, stale-state validation, duplicate-click protection and failure refunds.
+
+- Bladesinger: active Bladesong uses Intelligence for proficient weapon attacks and damage, including cached Strength/Dexterity attack selections, without editing weapon source data or adding enchantments. Arcane Recovery includes Restore Bladesong Yes/No inside its Short Rest section. Default to Yes when selecting spell slots, preserve an explicit No, and allow recovering only one Bladesong use when no slots need recovery. Either selection consumes the same native Arcane Recovery use; keep bulk updates, cancellation, full-pool and repeated-preparation safeguards.
+
+- Abjurer: Spell Resistance recommends Advantage against spells through AC5E or the native save configuration with normal cancellation. Apply native resistance to spell damage per recipient, stacking with a successful half-damage save for quarter damage without doubling existing resistance. Label qualifying save rows and damage cards, preserve immunity/vulnerability/rounding/Undo, and exclude magical abilities that are not spells.
+
+- Automatic effects now stop for GM resolution when an affected NPC has Legendary Resistance remaining or multiple applicable effects require a choice. Failed-save Legendary Resistance decisions also stop linked automatic damage before HP changes. Keep native manual Apply/Undo controls, leave effect-choice buffs and damage-linked effects manual, and show a GM reminder without polling or automatically resuming when resources change.
+
+- Abjurer: Projected Ward adds an incoming damage-card Reaction for a visible friendly creature within 30 feet. Use compact Project Ward buttons with ward HP; hover for caster and recipient names. Reuse the caster’s Arcane Ward after the recipient’s mitigation; only overflow reaches their temporary/normal HP. Keep shared rolls and other recipients unchanged, preserve both wards when the recipient has their own, route foreign ward spending through the GM, and restore ward resources with damage Undo. Integrate with reactive auto-apply and the shared chat-refresh queue.
+
+- Abjurer: Arcane Ward uses the native HP tracker and Create Ward activity. A completed, slot-funded Abjuration cast offers a clickable creation reminder while the daily use remains; later casts restore twice the slot level and report actual ward HP restored. Applied damage drains ward HP after mitigation and before temporary/normal HP. Damage Undo restores the ward and HP together, including fully absorbed hits; previews and canceled casts spend nothing. Keep existing manual ward activities and protect later Long Rest resets from stale reminders/Undo.
+
+- Evoker: Overchannel moves into spell damage configuration, showing the free first use or escalating Necrotic backlash formula. A single activation maximizes the spell’s own dice across all rays on the casting turn, without maximizing Hex, Minor Elementals, other riders or extra bonus formulas. Track total activations with the native uses-spent counter and Long Rest recovery; preserve canceled/failed-roll rollback. Backlash uses a self-targeted native damage card, ignores Necrotic Resistance/Immunity and retains Apply/Undo.
+
+- Evoker: Empowered Evocation adds Intelligence to one chosen initial damage roll per Wizard Evocation spell cast, with a default-Yes damage configuration choice. Later rays and recurring region/effect damage receive no second bonus. Preserve original dice, damage type, critical handling and rollback on canceled/failed rolls.
+
+- Evoker: Potent Cantrip prompts damage even when a cantrip attack misses, applying full damage on hits and half on misses. Damaging cantrip saves deal full damage on failure and half on success. Successful saves and missed attacks do not apply additional effects; reaction corrections, native resistance handling, manual multipliers and Undo remain available.
+
+- Evoker: Sculpt Spells adds friendly protection choices to target confirmation for qualifying Evocation save areas. Select up to 1 + casting level visible friendly creatures other than the caster; confirmed protected creatures are excluded from that cast’s saves, damage and effects. Keep other targets and existing Metamagic/confirmation workflows, reject stale or oversized selections, and complete casts with no remaining targets without leaving a pending card.
 
 ## v0.8.4 — Sorcerers, Wizard Casting & Region Preview (2026-11-02)
 

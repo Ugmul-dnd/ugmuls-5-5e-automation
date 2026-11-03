@@ -82,7 +82,7 @@ export async function readyDamageTargets(message) {
     }
     if(activity?.type==="attack"&&!isHealingCard(message)) {
         const attack=attackForDamage(message);if(!attack)return null;
-        const hits=new Set((attack.system.evaluatedTargets??[]).filter(target=>target.isMiss===false||target.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)).map(target=>target.token));
+        const hits=new Set((attack.system.evaluatedTargets??[]).filter(target=>target.isMiss===false||target.isMiss===true&&(globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity))).map(target=>target.token));
         return remaining(targets.filter(target=>hits.has(target.token)));
     }
     return remaining(targets);
@@ -92,12 +92,13 @@ export function automaticHitStillValid(message,tokenUuid){
  if(message.getFlag?.(MODULE_ID,'masteryGraze')){const attack=attackForDamage(message);return !message.getFlag(MODULE_ID,'masteryGrazeUndone')&&attack?.system?.evaluatedTargets?.some(t=>t.token===tokenUuid&&t.isMiss===true)===true;}
  const activity=message.getAssociatedActivity?.();if(activity?.type!=='attack'&&!message.getFlag?.(MODULE_ID,'damageAttackId'))return true;
  const attack=attackForDamage(message);if(!attack)return false;const target=(attack.system?.evaluatedTargets??[]).find(t=>t.token===tokenUuid);
- return target?.isMiss===false||target?.isMiss===true&&globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)===true;
+ return target?.isMiss===false||target?.isMiss===true&&(globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity))===true;
 }
 export async function applyAutomaticDamage(message) {
     if(globalThis.Ugmuls55eAutomationBendLuck?.ready(message)===false)return;
     if(!authority()||!autoApplyHpEnabled(message)||running.has(message.id))return;
     const targets=await readyDamageTargets(message);if(!targets)return;
+    if(await globalThis.Ugmuls55eAutomationEffectPolicy?.saveDecision(message,targets))return;
     running.add(message.id);appliedNow.set(message.id,new Set());appliedActorsNow.set(message.id,new Set());
     let holder;
     try {
@@ -130,6 +131,7 @@ export async function applyAutomaticDamage(message) {
         // Claim before applying so rerenders/save updates cannot apply twice.
         await message.setFlag(MODULE_ID,"automaticDamageDone",true);
         if(isManual(message)||await globalThis.Ugmuls55eAutomationReactive?.stop(message))return;
+        if(await globalThis.Ugmuls55eAutomationEffectPolicy?.saveDecision(message,targets))return;
         const commitTargets=await readyDamageTargets(message);if(!commitTargets||commitTargets.map(t=>t.token).join()!==targets.map(t=>t.token).join())return;
         console.log(`Ugmuls 5.5e Automation | Applying automatic ${isHealingCard(message)?"healing":"damage"}`,{card:message.id,targets:targets.length});
         await tray._onApplyDamage({preventDefault(){}});
@@ -203,6 +205,7 @@ export async function applyOutcomeEffects(card) {
     const usage=card.type==="usage"?card:originOf(card);
     if(!usage||usage.getFlag?.(MODULE_ID,"targetsConfirmationPending")||usage.getFlag?.(MODULE_ID,"targetsConfirmationCanceled"))return;
     if(await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
+    if(usage.getFlag?.(MODULE_ID,'manualEffectDecision')||await globalThis.Ugmuls55eAutomationEffectPolicy?.saveDecision(usage))return;
     if(globalThis.Ugmuls55eAutomationBeguiling?.isCard?.(usage))return globalThis.Ugmuls55eAutomationBeguiling.applySavedChoice(usage);
     if(usage.getFlag?.(MODULE_ID,"smiteSave"))return globalThis.Ugmuls55eAutomationSmite?.resolveSmiteSave(usage);
     if(usage.getFlag?.(MODULE_ID,"grappleStrike"))return globalThis.Ugmuls55eAutomationGrapple?.applyGrappleOutcome(usage);
@@ -248,9 +251,11 @@ export async function applyOutcomeEffects(card) {
         if(typeof tray._applyEffectToActor!=="function")throw Error("Native effect application is unavailable.");
         for(const {descriptor,actor} of targets) {
             if(!saving&&!hits.has(descriptor.token))continue;
+            const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,actor,saving?usage.system.outcomes.get(descriptor.token):null);
+            if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(card,decision);return;}
             for(const effect of effects) {
                 const profile=activity.effects?.find(profile=>profile.uuid===effect.uuid||profile._id===effect.id);
-                if(saving&&usage.system.outcomes.get(descriptor.token)==="success"&&profile?.onSave!==true)continue;
+                if(saving&&usage.system.outcomes.get(descriptor.token)==="success"&&(profile?.onSave!==true||globalThis.Ugmuls55eAutomationPotentCantrip?.eligible(activity)))continue;
                 const key=JSON.stringify([descriptor.token,effect.uuid]);
                 if(ledger.has(key))continue;
                 if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;

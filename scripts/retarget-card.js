@@ -2,6 +2,9 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
+    // A scoped Charm grant allows redirecting the actual enemy attack even
+    // when its source item is not accessible to the wizard client.
+    if(message?.type==="attack"&&globalThis.Ugmuls55eAutomationInstinctiveCharm?.canRetarget(message,globalThis.game?.user))return true;
     if(globalThis.Ugmuls55eAutomationCavalcade?.isCard(message))return false; // Use its budget-preserving allocation editor.
     const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);if(landPart)return ['usage','healing'].includes(landPart);
     if (!["usage","attack"].includes(message?.type)) return false;
@@ -20,6 +23,7 @@ export function supportsRetarget(message) {
 
 const RETARGET_ID="ugmuls-5-5e-automation";
 export function canRetargetCard(message,user=game.user){
+ if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.canRetarget(message,user))return true;
  if(user?.isGM||message?.isOwner&&user?.id===game.user.id)return true;
  if(message?.isContentVisible===false||message?.type!=="usage"||!message.getFlag?.(RETARGET_ID,"epitomeStrideDamage"))return false;
  const actor=message.getAssociatedActor?.()??message.getAssociatedActivity?.()?.actor;
@@ -41,6 +45,7 @@ export async function receiveStrideRetarget(packet){
 export async function retargetSpellCard(message, targets = game.user.targets) {
     if (!game.settings.get("ugmuls-5-5e-automation", "retargetActivityCards")) return;
     if (!supportsRetarget(message) || !canRetargetCard(message) || pendingCards.has(message)) return;
+    if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.intercept(message))return globalThis.Ugmuls55eAutomationInstinctiveCharm.retarget(message,targets);
     if(globalThis.Ugmuls55eAutomationLandsAid?.part?.(message)){pendingCards.add(message);try{return await globalThis.Ugmuls55eAutomationLandsAid.retarget(message,targets);}finally{pendingCards.delete(message);}}
     const descriptors = [...new Map(Array.from(targets).filter(isHealingCard(message)?isEligibleHealingTarget:isEligibleTarget).map(target => {
         const token = target.document ?? target;

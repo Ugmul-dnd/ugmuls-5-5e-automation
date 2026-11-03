@@ -32,7 +32,7 @@ export function eligibleBuffActivity(activity) {
 
 export async function applyBuffEffects(message) {
     if (game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true || !message?.id || completed.has(message.id) || pending.has(message.id)) return;
-    if(message.getFlag?.(MODULE_ID,"manualDamageWorkflow"))return;
+    if(message.getFlag?.(MODULE_ID,"manualDamageWorkflow")||message.getFlag?.(MODULE_ID,"manualEffectDecision"))return;
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     const activity=message.getAssociatedActivity?.({scaled:true});
     if (!eligibleBuffActivity(activity)) return;
@@ -40,6 +40,7 @@ export async function applyBuffEffects(message) {
     if(healingBuff&&!Array.from(message.getAssociatedRolls?.("healing")??[]).some(card=>card.rolls?.length&&!card.getFlag?.(MODULE_ID,"pendingDamage")))return;
     const effects=(await activity.getApplicableEffects?.() ?? []).filter(effect=>!regionManagesCardEffect(activity,effect));
     if (!effects.length) return;
+    const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,null);if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(message,decision);return;}
     const caster=message.getAssociatedActor?.();
     const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity);
     if((mark||inspire)&&message.system.targets?.length!==1)return;

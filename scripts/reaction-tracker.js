@@ -21,6 +21,8 @@ function manualActivity(activity,message) {
     return !cleaveMessage(message)&&["spell","weapon","feat"].includes(activity?.item?.type)&&!message?.data?.flags?.[ID]?.regionTriggered&&!message?.data?.flags?.[ID]?.riderTriggered;
 }
 export function reactionActivity(activity) {
+    // Exploding an undead under the wizard's control is explicitly free of a Reaction.
+    if((activity?.item?.identifier??activity?.item?.system?.identifier)==='rsa-extinguish-undead'&&activity.item.flags?.[ID]?.extinguishUndead?.owned===true)return false;
     // Searing Vengeance is a no-action rescue, even on another creature’s turn.
     if(activity?.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="searing-vengeance")return false;
     const actor=activity?.actor??activity?.item?.actor;

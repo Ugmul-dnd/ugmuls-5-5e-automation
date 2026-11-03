@@ -73,6 +73,7 @@ import "./wild-magic.js";
 import "./tamed-surge.js";
 import "./wild-surge-effects.js";
 import "./bend-luck.js";
+import "./sculpt-spells.js";
 import "./hunters-rime.js";
 import "./biting-cold.js";
 import "./frigid-explorer.js";

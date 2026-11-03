@@ -1,6 +1,13 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ extinguishUndead:{setting:"extinguishUndeadAutomation",types:["base"],feature:"deaths-master",candidates:"extinguishSnapshot"},
+ illusorySelf:{setting:"illusorySelfAutomation",types:["attack"],feature:"illusory-self",candidates:"illusorySelfSnapshot"},
+ instinctiveCharm:{setting:"instinctiveCharmAutomation",types:["attack"],feature:"instinctive-charm",candidates:"instinctiveCharmSnapshot"},
+ songDefense:{setting:'songDefenseAutomation',types:['damage'],feature:'song-of-defense',candidates:'songDefenseSnapshot'},
+ spellResistance:{setting:'spellResistanceAutomation',types:['usage','save','damage'],feature:'spell-resistance',own:true,incoming:true},
+ projectedWard:{setting:'projectedWardAutomation',types:['damage'],feature:'projected-ward',all:true},
+ arcaneWard:{setting:'arcaneWardAutomation',types:['usage','base'],feature:'arcane-ward',own:true},
  bendLuck:{setting:"bendLuckAutomation",types:["attack","save","check"],feature:"bend-luck",candidates:"bendLuckSnapshot"},
  wildMagic:{setting:"wildMagicAutomation",types:["usage"],feature:"wild-magic-surge",own:true},
  crownSpellfire:{setting:"crownSpellfireAutomation",types:["damage","usage","save"],feature:"crown-of-spellfire",incoming:true,own:true},

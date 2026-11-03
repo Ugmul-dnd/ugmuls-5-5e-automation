@@ -23,7 +23,7 @@ export function fieldCandidates(card,user=game.user){
   }
  }return entries;
 }
-export function fieldReduction(card,actor,uuid){return values(card?.getFlag?.(ID,"protectiveFields")).filter(r=>r.targetActor===actor?.uuid&&(!uuid||r.target===uuid)).reduce((n,r)=>n+((r.kind==="deflect"||["bastion","burningLife"].includes(r.kind))?Math.max(0,Number(r.total)||0):Math.max(1,Number(r.total)||1)),0);}
+export function fieldReduction(card,actor,uuid){return values(card?.getFlag?.(ID,"protectiveFields")).filter(r=>r.targetActor===actor?.uuid&&(!uuid||r.target===uuid)).reduce((n,r)=>n+((r.kind==="deflect"||["bastion","burningLife","songDefense"].includes(r.kind))?Math.max(0,Number(r.total)||0):Math.max(1,Number(r.total)||1)),0);}
 export function reduceFieldDamage(actor,damages,options={}){
  const ref=options.originatingMessage??options.origin,card=typeof ref==='string'?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
  if(!card||options.rsaUndoDamage||Number(options.multiplier??1)<=0)return;
@@ -60,7 +60,7 @@ export function installFieldDamage(Type=globalThis.customElements?.get('damage-a
 function report(error){console.error('Protective Field',error);ui.notifications.error(error.message);}
 export function fieldBreakdown(card){
  const total=(card?.rolls??[]).reduce((sum,roll)=>['healing','temphp','maximum'].includes(roll.options?.type)?sum:sum+Math.max(0,Number(roll.total)||0),0),groups=new Map();
- for(const record of card?.getFlag?.(ID,'protectiveFields')??[]){const key=record.target+":"+(record.label??"Protective Field");let group=groups.get(key);if(!group)groups.set(key,group={target:record.target,name:record.targetName,reduction:0,...(record.label?{label:record.label}:{})});group.reduction+=(record.kind==="deflect"||["bastion","burningLife"].includes(record.kind))?Math.max(0,Number(record.total)||0):Math.max(1,Number(record.total)||1);}
+ for(const record of card?.getFlag?.(ID,'protectiveFields')??[]){const key=record.target+":"+(record.label??"Protective Field");let group=groups.get(key);if(!group)groups.set(key,group={target:record.target,name:record.targetName,reduction:0,...(record.label?{label:record.label}:{})});group.reduction+=(record.kind==="deflect"||["bastion","burningLife","songDefense"].includes(record.kind))?Math.max(0,Number(record.total)||0):Math.max(1,Number(record.total)||1);}
  const remaining=new Map();return Array.from(groups.values(),g=>{const left=remaining.get(g.target)??total,reduction=Math.min(left,g.reduction);remaining.set(g.target,left-reduction);return {...g,reduction};});
 }
 export function fieldDisplayTotal(card,total){
@@ -92,7 +92,7 @@ export function renderFieldBreakdown(card,node){
 }
 export function renderField(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;const entries=[{card:message,node:root},...Array.from(root.querySelectorAll('.card-summary[data-message-id]'),node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
- for(const {card,node}of entries){renderFieldTotal(card,node);renderFieldBreakdown(card,node);node.querySelectorAll(':scope > .rsa-protective-field').forEach(n=>n.remove());if(card.isContentVisible===false)continue;const candidates=fieldCandidates(card),records=(card.getFlag?.(ID,'protectiveFields')??[]).filter(r=>r.kind!=="deflect"&&r.kind!=="bastion"&&r.kind!=="burningLife");if(!candidates.length&&!records.length)continue;
+ for(const {card,node}of entries){renderFieldTotal(card,node);renderFieldBreakdown(card,node);node.querySelectorAll(':scope > .rsa-protective-field').forEach(n=>n.remove());if(card.isContentVisible===false)continue;const candidates=fieldCandidates(card),records=(card.getFlag?.(ID,'protectiveFields')??[]).filter(r=>r.kind!=="deflect"&&r.kind!=="bastion"&&r.kind!=="burningLife"&&r.kind!=="songDefense");if(!candidates.length&&!records.length)continue;
  const controls=document.createElement('div');controls.className='rsa-attack-actions rsa-protective-field';for(const c of candidates){const button=document.createElement('button');button.type='button';button.textContent='Protective Field';button.dataset.tooltip=c.actor.name+' → '+c.target.name;button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit('module.'+ID,{action:'protectiveField',card:card.id,actor:c.actor.uuid,target:c.target.uuid,user:game.user.id,gm:gm.id});else await applyField(card,c.actor.uuid,c.target.uuid);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
  for(const r of records){const note=document.createElement('span');note.textContent='Protective Field: −'+r.total+' to '+r.targetName+' ('+r.name+')';controls.append(note);}node.append(controls);
  }

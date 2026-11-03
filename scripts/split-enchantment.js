@@ -1,0 +1,11 @@
+const ID='ugmuls-5-5e-automation';
+const values=v=>Array.from(v?.values?.()??v??[]),enabled=()=>game.settings.get(ID,'splitEnchantmentAutomation')===true;
+export const splitEnchantmentFeature=actor=>values(actor?.items).find(i=>i.type==='feat'&&(i.identifier??i.system?.identifier)==='split-enchantment'&&i.system?.source?.rules!=='2014');
+export function splitEnchantmentTarget(activity){const item=activity?.item;if(!enabled()||item?.type!=='spell'||item.system?.school!=='enc'||Number(item.system.level)<1||!splitEnchantmentFeature(activity.actor??item.actor)||activity.target?.template?.type||!['creature','humanoid','enemy','ally'].includes(activity.target?.affects?.type))return null;const data=item.toObject(),a=data.system.activities[activity.id],target=a?.target?.override?a.target:data.system.target,formula=target?.affects?.count;if(typeof formula!=='string'||!/@(?:item\.level|scaling)\b/.test(formula)||!(Number(activity.target.affects.count)>0))return null;return {data,target,formula};}
+export function prepareSplitEnchantment(activity,usage,dialog,message){if(usage.cause?.activity||activity.item?.flags?.[ID]?.splitEnchantmentApplied)return;const context=splitEnchantmentTarget(activity);if(!context)return;const {data,target,formula}=context;target.affects.count='('+formula+') + 1';data.flags??={};data.flags[ID]={...data.flags[ID],splitEnchantmentApplied:true};
+ // Native use supplies a private spell Item. Add only to its target formula:
+ // normal slot scaling remains native and no resource/slot consumption changes.
+ activity.item.updateSource(data);activity.item.prepareFinalAttributes();message.data??={};message.data.flags??={};message.data.flags[ID]={...message.data.flags[ID],splitEnchantment:true,activityOverrideData:data};message.data.flags.dnd5e={...message.data.flags.dnd5e,item:{...message.data.flags.dnd5e?.item,data}};
+}
+Hooks.once('init',()=>game.settings.register(ID,'splitEnchantmentAutomation',{name:'Enchanter: Split Enchantment',hint:'Automatically allow one extra creature for Enchantment spells whose target count increases with casting level. Stack with normal upcasting without spending a feature charge or an additional/higher-level spell slot.',scope:'world',config:true,type:Boolean,default:true}));
+Hooks.once('ready',()=>Hooks.on('dnd5e.preUseActivity',prepareSplitEnchantment));

@@ -147,7 +147,7 @@ export async function manualSaveEffectAllowed(message,effect,actor){
         const token=target.token?await fromUuid(target.token):null;
         if(token?.actor?.uuid===actor.uuid||target.actor===actor.uuid)outcomes.push(message.system.outcomes?.get(target.token));
     }
-    if(outcomes.some(outcome=>outcome==="failure"||outcome==="success"&&profile?.onSave===true))return {allowed:true};
+    if(outcomes.some(outcome=>outcome==="failure"||outcome==="success"&&profile?.onSave===true&&!globalThis.Ugmuls55eAutomationPotentCantrip?.eligible(activity)))return {allowed:true};
     if(outcomes.some(outcome=>!["success","failure"].includes(outcome)))return {allowed:false,reason:"Saving throw is still pending. Complete the save before applying this effect."};
     return {allowed:false,reason:outcomes.length?"Saving throw succeeded; this effect only applies on a failed save.":"This creature is not a recorded target of this save. Use Retarget before applying its effect."};
 }
@@ -198,7 +198,7 @@ export function damageUndoRecord(actor,options) {
     const changes=hpKeys.map(key=>({key,before:options.rsaUndoBefore[key],after:Number(actor.system.attributes.hp[key]??0)}))
         .filter(change=>Number.isFinite(change.before)&&Number.isFinite(change.after)&&change.before!==change.after);
     const guardianDamageAmount=options.rsaGuardianDamageAmount;
-    return changes.length||guardianDamageAmount>0?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(options.rsaStrengthGrave?{strengthGrave:{...options.rsaStrengthGrave}}:{}),...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
+    return changes.length||guardianDamageAmount>0||options.rsaArcaneWard?{id:foundry.utils.randomID(),actorUuid:actor.uuid,changes,...(options.rsaArcaneWard?{arcaneWard:{...options.rsaArcaneWard}}:{}),...(options.rsaStrengthGrave?{strengthGrave:{...options.rsaStrengthGrave}}:{}),...(guardianDamageAmount!=null?{guardianDamageAmount}:{})}:null;
 }
 export function captureAppliedHpUndo(actor,options) {
     const record=damageUndoRecord(actor,options);
@@ -255,6 +255,7 @@ async function storeRecord(message,record,user) {
     const actor=await fromUuid(record.actorUuid);
     if(!actor?.system?.attributes?.hp||(!user.isGM&&!actor.testUserPermission(user,"OWNER")))return;
     if(!Array.isArray(record.changes)||record.changes.some(change=>!hpKeys.includes(change.key)||!Number.isFinite(change.before)||!Number.isFinite(change.after)))return;
+    if(record.arcaneWard&&!globalThis.Ugmuls55eAutomationArcaneWard?.validUndo(record,actor))return;
     const records=history(message);
     if(records.some(entry=>entry.id===record.id))return;
     await message.setFlag(MODULE_ID,"damageUndoHistory",[...records,record]);
@@ -270,6 +271,7 @@ export async function undoCardDamage(message) {
     for(const record of [...records].reverse()) {
         const actor=await fromUuid(record.actorUuid);
         if(!actor){ui.notifications.warn("Cannot undo damage for an unavailable actor.");continue;}
+        await globalThis.Ugmuls55eAutomationArcaneWard?.undo(record,actor);
         const updates={};
         for(const change of record.changes) {
             const current=Number(actor.system.attributes.hp[change.key]??0);
@@ -355,7 +357,8 @@ Hooks.once("ready",()=>{
         hpPrototype.rsaHpUndoApplications=true;
     }
     Hooks.on("dnd5e.preApplyDamage",captureDamageUndo);
-    Hooks.on("dnd5e.applyDamage",(actor,amount,options)=>{
+    Hooks.on("dnd5e.applyDamage",async (actor,amount,options)=>{
+        if(options.rsaArcaneWardSettlement&&await options.rsaArcaneWardSettlement!==true)return;
         const message=hpApplicationMessage(options);
         const record=captureAppliedHpUndo(actor,options);if(!record||!isDamageOrHealingCard(message))return;
         const gm=game.users.activeGM;

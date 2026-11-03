@@ -38,7 +38,7 @@ export function reapplyHitEffects(card,user=game.user,{actorUuids=null}={}){retu
 export function applyDamageLinkedEffects(card,actorUuids){return enqueue(async()=>{
  if(!authority()||card?.type!=='damage')return 0;
  const candidates=effectUndoSources(card),attack=candidates.find(c=>c.type==='attack'),usage=attack?origin(attack):origin(card),activity=(attack??usage)?.getAssociatedActivity?.({scaled:true});
- if(!usage||!['attack','save'].includes(activity?.type))return 0;
+ if(!usage||!['attack','save'].includes(activity?.type)||flag(usage,'manualEffectDecision'))return 0;
  const saving=activity.type==='save',source=attack??card,allowed=new Set(actorUuids),hits=new Set((attack?.system?.evaluatedTargets??[]).filter(t=>t.isMiss===false).map(t=>t.token)),effects=(await activity.getApplicableEffects?.()??[]).filter(e=>!regionManagesCardEffect(activity,e));
  if(!effects.length)return 0;const tray=document.createElement('effect-application');tray.chatMessage=usage;if(typeof tray._applyEffectToActor!=='function')throw Error('Native effect application is unavailable.');
  const ledger=new Set(flag(attack,'automaticEffectApplications')??[]),plan=[];let applied=0,pending=false,eligible=false;
@@ -46,6 +46,7 @@ export function applyDamageLinkedEffects(card,actorUuids){return enqueue(async()
   if(!saving&&!hits.has(target.token))continue;
   const outcome=saving?usage.system?.outcomes?.get(target.token):null;if(saving&&!['success','failure'].includes(outcome)){pending=true;continue;}
   const token=await fromUuid(target.token,{strict:false}),actor=token?.actor;if(!actor||target.actor&&actor.uuid!==target.actor)continue;
+  const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,actor,outcome);if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(card,decision);pending=true;continue;}
   for(const effect of effects){
    const profile=activity.effects?.find(p=>p.uuid===effect.uuid||p._id===effect.id);if(saving&&outcome==='success'&&profile?.onSave!==true)continue;
    if(hasEquivalentActiveEffect(actor,effect)||regionOwnsEffect(token,effect)){eligible=true;continue;}

@@ -53,7 +53,8 @@ export function configurePromptDialog(kind, dialog = {}) {
             get rolls() {
                 const rolls=super.rolls;
                 if(!this._rsaPreview)return rolls;
-                const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
+                const overchannel=globalThis.Ugmuls55eAutomationOverchannel?.finalizeOverchannel(this,rolls,{preview:this._rsaPreview===true})??rolls;
+                const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,overchannel)??overchannel;
                 const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave,{preview:true})??cleave;
                 if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                 const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple,{preview:true})??grapple;
@@ -81,7 +82,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave,{preview:this._rsaPreview===true})??grave;
                 const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant,{preview:this._rsaPreview===true})??radiant;
                 const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant,{preview:this._rsaPreview===true})??savant;
-                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,affinity,{preview:true})??affinity;
+                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity,{preview:true})??affinity;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation,{preview:true})??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
             }
@@ -101,7 +103,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") {
                     globalThis.Ugmuls55eAutomationOpenHand?.finalizeOpenHand(this,rolls);
                     globalThis.Ugmuls55eAutomationElementalMotion?.finalizeElemental(this,rolls);
-                    const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,rolls)??rolls;
+                    const overchannel=globalThis.Ugmuls55eAutomationOverchannel?.finalizeOverchannel(this,rolls,{preview:this._rsaPreview===true})??rolls;
+                const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,overchannel)??overchannel;
                     const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave)??cleave;
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
                     const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple)??grapple;
@@ -130,7 +133,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave)??grave;
                     const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant)??radiant;
                 const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant)??savant;
-                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,affinity)??affinity;
+                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity)??affinity;
+                const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation)??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
                 return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
                 }
@@ -186,7 +190,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationPrecision?.addPrecisionChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
-                if(kind === "damage") globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);
+                if(kind === "damage") {globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);globalThis.Ugmuls55eAutomationEvocation?.addEvocationChoice(this);globalThis.Ugmuls55eAutomationOverchannel?.addOverchannelChoice(this);}
                 if(kind === "damage") globalThis.Ugmuls55eAutomationAffinity?.addAffinityChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationRadiantSoul?.addRadiantTarget(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
@@ -240,6 +244,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationFormOfDread?.commitFear(this,options);
                         await globalThis.Ugmuls55eAutomationGraveTouched?.commitGrave(this,options);
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,options);
+                        await globalThis.Ugmuls55eAutomationEvocation?.commitEvocation(this,options);
+                        await globalThis.Ugmuls55eAutomationOverchannel?.commitOverchannel(this,options);
                         await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,options);
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,options);
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,options);
@@ -247,6 +253,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,{});
+                        await globalThis.Ugmuls55eAutomationEvocation?.commitEvocation(this,{});
+                        await globalThis.Ugmuls55eAutomationOverchannel?.commitOverchannel(this,{});
                         await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,{});
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,{});
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,{});
@@ -398,7 +406,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
     try {
         if (attack) {
             await waitForAttackAnimation(attack);
-            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
+            if (!attack.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && (globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity)))) return;
         }
         if(message.getFlag?.(MODULE_ID,"envenomPoison")||message.getFlag?.(MODULE_ID,"deflectRedirectSave")){
             if(game.user.isGM)await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(message);
@@ -516,7 +524,7 @@ Hooks.once("ready", () => {
         const attack = Array.from(game.messages).reverse().find(message =>
             message.author?.id === game.user.id && message.type === "attack" &&
             message.getAssociatedActivity?.()?.uuid === activity.uuid && message.rolls?.[0]?.total === rolls[0].total);
-        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity))) return;
+        if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && (globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity)))) return;
         const origin = attack.system.origin;
         const card = typeof origin === "string" ? game.messages.get(origin) : origin;
         if (card) promptDamage(activity,card,"attack",attack).catch(report);

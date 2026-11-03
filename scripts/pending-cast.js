@@ -21,6 +21,7 @@ export function preparePendingCast(activity,usage,dialog,message){
  if(Dialog){dialog.applicationClass=class extends Dialog{static async create(...args){await state.ready;return super.create(...args);}};}
  wirePendingActivity(state,activity);
 }
+export function rebindPendingActivity(activity,message){const state=stateFor(message?.data);if(state)wirePendingActivity(state,activity);}
 function wirePendingActivity(state,activity){
  state.activities??=new WeakSet();if(state.activities.has(activity))return;state.activities.add(activity);state.activity=activity;
  const scaling=activity._prepareUsageScaling;
@@ -99,7 +100,7 @@ export function renderPendingCast(card,html){
  if(!root.querySelector('.rsa-pending-cast')){const label=document.createElement('p');label.className='rsa-pending-cast';label.textContent='Pending — choosing targets or preparing the roll';(root.querySelector('.chat-card')??root).append(label);}
 }
 Hooks.once("ready",()=>{
- globalThis.Ugmuls55eAutomationPendingCast={cancel:cancelPendingCast,commit:card=>castState(card)?.canceling?undefined:settlePendingCast(card),track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
+ globalThis.Ugmuls55eAutomationPendingCast={cancel:cancelPendingCast,rebind:rebindPendingActivity,commit:card=>castState(card)?.canceling?undefined:settlePendingCast(card),track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
  for(const type of Object.values(CONFIG.DND5E.activityTypes))installPendingCast(type.documentClass);
  Hooks.on("dnd5e.preUseActivity",preparePendingCast);
  Hooks.on("dnd5e.postActivityConsumption",(activity,usage,message)=>{const state=stateFor(message.data);if(state)state.deltas=foundry.utils.deepClone(message.data?.system?.deltas);});
