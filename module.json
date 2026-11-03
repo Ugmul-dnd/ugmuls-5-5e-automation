@@ -156,6 +156,10 @@
     "scripts/transmuter-stone.js",
     "scripts/empowered-transmutation.js",
     "scripts/master-transmuter.js",
+    "scripts/channel-divinity.js",
+    "scripts/cleric-potent-vitality.js",
+    "scripts/warding-flare.js",
+    "scripts/corona-of-light.js",
     "scripts/weird-conditions.js"
   ],
   "styles": [

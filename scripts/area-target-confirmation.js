@@ -11,6 +11,7 @@ export function excludesIntimidatingCaster(activity,token){
 }
 
 export function automaticTargetMode(activity, config) {
+    if(globalThis.Ugmuls55eAutomationChannelDivinity?.kind(activity)==='turn')return "undeadOnly";
     if(globalThis.Ugmuls55eAutomationWarping?.isActivity?.(activity))return "excludeSelf";
     if((activity.item?.identifier??activity.item?.system?.identifier)==="arms-of-hadar"&&activity.target?.template?.type)return "excludeSelf";
     if(globalThis.Ugmuls55eAutomationLandsAid?.isActivity(activity))return 'hostilesOnly';
@@ -34,6 +35,7 @@ export function automaticTargetMode(activity, config) {
 
 export function allowsAutomaticTarget(token, caster, mode) {
     if (mode === "everyone" || !mode) return true;
+    if (mode === "undeadOnly") return (token.actor?.system?.details?.type?.value??token.actor?.system?.details?.type)==="undead";
     if (!caster) return false;
     if (mode === "self") return token.uuid === caster.uuid;
     if (mode === "excludeSelf") return token.uuid !== caster.uuid;
@@ -211,6 +213,7 @@ export class TargetConfirmation extends foundry.applications.api.ApplicationV2 {
         const selected=this.isTwinned?[...new Map([...this.castTargets,...this.twinnedTargets.values()].map(t=>[(t.document??t).uuid,t])).values()]:this.canChooseTargets?Array.from(game.user.targets):this.castTargets;
         for (const token of selected) {
             const activity=this.activityForMetamagic(),searing=globalThis.Ugmuls55eAutomationSearing;
+            if(globalThis.Ugmuls55eAutomationChannelDivinity?.target(activity,token)===false)continue;
             if(searing?.isActivity(activity)&&!searing.validateTargets(activity,this.message,[describeTarget(token.document??token)]).length){if(this.canChooseTargets)token.setTarget(false,{user:game.user,releaseOthers:false});continue;}
             if (!excludesIntimidatingCaster(this.activityForMetamagic(),token)&&(this.activityForMetamagic()?.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))) targets.push(token);
             else if(this.canChooseTargets)token.setTarget(false, { user: game.user, releaseOthers: false });
@@ -319,7 +322,7 @@ export async function finishConfirmedCast(activity, message, targets) {
     const eligible = [],tokens=[];
     for (const descriptor of targets) {
         const token = await fromUuid(descriptor.token);
-        if(excludesIntimidatingCaster(activity,token))continue;
+        if(excludesIntimidatingCaster(activity,token)||globalThis.Ugmuls55eAutomationChannelDivinity?.target(activity,token)===false)continue;
         if(globalThis.Ugmuls55eAutomationWarping?.isActivity?.(activity)){const source=activity.getUsageToken?.();if(token?.uuid===(source?.document??source)?.uuid)continue;}
         if(activity.item?.identifier==="entangle"&&token?.actor?.uuid===activity.actor?.uuid)continue;
         if (token && (activity.type==="heal"?isEligibleHealingTarget(token):isEligibleTarget(token))){eligible.push(descriptor);tokens.push(token);}

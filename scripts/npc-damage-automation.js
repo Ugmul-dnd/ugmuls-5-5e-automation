@@ -44,6 +44,7 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(globalThis.Ugmuls55eAutomationWardingFlare?.ready(message)===false)return waiting(message,"Resolving Warding Flare / Improved Flare temporary HP.");
     if(globalThis.Ugmuls55eAutomationBalance?.ready(message)===false)return waiting(message,"Finishing Restore Balance.");
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(message)===false)return waiting(message,"Waiting for Steel Defender Deflect Attack.");
     if(message.getFlag?.(MODULE_ID,"deflectPending"))return waiting(message,"Waiting for Deflect Attacks.");

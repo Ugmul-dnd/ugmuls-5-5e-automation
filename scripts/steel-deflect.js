@@ -85,9 +85,9 @@ export function installDeflectDamage(Type){
  p.getMergedOptions=function(uuid){const options=get.call(this,uuid),card=this.chatMessage,attack=attackOf(card);
   const miss=attack?.system?.evaluatedTargets?.some(t=>t.token===uuid&&t.isMiss===true);
   const splash=globalThis.Ugmuls55eAutomationAcidArrow?.factor(card,uuid)===0.5;
-  if(miss&&Object.keys(flag(attack,'steelDeflections')??{}).length&&!splash&&!flag(card,'masteryGraze')&&!manual.has(this)&&this.getTargetOptions?.(uuid)?.multiplier==null)return {...options,multiplier:0};return options;};
+  if(miss&&(Object.keys(flag(attack,'steelDeflections')??{}).length||!!flag(attack,'wardingFlareUsed'))&&!splash&&!flag(card,'masteryGraze')&&!manual.has(this)&&this.getTargetOptions?.(uuid)?.multiplier==null)return {...options,multiplier:0};return options;};
  if(change)p._onChangeMultiplier=function(event){if(event.target.closest('.multiplier-button'))manual.add(this);return change.call(this,event);};
- if(apply)p._onApplyDamage=function(event){if(!deflectReady(this.chatMessage)){ui.notifications.warn('Wait for the Deflect Attack adjustment to finish.');return;}return apply.call(this,event);};p.rsaSteelDeflect=true;
+ if(apply)p._onApplyDamage=function(event){if(!deflectReady(this.chatMessage)||globalThis.Ugmuls55eAutomationWardingFlare?.ready(this.chatMessage)===false){ui.notifications.warn('Wait for the attack reaction or temporary HP roll to finish.');return;}return apply.call(this,event);};p.rsaSteelDeflect=true;
 }
 Hooks.once('init',()=>game.settings.register(ID,'steelDeflectAutomation',{name:'Steel Defender: Deflect Attack',hint:'Offer the Defender’s Reaction on a nearby visible attacker, preserve existing attack dice while applying Disadvantage, and prompt native Improved Deflection damage at level 15. Single-target attacks only; Undo applied HP before adjusting.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
