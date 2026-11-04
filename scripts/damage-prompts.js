@@ -85,7 +85,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity,{preview:true})??affinity;
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation,{preview:true})??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
+                const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,disciple)??disciple;
             }
             async _prepareContext(options) {
                 if(kind==="damage")await globalThis.Ugmuls55eAutomationPendingDamage?.prepareDamageDialog(this);
@@ -136,7 +137,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity)??affinity;
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation)??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,druid)??druid;
+                const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,disciple)??disciple;
                 }
                 if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
@@ -189,6 +191,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationPrecision?.addPrecisionChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationDisciple?.addNote(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") {globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);globalThis.Ugmuls55eAutomationEvocation?.addEvocationChoice(this);globalThis.Ugmuls55eAutomationOverchannel?.addOverchannelChoice(this);}
                 if(kind === "damage") globalThis.Ugmuls55eAutomationAffinity?.addAffinityChoice(this);

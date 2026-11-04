@@ -42,8 +42,8 @@ export async function applyBuffEffects(message) {
     if (!effects.length) return;
     const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,null);if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(message,decision);return;}
     const caster=message.getAssociatedActor?.();
-    const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity);
-    if((mark||inspire)&&message.system.targets?.length!==1)return;
+    const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity),pathGrave=globalThis.Ugmuls55eAutomationPathGrave?.curseActivity?.(activity)===true;
+    if((mark||inspire||pathGrave)&&message.system.targets?.length!==1)return;
     const actors=new Map();
     const type=activity.target?.affects?.type;
     if (type === "self" || globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity)&&game.settings.get(MODULE_ID,"moonlightStepAutomation")===true) {
@@ -64,7 +64,7 @@ export async function applyBuffEffects(message) {
             // Do not infer a no-save offensive effect as a buff. Self, explicit
             // allies, explicitly selected willing creatures, and friendly-disposition recipients are eligible.
             if(inspire&&actor.uuid===caster?.uuid)continue;
-            if (healingBuff || mark || inspire || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
+            if (healingBuff || mark || inspire || pathGrave || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
                 (type === "creature" && casterDisposition!=null && token && token.disposition === casterDisposition)) actors.set(actor.uuid,actor);
         }
     }
@@ -124,7 +124,7 @@ async function requestBuffs(message) {
 
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"autoApplyBuffEffects",{
     name:"Effect Automation: Automatically Apply Buffs",
-    hint:"Apply configured effects from non-rolling Utility spells/features to Self, Allies, selected Willing Creatures, or friendly targeted creatures. Hunter's Mark also applies to its single marked target. Heroism and Regenerate apply their effects after initial healing rolls complete. Save and attack effects use their separate GM NPC & Damage options.",
+    hint:"Apply configured effects from non-rolling Utility spells/features to Self, Allies, selected Willing Creatures, or friendly targeted creatures. Hunter's Mark and Path to the Grave also apply to their single recorded target. Heroism and Regenerate apply their effects after initial healing rolls complete. Save and attack effects use their separate GM NPC & Damage options.",
     scope:"world",config:true,type:Boolean,default:true
 }));
 Hooks.once("ready",()=>{

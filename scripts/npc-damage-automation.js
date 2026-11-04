@@ -44,6 +44,8 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    await globalThis.Ugmuls55eAutomationSentinel?.capture?.(message);
+    if(globalThis.Ugmuls55eAutomationSentinel?.ready(message)===false)return waiting(message,"Resolving Sentinel at Death's Door.");
     if(globalThis.Ugmuls55eAutomationWardingFlare?.ready(message)===false)return waiting(message,"Resolving Warding Flare / Improved Flare temporary HP.");
     if(globalThis.Ugmuls55eAutomationBalance?.ready(message)===false)return waiting(message,"Finishing Restore Balance.");
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(message)===false)return waiting(message,"Waiting for Steel Defender Deflect Attack.");
@@ -96,6 +98,8 @@ export function automaticHitStillValid(message,tokenUuid){
  return target?.isMiss===false||target?.isMiss===true&&(globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity))===true;
 }
 export async function applyAutomaticDamage(message) {
+    if(globalThis.Ugmuls55eAutomationSentinel?.ready(message)===false)return;
+    if(globalThis.Ugmuls55eAutomationModifyMagic?.ready(message)===false)return;
     if(globalThis.Ugmuls55eAutomationBendLuck?.ready(message)===false)return;
     if(!authority()||!autoApplyHpEnabled(message)||running.has(message.id))return;
     const targets=await readyDamageTargets(message);if(!targets)return;
@@ -199,6 +203,8 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationSentinel?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationModifyMagic?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationBendLuck?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationSteelDeflect?.ready(card)===false)return;
@@ -368,6 +374,8 @@ Hooks.once("ready",async()=>{
         const message=options.origin??options.originatingMessage;
         // The linked automatic rescue heal must not mark the main burst as manually stopped.
         if(options.rsaSearingRescueGrant===true&&message?.getFlag?.(MODULE_ID,"searingRescueHeal"))return;
+        // Blessed Healer is an independent self-heal, not a manual stop of the source spell.
+        if(options.rsaBlessedHealerGrant===true&&message?.getFlag?.(MODULE_ID,"blessedHealerHeal"))return;
         if(!isDamageOrHealingCard(message))return;
         if(message.getFlag?.(MODULE_ID,'masteryGraze')&&!automaticHitStillValid(message,options.rsaAutoDamageToken??message.getFlag(MODULE_ID,'masteryGrazeTarget')??message.system?.targets?.[0]?.token))return false;
         if(options.rsaAutomaticDamage) {if(isManual(message)||!autoApplyHpEnabled(message)||!automaticHitStillValid(message,options.rsaAutoDamageToken))return false;}
@@ -376,6 +384,8 @@ Hooks.once("ready",async()=>{
     const manualInteraction=event=>{
         if(event.isTrusted===false)return;
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
+        // Path to the Grave opens independent rider damage; it never pauses the hit's HP workflow.
+        if(interactive.closest('.rsa-path-grave'))return;
         // Retrying an unanswered save continues the automatic workflow.
         if(globalThis.Ugmuls55eAutomationReactive?.enabled()&&globalThis.Ugmuls55eAutomationReactive?.isControl(interactive))return;
         if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;
