@@ -50,6 +50,7 @@ export function availableReactions(card){
  const {tests,hp}=reactiveScope(card),found=new Set();
  for(const test of tests){
   if(canSeek(test,game.user))found.add('Seeking Spell');if(canPrecision(test,game.user))found.add('Precision Attack');if(valorDefenders(test,game.user).length)found.add('Combat Inspiration AC');if(uncannyCandidates(test,game.user).length)found.add('Uncanny Dodge');if(rebukeCandidates(test,game.user).length)found.add('Elemental Rebuke');
+  if(globalThis.Ugmuls55eAutomationGuidedStrike?.candidates(test,game.user)?.length)found.add('Guided Strike');
   if(globalThis.Ugmuls55eAutomationIllusorySelf?.candidates(test,game.user)?.length)found.add('Illusory Self');
   if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.candidates(test,game.user)?.length||globalThis.Ugmuls55eAutomationInstinctiveCharm?.ready(test)===false)found.add('Instinctive Charm');
   if(globalThis.Ugmuls55eAutomationWardingFlare?.candidates(test,game.user)?.length)found.add('Warding Flare');
@@ -57,6 +58,7 @@ export function availableReactions(card){
   for(let index=0;index<(test.rolls?.length??0);index++){
    if(canUseLuck(test,game.user,index))found.add('Dark One’s Own Luck');if(canFocus(test,game.user,index))found.add('Fanatical Focus');if(canIndomitable(test,game.user,index))found.add('Indomitable');if(canDisciplinedSurvivor(test,game.user,index))found.add('Disciplined Survivor');if(sharedResilienceCandidates(test,game.user,index).length)found.add('Shared Resilience');if(canHoming(test,game.user,index))found.add('Homing Strikes');if(canPeerless(test,game.user,index))found.add('Peerless Skill');
    if(flashCandidates(test,game.user,index).length)found.add('Flash of Genius');
+   if(globalThis.Ugmuls55eAutomationCountercharm?.candidates(test,game.user,index)?.length)found.add('Countercharm');
    if(balanceCandidates(test,index,game.user).length&&!balanceDisabled(test))found.add('Restore Balance');
    if(globalThis.Ugmuls55eAutomationModifyMagic?.eligible(test,index,game.user))found.add('Tenacious Spell');
    if(globalThis.Ugmuls55eAutomationBendLuck?.candidates?.(test,index,game.user)?.length&&!globalThis.Ugmuls55eAutomationBendLuck.disabled(test))found.add('Bend Luck');
@@ -77,9 +79,11 @@ export function reactiveDamageRollPending(card){
  return hp.some(c=>c.type==='damage'&&(flag(c,'pendingDamage')||!c.rolls?.length))||!!expectsDamage&&!hp.some(c=>c.type==='damage');
 }
 export async function stopForReactions(card){
+ if(globalThis.Ugmuls55eAutomationMirrorImage?.ready(card)===false)return true;
+ if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(card)===false)return true;
  if(!authority()||!reactiveEnabled()||card?.type==='healing')return false;if(globalThis.Ugmuls55eAutomationSentinel?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationModifyMagic?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationWardingFlare?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false||globalThis.Ugmuls55eAutomationBendLuck?.ready(card)===false)return true;const {root}=reactiveScope(card);if(globalThis.Ugmuls55eAutomationIllusorySelf?.ready(root)===false)return true;if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.ready(root)===false)return true;if(!root||flag(root,'manualDamageWorkflow')||flag(origin(root),'manualDamageWorkflow'))return false;
  if(stopped.has(root.id)||flag(root,'reactiveAutomationStopped'))return true;
- for(const test of reactiveScope(card).tests)if(live.has(test)){await captureOmen(test);await captureBalance(test);await globalThis.Ugmuls55eAutomationWardingFlare?.capture(test);await globalThis.Ugmuls55eAutomationIllusorySelf?.capture(test);await globalThis.Ugmuls55eAutomationInstinctiveCharm?.capture(test);await globalThis.Ugmuls55eAutomationBendLuck?.capture?.(test);}
+ for(const test of reactiveScope(card).tests)if(live.has(test)){await captureOmen(test);await captureBalance(test);await globalThis.Ugmuls55eAutomationCountercharm?.capture(test);await globalThis.Ugmuls55eAutomationWardingFlare?.capture(test);await globalThis.Ugmuls55eAutomationIllusorySelf?.capture(test);await globalThis.Ugmuls55eAutomationInstinctiveCharm?.capture(test);await globalThis.Ugmuls55eAutomationBendLuck?.capture?.(test);}
  const reasons=availableReactions(card);if(!reasons.length)return reactiveDamageRollPending(card);
  // A terminal stop, not a waiting task. Later ordinary renders return here
  // without more reaction/range checks. Only explicit completion can restart it.
@@ -94,21 +98,21 @@ function completedChange(card,changes){
  if(changed(changes,'battleManeuver')&&flag(card,'battleManeuver')?.key==='precision')return true;
  if(card.type==='damage'&&changed(changes,'beguilingDefenses')&&Object.values(flag(card,'beguilingDefenses')??{}).some(r=>r.save&&r.taken===null))return true;
  if(card.type==='damage'&&changed(changes,'empoweredSpellSettled')&&flag(card,'empoweredSpellSettled'))return true;
- if(['shieldReactionSettled','flashOfGenius','cosmicOmenUsed','bardicUsed','cuttingWords','parry','seekingSpellUsed','darkOnesOwnLuck','fanaticalFocus','indomitable','disciplinedSurvivor','sharedResilience','homingStrikes','peerlessSkill','valorDefense','uncannyDodges','chainResistance','superiorHunterDefense','elementalRebukes'].some(k=>changed(changes,k)&&flag(card,k)))return true;
+ if(['countercharmUsed','guidedStrikeUsed','shieldReactionSettled','flashOfGenius','cosmicOmenUsed','bardicUsed','cuttingWords','parry','seekingSpellUsed','darkOnesOwnLuck','fanaticalFocus','indomitable','disciplinedSurvivor','sharedResilience','homingStrikes','peerlessSkill','valorDefense','uncannyDodges','chainResistance','superiorHunterDefense','elementalRebukes'].some(k=>changed(changes,k)&&flag(card,k)))return true;
  let pending=pendingReactions.get(card);if(!pending)pendingReactions.set(card,pending=new Map());let completed=false;
  for(const [key,record]of [['sentinelPending','sentinelUsed'],['modifyMagicPending','modifyMagicUsed'],['bendLuckAdjusting','bendLuckUsed'],['restoreBalanceAdjusting','restoreBalanceUsed'],['steelDeflectAdjusting','steelDeflections'],['deflectPending','protectiveFields'],['protectiveFieldPending','protectiveFields']]){
   if(!changed(changes,key))continue;const signature=JSON.stringify(flag(card,record)??null);if(flag(card,key))pending.set(key,signature);else if(pending.has(key)){if(pending.get(key)!==signature)completed=true;pending.delete(key);}
  }
  return completed;
 }
-export function isReactiveControl(node){return !!node?.closest?.('[data-rsa-shield],.rsa-sentinel-death,.rsa-modify-magic,.rsa-flash-actions,.rsa-restore-balance,.rsa-bend-luck,.rsa-bastion,.rsa-song-defense,.rsa-projected-ward,.rsa-burning-life,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-warding-flare,.rsa-deflect,[data-rsa-empowered],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling,.rsa-instinctive-charm,.rsa-illusory-self');}
+export function isReactiveControl(node){return !!node?.closest?.('.rsa-mirror-image,.rsa-unbreakable-majesty,.rsa-countercharm,.rsa-guided-strike,[data-rsa-shield],.rsa-sentinel-death,.rsa-modify-magic,.rsa-flash-actions,.rsa-restore-balance,.rsa-bend-luck,.rsa-bastion,.rsa-song-defense,.rsa-projected-ward,.rsa-burning-life,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-warding-flare,.rsa-deflect,[data-rsa-empowered],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling,.rsa-instinctive-charm,.rsa-illusory-self');}
 Hooks.once('init',()=>game.settings.register(ID,'reactiveAutoApply',{name:'Automate Damage and Effects with Reactive Logic',hint:'Use the existing auto-apply options, but end that automation attempt when a supported roll/reaction adjustment is available. No polling or reaction timeout. Completing an adjustment checks that card again; otherwise the GM can apply damage and its eligible hit/save effects manually. Undo remains manual.',scope:'world',config:true,type:Boolean,default:false}));
 Hooks.once('ready',()=>{
  globalThis.Ugmuls55eAutomationReactive={enabled:reactiveEnabled,stop:stopForReactions,completed:reactionCompleted,isControl:isReactiveControl};
  Hooks.on('createChatMessage',card=>{if(!authority()||!reactiveEnabled())return;live.add(card);if(['autoApplyCardDamage','autoApplySavedEffects','autoApplyHitEffects'].some(k=>game.settings.get(ID,k)===true)&&['attack','save','damage'].includes(card.type)){
   // Prime a stop immediately, before the normal short auto-apply scheduling
   // window. Capture Omen once on player-created cards before checking it.
-  const probe=async()=>{await captureOmen(card);await captureBalance(card);await globalThis.Ugmuls55eAutomationIllusorySelf?.capture(card);await globalThis.Ugmuls55eAutomationInstinctiveCharm?.capture(card);await stopForReactions(card);};probe().catch(console.error);
+  const probe=async()=>{await globalThis.Ugmuls55eAutomationCountercharm?.capture(card);await captureOmen(card);await captureBalance(card);await globalThis.Ugmuls55eAutomationIllusorySelf?.capture(card);await globalThis.Ugmuls55eAutomationInstinctiveCharm?.capture(card);await stopForReactions(card);};probe().catch(console.error);
  }});
  Hooks.on('updateChatMessage',(card,changes)=>{if(!authority()||!reactiveEnabled())return;if(completedChange(card,changes)){reactionCompleted(card).catch(console.error);return;}if(live.has(card)&&(changed(changes,'bendLuckSnapshot')||changed(changes,'restoreBalanceSnapshot')||changed(changes,'cosmicOmenSnapshot')||Object.hasOwn(changes??{},'rolls'))&&!flag(card,'pendingDamage'))stopForReactions(card).catch(console.error);});
  Hooks.on('deleteChatMessage',card=>stopped.delete(card.id));

@@ -1,6 +1,11 @@
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ spiritsBeyond:{setting:'spiritsBeyondAutomation',types:['usage'],feature:'spirits-from-beyond',candidates:'spiritGather'},
+ unbreakableMajesty:{setting:'unbreakableMajestyAutomation',types:['attack'],feature:'unbreakable-majesty',candidates:'unbreakableSnapshot'},
+ leadingEvasion:{setting:'leadingEvasionAutomation',types:['damage','usage','save'],feature:'leading-evasion',incoming:true,own:true},
+ countercharm:{setting:'countercharmAutomation',types:['save'],feature:'countercharm',candidates:'countercharmSnapshot'},
+ guidedStrike:{setting:'guidedStrikeAutomation',types:['attack'],feature:'guided-strike',candidates:'guidedStrikeSnapshot'},
  extinguishUndead:{setting:"extinguishUndeadAutomation",types:["base"],feature:"deaths-master",candidates:"extinguishSnapshot"},
  illusorySelf:{setting:"illusorySelfAutomation",types:["attack"],feature:"illusory-self",candidates:"illusorySelfSnapshot"},
  instinctiveCharm:{setting:"instinctiveCharmAutomation",types:["attack"],feature:"instinctive-charm",candidates:"instinctiveCharmSnapshot"},

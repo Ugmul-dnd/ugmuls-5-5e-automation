@@ -15,9 +15,10 @@ export function isBardicInspireActivity(activity) {
         ((item.identifier??item.system?.identifier)==="bardic-inspiration"||/^bardic inspiration$/i.test(item.name?.trim()??""))&&
         activity.roll?.prompt!==true&&(!activity.roll?.formula||/^@scale\.bard\.inspiration(?:\.die)?$/.test(activity.roll.formula.trim()));
 }
+export function isMirrorImageActivity(activity){return activity?.type==='utility'&&activity.item?.type==='spell'&&(activity.item.identifier??activity.item.system?.identifier)==='mirror-image'&&activity.id==='dnd5eactivity000'&&activity.roll?.prompt!==true;}
 
 export function teamTacticsActivity(activity){return activity?.type==="heal"&&activity.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="team-tactics"&&activity.id==="prA3XGTjuTOdIxOe";}
-export function healingBuffActivity(activity){if(teamTacticsActivity(activity))return true;return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
+export function healingBuffActivity(activity){if(teamTacticsActivity(activity))return true;const spirit=activity?.item?.getFlag?.(MODULE_ID,'spiritUnleash')??activity?.item?.flags?.[MODULE_ID]?.spiritUnleash;if(activity?.type==='heal'&&activity.item?.name==='Wayfarer Spirit'&&spirit?.effect)return true;return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
 export function manualBuffChoice(activity) { return globalThis.Ugmuls55eAutomationUmbral?.isActivation?.(activity) || globalThis.Ugmuls55eAutomationRevelation?.isActivation?.(activity) || globalThis.Ugmuls55eAutomationHex?.hexChoiceActivity?.(activity) || globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(activity) || globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(activity) || globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(activity) || ["aura-of-elemental-shielding","aspect-of-the-wilds","superior-hunters-defense"].includes(activity?.item?.identifier ?? activity?.item?.system?.identifier) || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
 export function eligibleBuffActivity(activity) {
     if ((activity?.item?.identifier??activity?.item?.system?.identifier)==="avenging-angel"&&activity.id==="PUWfXLPucizXR8p0"&&game.settings.get(MODULE_ID,"avengingAngelAutomation")===true)return false;
@@ -27,7 +28,7 @@ export function eligibleBuffActivity(activity) {
     if (manualBuffChoice(activity)) return false;
     // Utility activities have no attack/save or damage/healing roll to resolve.
     return (activity?.type === "utility"||healingBuffActivity(activity)) && ["spell","feat"].includes(activity.item?.type) &&
-        !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)) && (!activity.target?.template?.type||teamTacticsActivity(activity));
+        !activity.damage?.parts?.length && (!activity.roll?.formula || isBardicInspireActivity(activity)||isMirrorImageActivity(activity)) && (!activity.target?.template?.type||teamTacticsActivity(activity));
 }
 
 export async function applyBuffEffects(message) {

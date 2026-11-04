@@ -15,6 +15,7 @@ export function needsSelectedTarget(activity){
 export function targetUseWarning(activity,count,{scaled=true}={}){
  if(!needsSelectedTarget(activity))return;
  if(count<1)return "This requires a target before use";
+    if(globalThis.Ugmuls55eAutomationWordsCreation?.eligible(activity))return count>2?"Words of Creation allows at most two targets":undefined;
  const raw=activity.target?.affects?.count;
  // Native preparation evaluates target formulas again after the chosen slot scales the item.
  const limit=Number(raw),single=limit===1||(activity.type==="attack"&&(raw==null||raw===""));
@@ -23,6 +24,8 @@ export function targetUseWarning(activity,count,{scaled=true}={}){
 function targetCount(message){const targets=message?.data?.system?.targets??game.user.targets??[];return new Set(Array.from(targets,target=>target.token??target.document?.uuid??target.uuid??target)).size;}
 function check(activity,usage,message,scaled){
  if(automated(usage,message))return;
+    const words=globalThis.Ugmuls55eAutomationWordsCreation;
+    if(words?.eligible(activity)){const warning=words.warning(activity,words.targets(message));if(warning){ui.notifications.warn(warning);return false;}}
  const warning=targetUseWarning(activity,targetCount(message),{scaled});
  if(warning){ui.notifications.warn(warning);return false;}
 }

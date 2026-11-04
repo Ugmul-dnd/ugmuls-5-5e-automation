@@ -11,6 +11,7 @@ function saveAbility(activity,usage,token){
 }
 export function evasionContext(card,uuid){
  const avoidance=globalThis.Ugmuls55eAutomationCrown?.context?.(card,uuid);if(avoidance)return avoidance;
+ if(card?.type==='damage'&&!isHealingCard(card)){const leading=globalThis.Ugmuls55eAutomationLeadingEvasion?.context(card,uuid);if(leading)return leading;}
  if(game.settings.get(ID,'evasionAutomation')!==true||card?.type!=='damage'||isHealingCard(card)||card.getFlag?.(ID,'pendingDamage'))return null;
  const usage=originOf(card);if(!usage)return null;
  const activity=card.getAssociatedActivity?.({scaled:true})??usage.getAssociatedActivity?.({scaled:true});
@@ -47,7 +48,7 @@ export function installEvasionDamage(Type=customElements.get('damage-application
 export function renderEvasionSaveLabels(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;
  root.querySelectorAll('[data-rsa-evasion-save]').forEach(el=>el.remove());
- if(game.settings.get(ID,'evasionAutomation')!==true&&!globalThis.Ugmuls55eAutomationCrown)return;
+ if(game.settings.get(ID,'evasionAutomation')!==true&&!globalThis.Ugmuls55eAutomationCrown&&!globalThis.Ugmuls55eAutomationLeadingEvasion)return;
  for(const name of root.querySelectorAll('.save-summary .pill.target')){
   const summary=name.closest('.card-summary[data-message-id]'),card=summary?game.messages.get(summary.dataset.messageId):message;
   if(!card||card.isContentVisible===false)continue;
@@ -56,9 +57,9 @@ export function renderEvasionSaveLabels(message,html){
   const row=name.closest('[data-target-uuid]'),ref=row?.dataset.targetUuid;
   const speaker=card.type==='save'?card.speaker:null;
   const token=ref?globalThis.fromUuidSync?.(ref,{strict:false}):speaker?.scene&&speaker?.token?globalThis.fromUuidSync?.('Scene.'+speaker.scene+'.Token.'+speaker.token,{strict:false}):card.type==='save'?card.getAssociatedToken?.():null;
-  const doc=token?.document??token,crown=globalThis.Ugmuls55eAutomationCrown?.saveLabel?.(doc?.actor);if(!doc?.actor||!crown&&(game.settings.get(ID,'evasionAutomation')!==true||activity.damage?.onSave!=='half'||!evasionFeature(doc.actor)||saveAbility(activity,usage,doc)!=='dex'))continue;
-  const inactive=['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(status=>doc.actor.statuses?.has(status));
-  const label=document.createElement('span');label.dataset.rsaEvasionSave='';const title=crown?.name??'Evasion';label.textContent=' ('+title+(inactive?' inactive':'')+')';
+  const doc=token?.document??token,crown=globalThis.Ugmuls55eAutomationCrown?.saveLabel?.(doc?.actor),leading=globalThis.Ugmuls55eAutomationLeadingEvasion?.saveLabel(activity,usage,doc);if(!doc?.actor||!crown&&!leading&&(game.settings.get(ID,'evasionAutomation')!==true||activity.damage?.onSave!=='half'||!evasionFeature(doc.actor)||saveAbility(activity,usage,doc)!=='dex'))continue;
+  const inactive=leading&&!crown?leading.inactive:['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(status=>doc.actor.statuses?.has(status));
+  const label=document.createElement('span');label.dataset.rsaEvasionSave='';const title=crown?.name??leading?.name??'Evasion';label.textContent=' ('+title+(inactive?' inactive':'')+')';
   label.title=inactive?title+' does not apply while Incapacitated.':title+': no damage on a successful qualifying save; half on failure.';
   name.append(label);
  }
@@ -78,9 +79,9 @@ export function renderEvasion(message,html){
  }
 }
 function refreshSaveDamage(card){
- if(card?.type!=='save'||game.settings.get(ID,'evasionAutomation')!==true&&!globalThis.Ugmuls55eAutomationCrown)return;
+ if(card?.type!=='save'||game.settings.get(ID,'evasionAutomation')!==true&&!globalThis.Ugmuls55eAutomationCrown&&!globalThis.Ugmuls55eAutomationLeadingEvasion)return;
  const usage=originOf(card);
- if(!(usage?.system?.targets??[]).some(t=>(evasionFeature(globalThis.fromUuidSync?.(t.token,{strict:false})?.actor)||globalThis.Ugmuls55eAutomationCrown?.active?.(globalThis.fromUuidSync?.(t.token,{strict:false})?.actor))))return;
+ if(!(usage?.system?.targets??[]).some(t=>(evasionFeature(globalThis.fromUuidSync?.(t.token,{strict:false})?.actor)||globalThis.Ugmuls55eAutomationLeadingEvasion?.saveLabel(usage?.getAssociatedActivity?.({scaled:true}),usage,globalThis.fromUuidSync?.(t.token,{strict:false}))||globalThis.Ugmuls55eAutomationCrown?.active?.(globalThis.fromUuidSync?.(t.token,{strict:false})?.actor))))return;
  for(const damage of linkedHpCards(card))globalThis.Ugmuls55eAutomationChatRefresh?.card(damage);
 }
 Hooks.once('init',()=>game.settings.register(ID,'evasionAutomation',{name:'Evasion Assistance',hint:'For any actor with Evasion, force no damage on successful Dexterity half-damage saves and half damage on failure. Applies per target, excludes Incapacitated actors and leaves other saving throws unchanged.',scope:'world',config:true,type:Boolean,default:true}));

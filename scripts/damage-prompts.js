@@ -153,6 +153,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationWeird?.prepareWeirdButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationOutlined?.prepareOutlinedButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationDuplicity?.prepareDuplicityButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationGuidingBolt?.prepareGuidingButtons(this,prepared);
                 return prepared;
             }

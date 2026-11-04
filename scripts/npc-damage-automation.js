@@ -44,6 +44,9 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(globalThis.Ugmuls55eAutomationMirrorImage?.intercepted(message))return null;
+    if(globalThis.Ugmuls55eAutomationMirrorImage?.ready(message)===false)return waiting(message,"Resolving Mirror Image.");
+    if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(message)===false)return waiting(message,"Resolving Unbreakable Majesty’s Recoil Save.");
     await globalThis.Ugmuls55eAutomationSentinel?.capture?.(message);
     if(globalThis.Ugmuls55eAutomationSentinel?.ready(message)===false)return waiting(message,"Resolving Sentinel at Death's Door.");
     if(globalThis.Ugmuls55eAutomationWardingFlare?.ready(message)===false)return waiting(message,"Resolving Warding Flare / Improved Flare temporary HP.");
@@ -203,6 +206,8 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationMirrorImage?.intercepted(card)||globalThis.Ugmuls55eAutomationMirrorImage?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationSentinel?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationModifyMagic?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationBendLuck?.ready(card)===false)return;
@@ -386,6 +391,9 @@ Hooks.once("ready",async()=>{
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
         // Path to the Grave opens independent rider damage; it never pauses the hit's HP workflow.
         if(interactive.closest('.rsa-path-grave'))return;
+        // These mandatory spell/feature checks continue the existing hit workflow,
+        // including when the optional reaction governor is disabled.
+        if(interactive.closest('.rsa-mirror-image,.rsa-unbreakable-majesty'))return;
         // Retrying an unanswered save continues the automatic workflow.
         if(globalThis.Ugmuls55eAutomationReactive?.enabled()&&globalThis.Ugmuls55eAutomationReactive?.isControl(interactive))return;
         if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;

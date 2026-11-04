@@ -379,6 +379,9 @@ Hooks.once("ready",()=>{
   for(const token of globalThis.canvas?.scene?.tokens??[])if(token.actor)actors.set(token.actor.uuid,token.actor);
   for(const actor of actors.values())for(const effect of actor.effects??[]){
    if(!active(effect))continue;const updates=weirdEffectUpdates(effect);if(updates)effect.update(updates).catch(report);
+   // Recover already-applied native Beguiling effects after adding their recipes.
+   // Source validation in registerNativeEffect prevents matching unrelated charms/fears.
+   if(['Beguiling Charm','Beguiling Fear'].includes(effect.name))registerNativeEffect(effect).catch(report);
   }
  }
  Hooks.on("createActiveEffect",effect=>registerNativeEffect(effect).catch(report));
