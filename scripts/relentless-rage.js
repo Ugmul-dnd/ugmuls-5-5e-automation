@@ -1,3 +1,4 @@
+import {latestIndexedMessage} from './chat-message-index.js';
 import {isRageEffect} from "./primal-knowledge.js";
 import {selectSaveUser} from "./save-prompts.js";
 const ID="ugmuls-5-5e-automation",values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,running=new Set(),prompting=new Set(),damageContexts=new Map();
@@ -88,7 +89,7 @@ export async function finishRelentless(card){
    await actor.setFlag(ID,"relentlessRage",{...s,phase:"healing",save:card.id});
    const target={token:s.token,actor:actor.uuid,name:actor.name};
    const result=await context.healing.rollDamage({isCritical:false},{configure:false},{data:{system:{origin:s.card,targets:[target]},flags:{[ID]:{riderTriggered:true,manualDamageWorkflow:true,relentlessRageHealing:s.id}}}});
-   const healingCard=result?.message??(result?.[0]?.parent?.documentName==="ChatMessage"?result[0].parent:null)??values(game.messages).filter(m=>m.getFlag?.(ID,"relentlessRageHealing")===s.id).at(-1);
+   const healingCard=result?.message??(result?.[0]?.parent?.documentName==="ChatMessage"?result[0].parent:null)??latestIndexedMessage("relentlessRageHealing",s.id);
    if(!healingCard?.rolls?.length)throw Error("Relentless Rage could not create its healing roll.");
    await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(healingCard);
    const amount=healingCard.rolls.reduce((sum,r)=>sum+Math.max(0,Number(r.total)||0),0);

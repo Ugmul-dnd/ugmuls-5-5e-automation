@@ -21,14 +21,14 @@ async function refreshHpUndoCard(message) {
     if(origin&&origin!==current)await ui.chat?.updateMessage?.(origin);
 }
 
-export async function applyEffectWithUndo(card,usage,effect,actor,tray) {
+export async function applyEffectWithUndo(card,usage,effect,actor,tray,{replace=null}={}) {
     return enqueue(async()=>{
         if(regionManagesCardEffect(usage?.getAssociatedActivity?.({scaled:true}),effect))return null;
-        const existing=Array.from(actor.effects??[]).find(entry=>entry._stats?.duplicateSource===effect.uuid||entry._stats?.compendiumSource===effect.uuid);
+        const existing=Array.from(actor.effects??[]).find(entry=>replace&&entry.uuid===replace.uuid)??Array.from(actor.effects??[]).find(entry=>entry._stats?.duplicateSource===effect.uuid||entry._stats?.compendiumSource===effect.uuid);
         const before=existing?existing.toObject():null;
         const applied=await tray._applyEffectToActor(effect,actor);
         if(!applied?.uuid)return applied;
-        const record={id:foundry.utils.randomID(),effectUuid:applied.uuid,sourceMessage:usage.uuid,before};
+        const record={id:foundry.utils.randomID(),effectUuid:applied.uuid,sourceMessage:usage.uuid,before,...(replace?{replacement:true}:{})};
         await card.setFlag(MODULE_ID,"effectUndoHistory",[...effectHistory(card),record]);
         return applied;
     });
@@ -68,6 +68,7 @@ export async function undoCardEffects(message) {
                     ui.notifications.warn("An effect was refreshed by another card; its newer application was kept.");
                 } else if(record.before) {
                     const restored={...record.before};delete restored._stats;
+                    if(record.replacement)restored._stats={duplicateSource:record.before._stats?.duplicateSource??null,compendiumSource:record.before._stats?.compendiumSource??null};
                     await effect.update(restored,{diff:false,recursive:false,rsaUndoEffect:true});
                 } else await effect.delete({rsaUndoEffect:true});
             }

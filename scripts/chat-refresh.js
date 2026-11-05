@@ -1,6 +1,9 @@
+import {recentIndexedMessages} from './chat-message-index.js';
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ blessingMoonlight:{setting:'blessingMoonlightAutomation',types:['save'],feature:'blessing-of-moonlight',candidates:'blessingMoonlightSave'},
+ inspiredEclipse:{setting:'inspiredEclipseAutomation',types:['usage'],features:["moons-inspiration","moon's-inspiration","eventide's-splendor"],grant:"eclipseGrant",candidates:'eclipseSnapshot'},
  spiritsBeyond:{setting:'spiritsBeyondAutomation',types:['usage'],feature:'spirits-from-beyond',candidates:'spiritGather'},
  unbreakableMajesty:{setting:'unbreakableMajestyAutomation',types:['attack'],feature:'unbreakable-majesty',candidates:'unbreakableSnapshot'},
  leadingEvasion:{setting:'leadingEvasionAutomation',types:['damage','usage','save'],feature:'leading-evasion',incoming:true,own:true},
@@ -54,6 +57,7 @@ function actorOf(doc){if(doc?.documentName==="Actor")return doc;return doc?.acto
 function relevant(actor,rule,doc){
  if(!owner(actor))return false;
  const items=[...Array.from(actor.items??[]),...(doc?.documentName==="Item"?[doc]:[])];
+ if(rule.features&&!actor.getFlag?.(ID,rule.grant)&&!actor.flags?.[ID]?.[rule.grant]&&!items.some(item=>rule.features.includes(item.identifier??item.system?.identifier)||rule.features.some(f=>item.name?.trim().toLowerCase()===f.replaceAll("-"," "))))return false;
  if(rule.feature&&!items.some(item=>(item.identifier??item.system?.identifier)===rule.feature||item.name?.trim().toLowerCase()===rule.feature.replaceAll("-"," ")))return false;
  if(rule.effect&&!Array.from(actor.effects??[]).concat(doc?.documentName==="ActiveEffect"?[doc]:[]).some(effect=>rule.effect.test(effect.name??"")))return false;
  return true;
@@ -79,7 +83,7 @@ export async function flushChatRefresh(){
    // Feature state is recomputed when history cards are rendered again.
    // Keep explicit result/Undo refreshes even when their cards are unmounted.
    const mounted=requests.length&&globalThis.document?.querySelectorAll?new Set(Array.from(document.querySelectorAll('[data-message-id]'),node=>node.dataset?.messageId).filter(Boolean)):null;
-   if(requests.length)for(const card of Array.from(game.messages??[]).slice(-100)){
+   if(requests.length)for(const card of recentIndexedMessages(100)){
     if(mounted&&!mounted.has(card.id))continue;
     if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))))cards.set(card.id,card);
    }

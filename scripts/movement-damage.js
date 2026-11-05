@@ -1,3 +1,4 @@
+import {latestIndexedMessage} from './chat-message-index.js';
 import { describeTarget } from "./shared-activity-card.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const SOCKET = `module.${MODULE_ID}`;
@@ -122,8 +123,7 @@ export async function recordMovementDamage({ trigger, spell, region, event, acti
     if (!Number.isFinite(increment) || increment <= 0) throw new Error("Invalid movement distance increment.");
     const key = JSON.stringify([region.uuid, spell.uuid, trigger.id, token.uuid,
         event.data.combat?.id, event.data.round, event.data.turn]);
-    const card = Array.from(game.messages).reverse().find(message =>
-        message.getFlag(MODULE_ID, "movementDamage")?.key === key && message.isOwner);
+    const card = latestIndexedMessage("movementDamage",key,message=>message.isOwner);
     const signature = movementSignature(movement);
     const prior = card?.getFlag(MODULE_ID, "movementDamage");
     if (prior?.movements.includes(signature)) return;

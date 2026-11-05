@@ -25,6 +25,24 @@ export function bardicFormula(actor,feature=featureFor(actor)){
     const cls=actor.itemTypes?.class?.find(item=>(item.identifier??item.system?.identifier)==="bard"),level=Number(cls?.system?.levels);
     return level>0?"1d"+(level>=15?12:level>=10?10:level>=5?8:6):null;
 }
+export async function applyBardicGrant(message,effect,actor,tray){
+    // One Inspiration die at a time. Refresh the existing grant through native
+    // preparation, even when a different Bard supplied it, and retain it for Undo.
+    const grants=Array.from(actor.effects??[]).filter(e=>inspirationData(e)),existing=grants.find(e=>!e.disabled&&!e.duration?.expired)??grants[0];
+    let application=tray;
+    if(existing){
+        const caster=message.getAssociatedActor?.(),item=message.getAssociatedItem?.()??message.getAssociatedActivity?.()?.item,formula=bardicFormula(caster,item);
+        if(!formula||!tray._prepareEffectData)throw Error('Bardic Inspiration could not prepare the replacement grant.');
+        application={_applyEffectToActor:async(source,target)=>{
+            const prepared=await tray._prepareEffectData(source,target),data=prepared.data;delete data._id;
+            data.disabled=false;data.transfer=false;data.start=CONFIG.ActiveEffect.documentClass.getEffectStart();data.duration={...data.duration,expired:false};
+            data.flags??={};data.flags[ID]={...data.flags[ID],bardicInspiration:{formula,sourceActor:caster.uuid,sourceItem:item.uuid,img:item.img,combatInspiration:valorSource(caster)}};
+            data.flags[ID].bardicSpent=null;await existing.update(data,{rsaBardicGrantRefresh:true});return existing;
+        }};
+    }
+    const undo=globalThis.Ugmuls55eAutomationEffectUndo;
+    return undo?undo.apply(message,message,effect,actor,application,{replace:existing}):application._applyEffectToActor(effect,actor);
+}
 export function inspirationData(effect){
     const stored=effect.getFlag?.(ID,"bardicInspiration");
     if(stored&&/^1d(?:6|8|10|12)$/.test(stored.formula))return {...stored,combatInspiration:stored.combatInspiration??valorSource(resolve(stored.sourceActor)??sourceOf(effect).actor)};
@@ -120,7 +138,8 @@ function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.re
 Hooks.once("init",()=>game.settings.register(ID,"bardicInspirationAutomation",{name:"Bardic Inspiration Assistance",hint:"Offer the source Bard's Inspiration die on failed attacks, saves and checks. Preserve the original d20 and consume Inspired when the die is rolled.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
     Hooks.on("preCreateActiveEffect",effect=>{if(!enabled()&&game.settings.get(ID,"combatInspirationAutomation")!==true)return;const data=inspirationData(effect);if(data)effect.updateSource({["flags."+ID+".bardicInspiration"]:data});});
-    Hooks.on("preUpdateActiveEffect",(effect,changes)=>{
+    Hooks.on("preUpdateActiveEffect",(effect,changes,options={})=>{
+        if(options.rsaBardicGrantRefresh||options.rsaUndoEffect)return;
         // A deliberately re-enabled/reapplied effect is a fresh grant, not a permanent spent marker.
         if((!enabled()&&game.settings.get(ID,"combatInspirationAutomation")!==true)||changes.disabled!==false||!effect.getFlag?.(ID,"bardicSpent"))return;
         changes["flags."+ID+".-=bardicSpent"]=null;

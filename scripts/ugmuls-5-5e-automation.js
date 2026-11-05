@@ -1,3 +1,6 @@
+import {latestIndexedMessage} from './chat-message-index.js';
+import './initiative-prompt.js';
+import './uncanny-metabolism.js';
 import "./conjure-animals-movement.js";
 import "./conjure-animals.js";
 import "./conjure-elemental.js";
@@ -80,6 +83,10 @@ import "./font-of-inspiration.js";
 import "./countercharm.js";
 import "./superior-inspiration.js";
 import "./spirits-from-beyond.js";
+import "./empowered-channeling.js";
+import "./inspired-eclipse.js";
+import "./lunar-vitality.js";
+import "./blessing-of-moonlight.js";
 import "./words-of-creation.js";
 import "./tandem-footwork.js";
 import "./leading-evasion.js";
@@ -759,8 +766,7 @@ async function executeRegionEvent({
     const sharedKey = getSharedCardKey(trigger, spell, region, event, game.combat);
     const sharedMessage = sharedKey
         ? game.messages.get(sharedCardHistory.get(sharedKey)) ??
-            Array.from(game.messages.values()).reverse().find(message =>
-                message.getFlag?.(MODULE_ID, "sharedCardKeys")?.includes(sharedKey))
+            latestIndexedMessage("sharedCardKeys",sharedKey)
         : null;
 
     if (sharedMessage) {

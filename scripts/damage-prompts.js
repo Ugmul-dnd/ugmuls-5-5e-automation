@@ -16,7 +16,7 @@ const queued = new Set();
 const dialogClasses = new Map();
 let positionWrites = Promise.resolve();
 
-export function addDamageChoice(app, {key, label, value, disabled=false, used=false, locked=false, change=()=>{}}) {
+export function addDamageChoice(app, {key, label, value, choices, disabled=false, used=false, locked=false, change=()=>{}}) {
     const configuration=app.element.querySelector('fieldset[data-application-part="configuration"]')
         ??app.element.querySelector('[data-application-part="configuration"] fieldset')
         ??app.element.querySelector('fieldset');
@@ -29,15 +29,20 @@ export function addDamageChoice(app, {key, label, value, disabled=false, used=fa
     const fields=document.createElement("div");fields.className="form-fields";
     const select=document.createElement("select");select.disabled=disabled||used||locked;
     select.setAttribute("aria-label",label);
-    for(const [value,text] of [["yes","Yes"],["no",used?"No - Already Used":"No"]]) {
+    for(const [value,text] of (choices??[["yes","Yes"],["no",used?"No - Already Used":"No"]])) {
         const option=document.createElement("option");option.value=value;option.textContent=text;select.append(option);
     }
-    select.value=!disabled&&!used&&value?"yes":"no";
+    select.value=!disabled&&!used&&value?(choices&&typeof value==="string"?value:"yes"):"no";
     select.addEventListener("change",event=>{
-        event.stopPropagation();change(select.value==="yes");
+        event.stopPropagation();change(choices?(select.value==="free"?"free":select.value==="yes"):select.value==="yes");
         app.rebuild();
     });
     fields.append(select);group.append(caption,fields);configuration.append(group);return group;
+}
+
+export function attackCardForRolls(rolls,activity,user=game.user){
+ const parent=rolls?.[0]?.parent,attack=parent?.id?game.messages.get(parent.id):null;
+ return attack?.type==='attack'&&attack.author?.id===user.id&&attack.getAssociatedActivity?.()?.uuid===activity?.uuid?attack:null;
 }
 
 export function configurePromptDialog(kind, dialog = {}) {
@@ -86,7 +91,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation,{preview:true})??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
                 const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,disciple)??disciple;
+                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple,{preview:true})??disciple;
+                const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit,{preview:true})??spirit;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,lunar)??lunar;
             }
             async _prepareContext(options) {
                 if(kind==="damage")await globalThis.Ugmuls55eAutomationPendingDamage?.prepareDamageDialog(this);
@@ -138,7 +145,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation)??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
                 const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,disciple)??disciple;
+                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple)??disciple;
+                const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit)??spirit;
+                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,lunar)??lunar;
                 }
                 if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
@@ -193,6 +202,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationPrecision?.addPrecisionChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDisciple?.addNote(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationEmpoweredChanneling?.addChoice(this);
+                if(kind === "damage") globalThis.Ugmuls55eAutomationLunarVitality?.addChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") {globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);globalThis.Ugmuls55eAutomationEvocation?.addEvocationChoice(this);globalThis.Ugmuls55eAutomationOverchannel?.addOverchannelChoice(this);}
                 if(kind === "damage") globalThis.Ugmuls55eAutomationAffinity?.addAffinityChoice(this);
@@ -253,9 +264,13 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,options);
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,options);
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,options);
+                        await globalThis.Ugmuls55eAutomationEmpoweredChanneling?.commit(this,options);
+                        await globalThis.Ugmuls55eAutomationLunarVitality?.commit(this,options);
                     }
                     catch(error) {
                         // Release pending uses if resource consumption blocks submission.
+                        await globalThis.Ugmuls55eAutomationLunarVitality?.commit(this,{});
+                        await globalThis.Ugmuls55eAutomationEmpoweredChanneling?.commit(this,{});
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,{});
                         await globalThis.Ugmuls55eAutomationEvocation?.commitEvocation(this,{});
                         await globalThis.Ugmuls55eAutomationOverchannel?.commitOverchannel(this,{});
@@ -525,9 +540,9 @@ Hooks.once("ready", () => {
     });
     Hooks.on("dnd5e.postRollAttack", (rolls,{subject:activity}) => {
         if (!activity || !rolls?.length || game.settings.get(MODULE_ID,"promptDamageOnHit") !== true) return;
-        const attack = Array.from(game.messages).reverse().find(message =>
-            message.author?.id === game.user.id && message.type === "attack" &&
-            message.getAssociatedActivity?.()?.uuid === activity.uuid && message.rolls?.[0]?.total === rolls[0].total);
+        // Native publication attaches the exact attack card to its rolls. Equal
+        // totals from repeated attacks must never select another attack's card.
+        const attack=attackCardForRolls(rolls,activity);
         if (!attack?.system.evaluatedTargets?.some(target => target.isMiss === false || target.isMiss === true && (globalThis.Ugmuls55eAutomationAcidArrow?.allowsMiss(activity)||globalThis.Ugmuls55eAutomationPotentCantrip?.allowsMiss(activity)))) return;
         const origin = attack.system.origin;
         const card = typeof origin === "string" ? game.messages.get(origin) : origin;

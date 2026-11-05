@@ -1,4 +1,4 @@
-import {createEventQueue} from './shared-activity-card.js';
+import {createEventQueue,startupActors} from './shared-activity-card.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export async function syncFontRecovery(actor){
@@ -14,6 +14,6 @@ export async function syncFontRecovery(actor){
  if(updates.length)await actor.updateEmbeddedDocuments('Item',updates);
 }
 function report(error){console.error('Font of Inspiration',error);}
-async function recover(){const actors=new Map(values(game.actors).map(a=>[a.uuid,a]));for(const scene of values(game.scenes))for(const token of values(scene.tokens))if(token.actor)actors.set(token.actor.uuid,token.actor);for(const actor of actors.values())await enqueue(()=>syncFontRecovery(actor));}
+async function recover(){for(const actor of startupActors())await enqueue(()=>syncFontRecovery(actor));}
 Hooks.once('init',()=>game.settings.register(ID,'fontInspirationAutomation',{name:'Bard: Font of Inspiration Recovery',hint:'Automatically enable native Short Rest recovery for Bardic Inspiration while Font of Inspiration is owned. Preserve existing recovery rules and restore the prior configuration if the feature is removed.',scope:'world',config:true,type:Boolean,default:true,onChange:()=>recover().catch(report)}));
 Hooks.once('ready',()=>{recover().catch(report);for(const event of ['createItem','updateItem','deleteItem'])Hooks.on(event,item=>{if(['font-of-inspiration','bardic-inspiration'].includes(key(item)))enqueue(()=>syncFontRecovery(item.actor??item.parent)).catch(report);});Hooks.on('createActor',actor=>enqueue(()=>syncFontRecovery(actor)).catch(report));Hooks.on('createToken',token=>enqueue(()=>syncFontRecovery(token.actor)).catch(report));});

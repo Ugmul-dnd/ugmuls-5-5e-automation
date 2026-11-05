@@ -1,5 +1,6 @@
 import {hasEquivalentActiveEffect,regionOwnsEffect} from "./shared-activity-card.js";
 import {regionManagesCardEffect} from "./region-library.js";
+import {applyBardicGrant} from "./bardic-inspiration.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const completed=new Set();
 const pending=new Set();
@@ -84,10 +85,11 @@ export async function applyBuffEffects(message) {
         if (typeof tray._applyEffectToActor !== "function") throw Error("D&D5e effect application API is unavailable.");
         for (const actor of actors.values()) for (const effect of effects) {
             // A prior partial attempt may already have applied this source.
-            if(hasEquivalentActiveEffect(actor,effect)&&!globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity))continue;
+            if(!inspire&&hasEquivalentActiveEffect(actor,effect)&&!globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity))continue;
             const tokens=await Promise.all((message.system.targets??[]).filter(target=>target.actor===actor.uuid||actors.size===1)
                 .map(target=>target.token?fromUuid(target.token):null));
             if(tokens.some(token=>token?.actor?.uuid===actor.uuid&&regionOwnsEffect(token,effect)))continue;
+            if(inspire){await applyBardicGrant(message,effect,actor,tray);continue;}
             const undo=globalThis.Ugmuls55eAutomationEffectUndo;
             if(undo)await undo.apply(message,message,effect,actor,tray);
             else await tray._applyEffectToActor(effect,actor);

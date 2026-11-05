@@ -1,4 +1,5 @@
-import {createEventQueue,isRollAdjustmentLocked,describeTarget} from "./shared-activity-card.js";
+import {indexedMessages} from './chat-message-index.js';
+import {createEventQueue,isRollAdjustmentLocked,describeTarget,linkedHpCards} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 const ID="ugmuls-5-5e-automation",types=["acid","cold","fire","lightning","thunder"],enqueue=createEventQueue();
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier;
@@ -16,7 +17,7 @@ export function rebukeRecord(card,uuid){
 export function refreshRebukeDamage(attack){
  if(attack?.type!=="attack")return;
  const cards=new Map(values(attack.getAssociatedRolls?.("damage")).map(card=>[card.id,card]));
- for(const card of values(game.messages).slice(-100))if(card.type==="damage"&&rebukeAttack(card)?.id===attack.id)cards.set(card.id,card);
+ for(const card of [...linkedHpCards(attack),...indexedMessages("origin",attack.id),...indexedMessages("damageAttackId",attack.id)])if(card.type==="damage"&&rebukeAttack(card)?.id===attack.id)cards.set(card.id,card);
  for(const card of cards.values())globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
 }
 export function rebukeCandidates(card,user=game.user){

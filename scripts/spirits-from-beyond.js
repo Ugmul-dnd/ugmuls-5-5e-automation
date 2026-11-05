@@ -64,7 +64,13 @@ export function spiritOperation(operation,payload,user=game.user){return enqueue
   let draw=flag(card,'spiritDraw');if(!draw){
    const rolls=[];for(let i=0;i<(c.state.mystical?2:1);i++){const roll=await new CONFIG.Dice.BasicRoll(c.state.formula).evaluate();if(!Number.isInteger(roll.total)||!c.table.some(r=>r.number===roll.total)||roll.total>c.state.faces)throw Error('The native spirit roll could not be resolved.');rolls.push(roll);}
    const numbers=rolls.map(r=>r.total),allowed=c.state.mystical&&numbers[0]===numbers[1]?c.table.map(r=>r.number):[...new Set(numbers)];draw={numbers,allowed,rolls:rolls.map(r=>r.toJSON())};await card.setFlag(ID,'spiritDraw',draw);
-   for(const roll of rolls)if(game.dice3d?.showForRoll)await game.dice3d.showForRoll(roll,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker);
+   if(game.dice3d?.showForRoll){
+    // One visual pool throws both Mystical Connection dice together, while the
+    // saved rolls retain their individual results for choosing the spirit.
+    const visual=rolls.length>1?Roll.fromTerms([foundry.dice.terms.PoolTerm.fromRolls(rolls)]):rolls[0];
+    const animation=game.dice3d.showForRoll(visual,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker);
+    await(globalThis.Ugmuls55eAutomationWaitForAnimation?.(animation)??animation);
+   }
   }
   if(draw.allowed.length===1)return grant(card,c,draw.allowed[0]);
   if(operation==='choose'){if(!draw.allowed.includes(Number(payload.number)))throw Error('Choose one of the rolled spirits.');return grant(card,c,Number(payload.number));}
@@ -133,7 +139,7 @@ export async function processSpiritCard(card){
  const passive=flag(card,'spiritGather').mode==='passive';if(passive&&opened.has(card.id))return;
  processing.add(card.id);try{
   const c=sourceContext(card,game.user);if(passive){opened.add(card.id);if(opened.size>512)opened.delete(opened.keys().next().value);
-   if(!flag(card,'spiritDraw')){const confirmed=await foundry.applications.api.DialogV2.wait({window:{title:'Passive Channeling — Gather Spirit'},content:'<p>Giving Bardic Inspiration lets you gather a spirit. Roll '+escape(c.state.formula)+(c.state.mystical?' twice with Mystical Connection':'')+'. No additional Bardic Inspiration is consumed.</p>',rejectClose:false,buttons:[{action:'roll',label:'Roll Spirit',default:true,callback:()=>true},{action:'cancel',label:'Skip',callback:()=>false}]});if(!confirmed)return;}
+   if(!flag(card,'spiritDraw')){const confirmed=await foundry.applications.api.DialogV2.wait({window:{title:'Gather Spirit'},position:{width:300},classes:['rsa-spirit-gather-dialog'],content:'<p>Roll '+escape(c.state.formula)+(c.state.mystical?' twice (Mystical Connection)':'')+'. No extra Bardic Inspiration use.</p>',rejectClose:false,buttons:[{action:'roll',label:'Roll Spirit',default:true,callback:()=>true},{action:'cancel',label:'Skip',callback:()=>false}]});if(!confirmed)return;}
   }
   await chooseDraw(card,await operate('gather',{card:card.id}));
  }finally{processing.delete(card.id);}
@@ -141,8 +147,11 @@ export async function processSpiritCard(card){
 export async function openSpirits(item){
  if(!spiritsItem(item)||!item.actor?.isOwner||dialogs.has(item.actor.uuid))return;const c=context(item.actor);dialogs.add(c.actor.uuid);
  try{
-  const stored=gatheredSpirits(c.actor),max=snapshot(c.actor,item).faces,rows=c.table.filter(r=>r.number<=max);
-  const choice=await foundry.applications.api.DialogV2.wait({window:{title:'Spirits from Beyond'},position:{width:440},content:'<p>Bardic Inspiration: '+remaining(c.resource)+' / '+escape(c.resource.system.uses.max)+'</p><label>Controlled Channeling <select name="channel">'+rows.map(r=>'<option value="'+r.number+'">'+r.number+' — '+escape(r.name)+'</option>').join('')+'</select></label><label>Unleash Spirit <select name="unleash">'+stored.map((e,n)=>'<option value="'+escape(e.uuid)+'">'+escape(flag(e,'gatheredSpirit').name)+' (copy '+(n+1)+')</option>').join('')+'</select></label><p>Controlled Channeling uses a Bonus Action and one Bardic Inspiration. Unleash uses a Magic action and one gathered spirit; select a visible creature within 30 feet first.</p>',rejectClose:false,buttons:[{action:'channel',label:'Controlled Channeling',disabled:remaining(c.resource)<1,callback:(_e,_b,d)=>({mode:'controlled',number:Number(d.element.querySelector('[name="channel"]').value)})},{action:'unleash',label:'Unleash Spirit',disabled:!stored.length,callback:(_e,_b,d)=>({mode:'unleash',effect:d.element.querySelector('[name="unleash"]').value})},{action:'cancel',label:'Cancel',callback:()=>null}]});
+  const mode=await foundry.applications.api.DialogV2.wait({window:{title:'Spirits from Beyond'},position:{width:300},classes:['rsa-spirit-gather-dialog'],content:'<p>Bardic Inspiration: '+remaining(c.resource)+' / '+escape(c.resource.system.uses.max)+'</p>',rejectClose:false,buttons:[{action:'unleash',label:'Unleash',disabled:!gatheredSpirits(c.actor).length,callback:()=> 'unleash'},{action:'channel',label:'Controlled',disabled:remaining(c.resource)<1,callback:()=> 'controlled'},{action:'cancel',label:'Cancel',callback:()=>null}]});
+  if(!mode)return;
+  const controlled=mode==='controlled',stored=gatheredSpirits(c.actor),max=snapshot(c.actor,item).faces,rows=c.table.filter(r=>r.number<=max);
+  const selection=controlled?'<label>Spirit <select name="channel">'+rows.map(r=>'<option value="'+r.number+'">'+r.number+' — '+escape(r.name)+'</option>').join('')+'</select></label>':'<label>Spirit <select name="unleash">'+stored.map((e,n)=>'<option value="'+escape(e.uuid)+'">'+escape(flag(e,'gatheredSpirit').name)+' (copy '+(n+1)+')</option>').join('')+'</select></label>';
+  const choice=await foundry.applications.api.DialogV2.wait({window:{title:controlled?'Controlled Channeling':'Unleash Spirit'},position:{width:360},content:selection+'<p>'+(controlled?'Bonus Action · 1 Bardic Inspiration':'Magic action · 1 gathered spirit. Select a visible creature within 30 feet.')+'</p>',rejectClose:false,buttons:[{action:'confirm',label:'Confirm',default:true,disabled:controlled?remaining(c.resource)<1:!stored.length,callback:(_e,_b,d)=>controlled?{mode,number:Number(d.element.querySelector('[name="channel"]').value)}:{mode,effect:d.element.querySelector('[name="unleash"]').value}},{action:'cancel',label:'Cancel',callback:()=>null}]});
   if(!choice)return;
   if(choice.mode==='controlled'){const result=await useHelper(c.actor,controlledSpiritData(item,choice.number));if(result?.message)await processSpiritCard(result.message);return result;}
   const selected=values(game.user.targets).map(t=>t.document??t);if(selected.length!==1)throw Error('Select one creature before unleashing a spirit.');

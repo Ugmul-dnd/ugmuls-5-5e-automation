@@ -135,3 +135,6 @@
 .rsa-metamagic-choice select {min-width:0;}
 .rsa-metamagic-details {margin:8px 0 10px;padding-left:10px;border-left:2px solid var(--color-border-light-primary, #777);}
 
+.rsa-spirit-gather-dialog .form-footer {flex-direction:column;align-items:stretch;}
+.rsa-spirit-gather-dialog .form-footer button {width:100%;flex:none;}
+

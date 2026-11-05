@@ -12,9 +12,9 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 0.8.4
+## Version 0.8.5
 
-Expanded Sorcerer support brings Metamagic choices, subclass actions and Wild Magic into native casting and chat cards. Wizards gain rest-based Arcane Recovery, Mastered spell defaults and separate per-spell Signature casts. Live Region previews show eligible targets before placement, while existing final targeting stays in place. See [0.8.4 release notes](RELEASE-NOTES-0.8.4.md) for highlights and updating instructions.
+Expanded Wizard, Cleric, and Bard feature automation adds native casting options, reactions, healing, summon benefits, and source-tracked effects. Moon Bard features include Inspired Eclipse, Lunar Vitality, and Blessing of Moonlight; Monk Uncanny Metabolism can activate with initiative. An optional Carousel initiative prompt opens native roll configuration. Shared message indexing and startup discovery reduce repeated traversal. See [0.8.5 release notes](RELEASE-NOTES-0.8.5.md) for highlights, manual limits, and updating instructions.
 
 ## Main features
 
