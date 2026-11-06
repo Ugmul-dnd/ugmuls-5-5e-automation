@@ -50,7 +50,10 @@ export function isRollAdjustmentLocked(roll) {
             (origin.getFlag("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
     }
     return linkedHpCards(roll).some(card=>!card.getFlag?.("ugmuls-5-5e-automation","masteryGrazeUndone")&&
-        (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0||roll?.type==="save"&&effectsApplied(card)));
+        (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0||roll?.type==="save"&&effectsApplied(card)||
+        // A feat effect already committed this hit/critical outcome. Undo the
+        // effect before changing the source attack; no additional history scan.
+        roll?.type==="attack"&&card.getFlag?.("ugmuls-5-5e-automation","effectUndoHistory")?.some(record=>record.weaponFeat)));
 }
 Hooks.once("ready",()=>{
     for(const event of ["createChatMessage","deleteChatMessage"])Hooks.on(event,invalidateLinkedHpIndex);

@@ -1,3 +1,8 @@
+import './elemental-adept.js';
+import './mage-slayer.js';
+import './lucky.js';
+import './defensive-duelist.js';
+import './weapon-feats.js';
 import {latestIndexedMessage} from './chat-message-index.js';
 import './initiative-prompt.js';
 import './uncanny-metabolism.js';

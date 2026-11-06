@@ -44,6 +44,11 @@ function attackForDamage(message) {
     return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function readyDamageTargets(message) {
+    if(globalThis.Ugmuls55eAutomationMageSlayer?.ready(message)===false)return waiting(message,"Resolving Guarded Mind.");
+    await globalThis.Ugmuls55eAutomationLucky?.capture(message);
+    if(globalThis.Ugmuls55eAutomationLucky?.ready(message)===false)return waiting(message,"Resolving Lucky.");
+    await globalThis.Ugmuls55eAutomationDuelist?.capture(message);
+    if(globalThis.Ugmuls55eAutomationDuelist?.ready(message)===false)return waiting(message,"Resolving Defensive Duelist.");
     if(globalThis.Ugmuls55eAutomationMirrorImage?.intercepted(message))return null;
     if(globalThis.Ugmuls55eAutomationMirrorImage?.ready(message)===false)return waiting(message,"Resolving Mirror Image.");
     if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(message)===false)return waiting(message,"Resolving Unbreakable Majesty’s Recoil Save.");
@@ -111,6 +116,9 @@ export async function applyAutomaticDamage(message) {
     let holder;
     try {
         await waitForWorkflowAnimations(message);
+        // Commit automatic weapon feat effects before automatic HP can
+        // lock this damage card; share the creation hook's in-flight operation.
+        await globalThis.Ugmuls55eAutomationWeaponFeats?.applyAutomaticWeaponFeats(message);
         if(isManual(message)||!autoApplyHpEnabled(message))return;
         const latest=await readyDamageTargets(message);
         if(!latest||latest.map(t=>t.token).join()!==targets.map(t=>t.token).join())return;
@@ -206,6 +214,9 @@ export async function waitForWorkflowAnimations(message) {
     await Promise.all([remote,...rolls.map(roll=>waitForDamageAnimation(roll))]);
 }
 export async function applyOutcomeEffects(card) {
+    if(globalThis.Ugmuls55eAutomationMageSlayer?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationLucky?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationDuelist?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationMirrorImage?.intercepted(card)||globalThis.Ugmuls55eAutomationMirrorImage?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(card)===false)return;
     if(globalThis.Ugmuls55eAutomationSentinel?.ready(card)===false)return;
@@ -253,6 +264,9 @@ export async function applyOutcomeEffects(card) {
     runningEffects.add(card.id);
     try {
         await waitForWorkflowAnimations(card);
+        if(globalThis.Ugmuls55eAutomationMageSlayer?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationLucky?.ready(card)===false)return;
+        if(globalThis.Ugmuls55eAutomationDuelist?.ready(card)===false)return;
         if(isManual(card)||game.settings.get(MODULE_ID,setting)!==true||globalThis.Ugmuls55eAutomationBalance?.ready(card)===false||await globalThis.Ugmuls55eAutomationReactive?.stop(card))return;
         const currentTargets=(saving?usage:card).system.targets??[];
         if(targets.some(({descriptor})=>!currentTargets.some(target=>target.token===descriptor.token)))return;
@@ -266,6 +280,9 @@ export async function applyOutcomeEffects(card) {
             const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,actor,saving?usage.system.outcomes.get(descriptor.token):null);
             if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(card,decision);return;}
             for(const effect of effects) {
+                if(globalThis.Ugmuls55eAutomationMageSlayer?.ready(card)===false)return;
+    if(globalThis.Ugmuls55eAutomationLucky?.ready(card)===false)return;
+                if(globalThis.Ugmuls55eAutomationDuelist?.ready(card)===false)return;
                 const profile=activity.effects?.find(profile=>profile.uuid===effect.uuid||profile._id===effect.id);
                 if(saving&&usage.system.outcomes.get(descriptor.token)==="success"&&(profile?.onSave!==true||globalThis.Ugmuls55eAutomationPotentCantrip?.eligible(activity)))continue;
                 const key=JSON.stringify([descriptor.token,effect.uuid]);

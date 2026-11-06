@@ -2,6 +2,13 @@ import {recentIndexedMessages} from './chat-message-index.js';
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ elementalAdept:{setting:'elementalAdeptAutomation',types:['damage'],effect:/^Elemental Adept — /,own:true},
+ mageSlayer:{setting:'mageSlayerAutomation',types:['save'],feature:'mage-slayer',own:true},
+ lucky:{setting:'luckyAutomation',types:['attack'],feature:'lucky',incoming:true},
+ defensiveDuelist:{setting:'defensiveDuelistAutomation',types:['attack'],feature:'defensive-duelist',incoming:true},
+ crusher:{setting:'crusherAutomation',types:['damage'],feature:'crusher',own:true},
+ slasher:{setting:'slasherAutomation',types:['damage'],feature:'slasher',own:true},
+ piercer:{setting:'piercerAutomation',types:['damage'],feature:'piercer',own:true},
  blessingMoonlight:{setting:'blessingMoonlightAutomation',types:['save'],feature:'blessing-of-moonlight',candidates:'blessingMoonlightSave'},
  inspiredEclipse:{setting:'inspiredEclipseAutomation',types:['usage'],features:["moons-inspiration","moon's-inspiration","eventide's-splendor"],grant:"eclipseGrant",candidates:'eclipseSnapshot'},
  spiritsBeyond:{setting:'spiritsBeyondAutomation',types:['usage'],feature:'spirits-from-beyond',candidates:'spiritGather'},

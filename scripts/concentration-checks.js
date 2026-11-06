@@ -6,8 +6,16 @@ const currentEffects=actor=>Array.from(actor?.concentration?.effects??[]).filter
 const coordinator=card=>game.users.activeGM??(card?.author?.active?card.author:selectSaveUser(actorFor(card),game.users,null));
 const enabled=()=>game.settings.get(ID,"promptConcentrationChecks")===true;
 function actorFor(card){return card?.getAssociatedActor?.()??ChatMessage.getSpeakerActor(card?.speaker);}
+export function createConcentrationPrompt(actor,{dc=10,ability=null,flags={}}={}){
+ if(game.settings.get('dnd5e','disableConcentration')===true||!currentEffects(actor).length)return Promise.resolve(null);
+ const Type=ChatMessage.implementation??ChatMessage,button={dc,format:'short',type:'concentration'};
+ if(ability)button.ability=ability;
+ // Native prompt format, with optional source provenance. The shared request,
+ // owner routing, protection, takeover, and expiry workflows remain unchanged.
+ return Type.create({type:'prompt',speaker:Type.getSpeaker({actor}),system:{broadcast:false,buttons:[button]},whisper:Array.from(game.users).filter(u=>actor.testUserPermission(u,'OWNER')).map(u=>u.id),flags});
+}
 export function prepareConcentrationPrompt(card){
- if(card.type!=="prompt"||!enabled()&&game.settings.get(ID,"autoBreakConcentration")!==true)return;
+ if(card.type!=="prompt"||!enabled()&&game.settings.get(ID,"autoBreakConcentration")!==true&&!card.getFlag?.(ID,'mageSlayerConcentration'))return;
  const button=Array.from(card.system?.buttons??[]).find(button=>button.type==="concentration");if(!button)return;
  const actor=actorFor(card),effects=currentEffects(actor);if(!actor)return;
  if(!effects.length){if(Array.from(actor.concentration?.effects??[]).some(effect=>protectedEffect(actor,effect)))return false;return;}
@@ -42,9 +50,11 @@ export async function receiveConcentration(packet){
  try{
   const auto=!game.users.get(state.userId)?.isGM?false:globalThis.Ugmuls55eAutomationNpcDamage?.shouldAutoRollNpc(actor)===true;
   const config={target:state.dc,...(state.ability?{ability:state.ability}:{}),...(auto?{rsaAutoNpcSave:true}:{})};
+  const mageSlayer=card.getFlag?.(ID,'mageSlayerConcentration');
+  if(mageSlayer?.target===actor.uuid)config.disadvantage=true;
   const dialog={configure:!auto,options:{id:"rsa-concentration-"+card.id}};
   const positioned=auto?dialog:globalThis.Ugmuls55eAutomationDamage?.configurePromptDialog("save",dialog)??dialog;
-  const rolls=await actor.rollConcentration(config,positioned,{data:{speaker:card.speaker,whisper:card.whisper,blind:card.blind??false,system:{origin:card.id},flags:{[ID]:{concentrationRequest:{id:card.id,session:state.session,actor:actor.uuid,effects:state.effects,dc:state.dc}}}}});
+  const rolls=await actor.rollConcentration(config,positioned,{data:{speaker:card.speaker,whisper:card.whisper,blind:card.blind??false,system:{origin:card.id},flags:{[ID]:{...(mageSlayer?.target===actor.uuid?{mageSlayerConcentration:mageSlayer}:{}),concentrationRequest:{id:card.id,session:state.session,actor:actor.uuid,effects:state.effects,dc:state.dc}}}}});
   if(!rolls?.length){const packet={action:"concentrationPromptClosed",messageId:card.id,userId:game.user.id,session:state.session};if(coordinator(card)?.id===game.user.id)await releaseConcentration(card,packet);else game.socket.emit("module."+ID,packet);}
  }catch(error){
   const closed={action:"concentrationPromptClosed",messageId:card.id,userId:game.user.id,session:state.session};
@@ -72,7 +82,10 @@ export async function resolveConcentration(card){
   const state=record(request),actor=await fromUuid(link.actor),roll=card.rolls[0];
   if(!state||state.session!==link.session||state.status!=="rolling"||state.actor!==actor?.uuid||card.author?.id!==state.userId)return;
   if(roll.evaluated===false||!Number.isFinite(roll.total))return;
-  const failed=typeof roll.isFailure==="boolean"?roll.isFailure:Number(roll.total)<state.dc;
+  const failed=!(card.system?.forceSuccess||card.system?.resisted)&&(typeof roll.isFailure==="boolean"?roll.isFailure:Number(roll.total)<state.dc);
+  // A failed mental concentration save can still use Guarded Mind. Keep its
+  // current request pending until success is chosen or native Break is used.
+  if(failed&&globalThis.Ugmuls55eAutomationMageSlayer?.canGuard(card,game.user))return;
   await request.setFlag(ID,"concentrationCheck",{...state,status:"resolved",failed,resultId:card.id});
   if(failed&&game.settings.get(ID,"autoBreakConcentration")===true){
    for(const effect of currentEffects(actor))if(state.effects.includes(effect.id))await actor.endConcentration(effect);
@@ -99,6 +112,7 @@ Hooks.once("init",()=>{
 Hooks.once("ready",()=>{
  Hooks.on("preCreateChatMessage",prepareConcentrationPrompt);Hooks.on("preCreateChatMessage",validateConcentrationResult);
  Hooks.on("createChatMessage",card=>{if(record(card)&&enabled()&&coordinator(card)?.id===game.user.id)dispatchConcentration(card,game.user).catch(report);resolveConcentration(card).catch(report);});
+ Hooks.on('updateChatMessage',(card,changes)=>{if(card.getFlag?.(ID,'concentrationRequest')&&(Object.hasOwn(changes??{},'system.resisted')||Object.hasOwn(changes?.system??{},'resisted')||Object.hasOwn(changes??{},'system.outcome')||Object.hasOwn(changes?.system??{},'outcome')))resolveConcentration(card).catch(report);});
  Hooks.on("dnd5e.renderChatMessage",renderConcentrationPrompt);
  Hooks.on("userConnected",(user,connected)=>{if(connected)return;for(const card of game.messages){const state=record(card);if(state&&!["resolved","obsolete"].includes(state.status)&&state.userId===user.id&&coordinator(card)?.id===game.user.id)dispatchConcentration(card,game.user,{manual:true}).catch(report);}});
  game.socket.on("module."+ID,packet=>{

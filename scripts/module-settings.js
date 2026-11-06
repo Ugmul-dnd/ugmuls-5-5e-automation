@@ -17,7 +17,7 @@ export const CLASS_AUTOMATIONS=[
 export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
-    {id:"feats",name:"Feats",icon:"fa-star",keys:["savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
+    {id:"feats",name:"Feats",icon:"fa-star",keys:["elementalAdeptAutomation","mageSlayerAutomation","luckyAutomation","defensiveDuelistAutomation","crusherAutomation","slasherAutomation","piercerAutomation","savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
     {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];

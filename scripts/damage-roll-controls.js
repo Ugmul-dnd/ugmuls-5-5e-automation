@@ -9,6 +9,9 @@ export function isAttackDamage(message) {
 }
 
 export function canAdjustDamage(message,user) {
+    // Critical feat effects depend on the current critical result. Undo those
+    // applications before downgrading it; newer effects remain protected by Undo.
+    if((message?.getFlag?.(MODULE_ID,"effectUndoHistory")??[]).some(record=>["crusherCritical","slasherCritical"].includes(record.weaponFeat)))return false;
     return !isRollAdjustmentLocked(message) && isAttackDamage(message) && Boolean(user?.isGM || message.author?.id === user?.id ||
         message.getAssociatedActor?.()?.testUserPermission?.(user,"OWNER"));
 }
@@ -29,7 +32,7 @@ async function convertSavage(roll,critical) {
     let remainder=roll.terms.slice(1),flat=[];
     if(policy.powerfulCritical&&roll.options.isCritical) {
         const die=pool.rolls[0].terms[0];
-        const maximum=die.number*die.faces*(Math.max(1,(policy.multiplier??2)-1)+(policy.bonusDice??0));
+        const maximum=die.number*die.faces*(Math.max(1,(policy.multiplier??2)-1)+((policy.bonusDice??0)-(roll.options.rsaPiercerCritical?1:0)))+(roll.options.rsaPiercerCritical?die.faces:0);
         if(!(remainder[0] instanceof OperatorTerm)||remainder[0].operator!=="+"||!(remainder[1] instanceof NumericTerm)||remainder[1].number!==maximum)
             throw Error("Cannot identify Savage Attacker's maximized critical bonus safely.");
         flat=remainder.slice(0,2);remainder=remainder.slice(2);
@@ -83,12 +86,12 @@ export async function changeDamageCritical(roll,critical) {
                 if (policy.multiplyNumeric&&!term.options?.rsaCuttingWords&&!term.options?.rsaParry) term.number=critical?term.number*multiplier:term.number/multiplier;
                 terms.push(term);continue;
             }
-            if (!(term instanceof foundry.dice.terms.Die) || term.modifiers?.some(mod=>!roll.options.rsaGreatWeaponFighting||!/^min\d+$/.test(mod))) throw Error("Complex or modified dice are not supported by this toggle.");
+            if (!(term instanceof foundry.dice.terms.Die) || term.modifiers?.some(mod=>!(roll.options.rsaGreatWeaponFighting||roll.options.rsaElementalAdept)||!/^min\d+$/.test(mod))) throw Error("Complex or modified dice are not supported by this toggle.");
             const previous=source[index-1],next=source[index+1];
             if ([previous,next].some(operator=>operator instanceof foundry.dice.terms.OperatorTerm && !["+","-"].includes(operator.operator))) {
                 throw Error("Nested or multiplied powerful-critical dice require manual correction.");
             }
-            const maximized=term.number*term.faces*(Math.max(1,multiplier-1)+(index===0?(policy.bonusDice ?? 0):0));
+            const maximized=term.number*term.faces*(Math.max(1,multiplier-1)+(index===0?((policy.bonusDice ?? 0)-(roll.options.rsaPiercerCritical?1:0)):0))+(index===0&&roll.options.rsaPiercerCritical?term.faces:0);
             terms.push(term);
             if (critical) {
                 const sign=previous instanceof foundry.dice.terms.OperatorTerm?previous.operator:"+";
@@ -110,7 +113,7 @@ export async function changeDamageCritical(roll,critical) {
             if (policy.multiplyNumeric&&!term.options?.rsaCuttingWords&&!term.options?.rsaParry) term.number=critical?term.number*multiplier:term.number/multiplier;
             continue;
         }
-        if (!(term instanceof foundry.dice.terms.Die) || term.modifiers?.some(mod=>!roll.options.rsaGreatWeaponFighting||!/^min\d+$/.test(mod))) throw Error("Complex or modified dice are not supported by this toggle.");
+        if (!(term instanceof foundry.dice.terms.Die) || term.modifiers?.some(mod=>!(roll.options.rsaGreatWeaponFighting||roll.options.rsaElementalAdept)||!/^min\d+$/.test(mod))) throw Error("Complex or modified dice are not supported by this toggle.");
         const bonus=index===0?(policy.bonusDice ?? 0):0;
         const number=critical ? term.number*multiplier+bonus : (term.number-bonus)/multiplier;
         if (!Number.isInteger(number) || number<1) throw Error("Cannot safely determine the original damage dice count.");

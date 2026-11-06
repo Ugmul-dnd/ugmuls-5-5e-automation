@@ -62,7 +62,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,overchannel)??overchannel;
                 const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave,{preview:true})??cleave;
                 if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
-                const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple,{preview:true})??grapple;
+                const piercer=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,grapple)??grapple;
+                const savage=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,piercer,{preview:true})??piercer;
                 const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,savage)??savage;
                 const thrall=globalThis.Ugmuls55eAutomationThrallHex?.finalizeThrall(this,riders,{preview:true})??riders;
                 const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,thrall,{preview:true})??thrall;
@@ -93,7 +94,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
                 const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple,{preview:true})??disciple;
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit,{preview:true})??spirit;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,lunar)??lunar;
+                const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
+                const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
+                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,greatRolls)??greatRolls;
             }
             async _prepareContext(options) {
                 if(kind==="damage")await globalThis.Ugmuls55eAutomationPendingDamage?.prepareDamageDialog(this);
@@ -115,7 +118,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const cleave=globalThis.Ugmuls55eAutomationCleave?.finalizeCleaveDamage(this,overchannel)??overchannel;
                     const grapple=globalThis.Ugmuls55eAutomationGrapple?.finalizeGrapple(this,cleave)??cleave;
                     if(globalThis.Ugmuls55eAutomationGrapple?.replacesGrappleDamage(this))return grapple;
-                    const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,grapple)??grapple;
+                    const piercer=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,grapple)??grapple;
+                    const weaponRolls=globalThis.Ugmuls55eAutomationSavage?.finalizeSavage(this,piercer)??piercer;
                     const riders=globalThis.Ugmuls55eAutomationRiders?.finalizeRiders(this,weaponRolls)??weaponRolls;
                     const thrall=globalThis.Ugmuls55eAutomationThrallHex?.finalizeThrall(this,riders)??riders;
                     const fury=globalThis.Ugmuls55eAutomationBestialFury?.finalizeFury(this,thrall)??thrall;
@@ -147,7 +151,9 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
                 const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple)??disciple;
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit)??spirit;
-                return globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,lunar)??lunar;
+                const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
+                const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
+                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,greatRolls)??greatRolls;
                 }
                 if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;
