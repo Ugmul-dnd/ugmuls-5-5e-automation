@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Finish legendary initiative sorting compatibility with Monk’s Combat Details: invoke the libWrapper chain for slot/anchor comparisons as well as ordinary comparisons, preserving anchored slot order without the missing-chain conflict warning.
+
 ## v1.0.0 — Official Release (2026-11-07)
 
 - Limit the Legendary Resistance effect-automation hold to failed saving throws. Native attack riders such as Starry Wisp’s Illuminated now apply to legendary targets through the normal hit/damage and Effect Undo workflow; successful-save and single utility effects are not incorrectly held. Preserve failed-save decisions, misses, source targeting, and resistance resources.

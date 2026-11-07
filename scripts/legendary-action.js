@@ -70,8 +70,11 @@ export function legendarySort(wrapped,a,b){
     const find=id=>combat?.combatants?.get?.(id)??values(combat?.combatants).find(c=>c.id===id);
     const aa=aSlot?find(aSlot.after)??a:a;
     const bb=bSlot?find(bSlot.after)??b:b;
+    // Always invoke the remaining chain, including when both entries resolve
+    // to one anchor. Only the slot's relative placement overrides its result.
+    const result=wrapped(aa,bb);
     if(aa.id===bb.id)return aSlot&&bSlot?String(a.id).localeCompare(String(b.id)):aSlot?1:-1;
-    const result=wrapped(aa,bb);if(result)return result;
+    if(result)return result;
     // Keep the native stable order for tied real combatants. An anchored
     // slot follows its player even when initiative values are identical.
     const entries=values(combat?.combatants);return entries.indexOf(aa)-entries.indexOf(bb);
@@ -88,9 +91,8 @@ export function installLegendaryPlacement(Type=globalThis.CONFIG?.Combat?.docume
     if(typeof sort!=="function"||typeof next!=="function")return;
     if(globalThis.libWrapper?.register&&Type===globalThis.CONFIG?.Combat?.documentClass){
         // Compose with Monk's Combat Details and other initiative wrappers.
-        // MIXED is required because comparisons against the slot's own anchor
-        // are resolved here; all real-creature comparisons use the next link.
-        libWrapper.register(ID,"CONFIG.Combat.documentClass.prototype._sortCombatants",legendarySort,"MIXED");
+        // Every comparison calls the next link, including slot/anchor pairs.
+        libWrapper.register(ID,"CONFIG.Combat.documentClass.prototype._sortCombatants",legendarySort,"WRAPPER");
         libWrapper.register(ID,"CONFIG.Combat.documentClass.prototype.nextTurn",legendaryNextTurn,"WRAPPER");
     }else{
         // Standalone fallback for installations without libWrapper.
