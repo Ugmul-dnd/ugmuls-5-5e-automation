@@ -21,6 +21,7 @@ function manualActivity(activity,message) {
     return !cleaveMessage(message)&&["spell","weapon","feat"].includes(activity?.item?.type)&&!message?.data?.flags?.[ID]?.regionTriggered&&!message?.data?.flags?.[ID]?.riderTriggered;
 }
 export function reactionActivity(activity) {
+    if(globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(activity))return false;
     // Hill's Tumble is part of its triggering hit, including an Opportunity
     // Attack. Its separate utility use must not spend a second Reaction.
     if(activity?.item?.type==='feat'&&(activity.item.identifier??activity.item.system?.identifier)==='hills-tumble'&&activity.item.system?.source?.rules!=='2014')return false;
@@ -55,6 +56,7 @@ export async function recordReactionUse(activity,usage,results) {
 
 export function allowReactionAttack(config,dialog,message) {
     const activity=config?.subject;if(cleaveMessage(message))return;
+    if(globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(activity))return;
     if(!enabled()||activity?.type!=="attack"||!offTurn(activity))return;
     const used=reactionUsed(activity.actor??activity.item?.actor);if(!used)return;
     const origin=message?.data?.system?.origin;

@@ -33,6 +33,24 @@ export function equipmentFilter(entry){
     const specific=entry.type==="weapon"&&!(["sim","mar"].includes(entry.key)||entry.key in CONFIG.DND5E.weaponTypes)||entry.type==="tool"&&!(entry.key in CONFIG.DND5E.toolTypes);
     return entry.key?[{k:specific?"system.type.baseItem":"system.type.value",o:"in",v:values}]:[];
 }
+export function equipmentBrowserOptions(entry,candidates=[]){
+    const types=new Set([['focus','armor'].includes(entry.type)?'equipment':entry.type]),additional={};
+    const category=equipmentFilter(entry).find(filter=>filter.k==='system.type.value');
+    if(category)additional.type=Object.fromEntries(category.v.map(value=>[value,1]));
+    else if(candidates.length&&candidates.every(item=>typeof item.system?.type?.value==='string'&&item.system.type.value)){
+        // Specific tools and native focus IDs use base-item/ID restrictions,
+        // not a browser category. Derive their category from the allowed items.
+        additional.type=Object.fromEntries(candidates.map(item=>[item.system.type.value,1]));
+    }
+    if(entry.type==='focus'&&candidates.length&&candidates.every(item=>Array.from(item.system?.properties??[]).includes('foc')))additional.properties={foc:1};
+    const locked={documentClass:'Item',types:new Set(types)};
+    // Native prerequisites disable invalid rows but do not remove them. Limit
+    // the fetched results to the validated UUIDs as well, so Holy Focus shows
+    // its actual choices instead of every focus with red prerequisite locks.
+    // UUIDs preserve source identity when different packs reuse an item ID.
+    if(candidates.length)locked.arbitrary=[{k:'uuid',o:'in',v:[...new Set(candidates.map(item=>item.uuid))]}];
+    return {tab:'physical',filters:{locked,initial:{documentClass:'Item',types:new Set(types),additional}},selection:{min:1,max:1}};
+}
 export async function addNativeOrigin(actor,source){
     if(!actor.isOwner)throw Error("You do not own this character.");
     if(!kinds[source.type])throw Error("Choose a class, background, or species.");
@@ -179,7 +197,7 @@ export class PlayerCreationWizard extends foundry.applications.api.ApplicationV2
         const types=new Set([['focus','armor'].includes(entry.type)?'equipment':entry.type]);
         const candidates=await dnd5e.applications.CompendiumBrowser.fetch(CONFIG.Item.documentClass,{types,filters:equipmentFilter(entry)}),allowed=new Set(candidates.map(item=>item.uuid));
         if(!allowed.size)throw Error("No matching equipment in enabled Compendium Sources.");
-        const uuid=await dnd5e.applications.CompendiumBrowser.selectOne({tab:'physical',filters:{locked:{documentClass:'Item',types},initial:{documentClass:'Item',types}},prerequisites:{enforce:true,fullDocuments:false,validate:item=>new Map([['equipment',{valid:allowed.has(item.uuid),label:'Matches starting equipment choice',quiet:true}]])},selection:{min:1,max:1}});if(!uuid)return;
+        const uuid=await dnd5e.applications.CompendiumBrowser.selectOne({...equipmentBrowserOptions(entry,candidates),prerequisites:{enforce:true,fullDocuments:false,validate:item=>new Map([['equipment',{valid:allowed.has(item.uuid),label:'Matches starting equipment choice',quiet:true}]])}});if(!uuid)return;
         const doc=await this.doc(uuid);if(!doc||!allowed.has(uuid))throw Error('Choose a matching starting equipment item.');this.progress.equipment[kind].picks[gear+':'+slot]=uuid;
     }
     async applyEquipment(){

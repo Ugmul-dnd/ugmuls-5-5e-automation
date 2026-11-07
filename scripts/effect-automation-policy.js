@@ -1,7 +1,9 @@
 const ID='ugmuls-5-5e-automation',flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
 const origin=c=>typeof c?.system?.origin==='string'?game.messages.get(c.system.origin.replace(/^ChatMessage\./,'')):c?.system?.origin;
 export function legendaryResistanceAvailable(actor){const resource=actor?.system?.resources?.legres;if(actor?.type!=='npc'||!resource)return false;return Number(resource.value??(Number(resource.max??0)-Number(resource.spent??0)))>0;}
-export function automaticEffectDecision(activity,effects,actor,outcome=null){const applicable=effects.filter(effect=>{if(activity?.type!=='save')return true;const profile=activity.effects?.find(p=>p.uuid===effect.uuid||p._id===(effect.id??effect._id));return outcome==='success'?profile?.onSave===true:outcome==='failure';});if(applicable.length&&legendaryResistanceAvailable(actor))return 'Legendary Resistance available';
+// Legendary Resistance can replace a failed save, not negate an attack hit
+// (for example Starry Wisp) or an effect that applies after a successful save.
+export function automaticEffectDecision(activity,effects,actor,outcome=null){const applicable=effects.filter(effect=>{if(activity?.type!=='save')return true;const profile=activity.effects?.find(p=>p.uuid===effect.uuid||p._id===(effect.id??effect._id));return outcome==='success'?profile?.onSave===true:outcome==='failure';});if(activity?.type==='save'&&outcome==='failure'&&applicable.length&&legendaryResistanceAvailable(actor))return 'Legendary Resistance available';
  const duplicates=new Set(['VUqQIaiZoIzxUdf1','XcTQl9DhT9lC3bxI','uMsGEsbEZ2hckOKW']);
  // Mirror Image grants all three native duplicates; these are not alternative choices.
  if(activity?.type==='utility'&&activity.item?.type==='spell'&&(activity.item.identifier??activity.item.system?.identifier)==='mirror-image'&&activity.id==='dnd5eactivity000'&&applicable.length===3&&new Set(applicable.map(e=>e.id??e._id)).size===3&&applicable.every(e=>duplicates.has(e.id??e._id)))return null;

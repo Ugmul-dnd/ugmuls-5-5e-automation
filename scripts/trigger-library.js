@@ -2056,11 +2056,15 @@ export function triggerKeyForSpell(spell,effect){const identifier=spell?.identif
 export async function saveTriggerEntry(key,entry){validateTriggerEntry(entry);const setting=TRIGGER_DEFAULTS[key]?"triggerLibraryOverrides":"triggerLibraryCustoms";const entries=foundry.utils.deepClone(game.settings.get(ID,setting)??{});entries[key]=entry;await game.settings.set(ID,setting,entries);}
 export function validateTriggerEntry(entry){
  if(entry.sourceKind==="blink")return entry;
+ if(entry.sourceKind==="infernalWound"){
+  if(entry.event!=="turnStart"||!entry.damageActivityId||![entry.medicineDC,entry.durationSeconds].every(value=>Number.isFinite(Number(value))&&Number(value)>0))throw Error("Choose an HP-loss activity and positive Medicine DC and duration.");
+  return entry;
+ }
  if(entry.sourceKind==="recurringHealing"){
   if(!["turnStart","turnEnd"].includes(entry.event)||!entry.effectName?.trim()||!["healing","temphp"].includes(entry.healingType)||!["casterMod","fixed"].includes(entry.healingSource))throw Error("Choose a turn trigger, applied effect and healing type/source.");
   if(entry.healingSource==="fixed"&&(!Number.isFinite(Number(entry.healingAmount))||Number(entry.healingAmount)<0))throw Error("Healing amount must be zero or greater.");return entry;
  }
- if(!["turnStart","turnEnd","damage",...(entry.sourceKind==="monsterDamage"?["sourceTurnStart","sourceTurnEnd"]:[])].includes(entry.event))throw Error("Choose a supported turn or damage trigger.");
+ if(!["turnStart","turnEnd","damage",...(["monsterDamage","customEffect"].includes(entry.sourceKind)?["sourceTurnStart","sourceTurnEnd"]:[])].includes(entry.event))throw Error("Choose a supported turn or damage trigger.");
  if((entry.event==="damage"||entry.onDamage)&&(!entry.saveActivity||entry.damageActivity))throw Error("Damage-taken triggers require a save-only activity.");
  if(!entry.effectName?.trim()||(!entry.damageActivity?.trim()&&!entry.saveActivity?.trim()))throw Error("Choose an applied effect and at least one damage or save activity.");
  if(entry.damageFormula&&!entry.damageActivity)throw Error("Custom damage requires a damage activity.");
@@ -2069,18 +2073,84 @@ export function validateTriggerEntry(entry){
 }
 const escape=value=>String(value??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 export class TriggerLibraryApp extends foundry.applications.api.ApplicationV2{
- static DEFAULT_OPTIONS={id:"rsa-trigger-library",window:{title:"Trigger Automation Library — Creature Effects",resizable:true},position:{width:830,height:400}};
+ static DEFAULT_OPTIONS={id:"rsa-trigger-library",window:{title:"Automated Effects",resizable:true},position:{width:920,height:760}};
  editors=new Map();
+ selectedEffects=new Set();
+ listScrollTop=0;
  searchText="";
+ stateFilter="all";
+ busy=false;
  async _renderHTML(){
   const overrides=game.settings.get(ID,"triggerLibraryOverrides")??{};
-  const rows=triggerKeys().map(key=>{const entry=triggerEntry(key);return `<tr data-trigger-search="${escape((entry.name+' '+entry.effectName).toLocaleLowerCase())}"><th scope="row">${escape(entry.name)}</th><td>${escape(entry.effectName)}</td><td>${entry.event==="damage"?"Damage taken":entry.event==="turnEnd"?"Turn end":"Turn start"}${entry.onDamage?" + damage taken":""}${entry.promptMode==="manual"?" (GM chooses)":""}</td><td>${entry.enabled?"Enabled":"Disabled"}</td><td>${!TRIGGER_DEFAULTS[key]?"Custom entry":Object.keys(overrides[key]??{}).length?"Customized":"Default"}</td><td><button type="button" data-edit-entry="${escape(key)}" aria-label="View or edit ${escape(entry.name)}"><i class="fa-solid fa-pen-to-square" aria-hidden="true"></i> View/Edit</button></td></tr>`;}).join("");
-  return `<div style="padding:16px;display:grid;gap:12px"><div><button type="button" data-add-entry style="width:auto"><i class="fa-solid fa-plus" aria-hidden="true"></i> Add New Effect</button></div><h2>Creature Effect Triggers</h2><p>Choose an entry to view its trigger and settings. Existing book effects and Region settings are preserved.</p><label style="display:grid;gap:4px">Search triggers<input type="search" data-trigger-filter placeholder="Search by spell or effect name…" value="${escape(this.searchText)}"></label><p data-trigger-empty role="status" hidden>No matching triggers.</p><div style="overflow-x:auto"><table style="width:100%"><thead><tr><th scope="col">Spell / Feature</th><th scope="col">Effect</th><th scope="col">Trigger</th><th scope="col">Status</th><th scope="col">Settings</th><th scope="col">Action</th></tr></thead><tbody>${rows}</tbody></table></div></div>`;
+  const rows=triggerKeys().map(key=>{
+   const entry=triggerEntry(key),safe=escape(key),status=!TRIGGER_DEFAULTS[key]?"Custom entry":Object.keys(overrides[key]??{}).length?"Customized":"Default";
+   return '<div class="rsa-effect-row" data-trigger-search="'+escape((entry.name+' '+entry.effectName).toLocaleLowerCase())+'" data-effect-enabled="'+!!entry.enabled+'">'+
+    '<input type="checkbox" data-select-effect="'+safe+'" aria-label="Select '+escape(entry.name)+'" '+(this.selectedEffects.has(key)?'checked':'')+'>'+
+    '<div class="rsa-effect-name" title="'+status+'"><strong>'+escape(entry.name)+(entry.enabled?'':' (Disabled)')+'</strong><small>'+escape(entry.effectName)+'</small></div>'+
+    '<button type="button" data-toggle-effect="'+safe+'">'+(entry.enabled?'Disable':'Enable')+'</button>'+
+    '<button type="button" data-edit-entry="'+safe+'" aria-label="View or edit '+escape(entry.name)+'">Edit</button>'+
+    '<button type="button" data-reset-effect="'+safe+'" '+(TRIGGER_DEFAULTS[key]?'':'disabled title="Custom effects have no module default"')+'>Reset to Default</button></div>';
+  }).join('');
+  return '<div class="rsa-effects-library"><header class="rsa-effects-toolbar"><p>Automate lingering effects from spells, features, and abilities, such as recurring damage or repeat saving throws at the end of a turn. Included defaults follow the rules in official Wizards of the Coast manuals. Configure an effect and its activities on the source item, then add its automation here, or edit or disable an included default to suit your game. Your changes are saved for this world, and Reset to Default restores the original configuration for included effects.</p><button type="button" data-add-entry><i class="fa-solid fa-plus" aria-hidden="true"></i> Add New Effect</button>'+
+   '<div class="rsa-effects-actions"><button type="button" data-select-all>Select all</button><button type="button" data-deselect-all>Deselect all</button><span data-selected-count>'+this.selectedEffects.size+' selected</span></div>'+
+   '<div class="rsa-effects-actions"><button type="button" data-enable-selected>Enable Selected</button><button type="button" data-disable-selected>Disable Selected</button></div>'+
+   '<label>Search Effects<input type="search" data-trigger-filter placeholder="Search by source or effect name…" value="'+escape(this.searchText)+'"></label>'+
+   '<div class="rsa-effects-actions"><button type="button" data-show-disabled aria-pressed="'+(this.stateFilter==='disabled')+'">Show Disabled</button><button type="button" data-show-enabled aria-pressed="'+(this.stateFilter==='enabled')+'">Show Enabled</button></div>'+
+   '<p data-trigger-empty role="status" hidden>No matching effects.</p></header><div class="rsa-effects-list">'+rows+'</div></div>';
  }
- _replaceHTML(result,content){content.style.display="block";content.style.minHeight="0";content.style.overflowY="auto";content.style.scrollbarGutter="stable";content.innerHTML=result;}
- applySearch(){const terms=this.searchText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);let visible=0;for(const row of this.element.querySelectorAll("[data-trigger-search]")){const matches=terms.every(term=>row.dataset.triggerSearch.includes(term));row.hidden=!matches;row.style.display=matches?"":"none";if(matches)visible++;}this.element.querySelector("[data-trigger-empty]").hidden=visible>0;}
- _onRender(context,options){super._onRender(context,options);this.element.querySelector("[data-trigger-filter]").addEventListener("input",event=>{this.searchText=event.currentTarget.value;this.applySearch();});this.applySearch();this.element.querySelector("[data-add-entry]").addEventListener("click",()=>this.openCreate());for(const button of this.element.querySelectorAll('[data-edit-entry]'))button.addEventListener('click',()=>this.openEntry(button.dataset.editEntry));}
- openCreate(){new TriggerSourceApp(async item=>{const key="custom-"+foundry.utils.randomID();const draft=newTriggerFromSpell(item);const editor=new TriggerEntryApp(key,()=>{if(this.rendered)this.render({force:true});},draft);this.editors.set(key,editor);editor.render({force:true});}).render({force:true});}
+ _replaceHTML(result,content){const previous=content.querySelector?.('.rsa-effects-list');if(previous)this.listScrollTop=previous.scrollTop;content.style.display="flex";content.style.flexDirection="column";content.style.minHeight="0";content.style.overflow="hidden";content.innerHTML=result;}
+ applySearch(){
+  const terms=this.searchText.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);let visible=0;
+  for(const row of this.element.querySelectorAll("[data-trigger-search]")){
+   const enabled=row.dataset.effectEnabled==='true',matches=terms.every(term=>row.dataset.triggerSearch.includes(term))&&(this.stateFilter==='all'||enabled===(this.stateFilter==='enabled'));
+   row.hidden=!matches;row.style.display=matches?'':'none';if(matches)visible++;
+  }
+  this.element.querySelector('[data-trigger-empty]').hidden=visible>0;
+ }
+ updateSelection(){
+  const current=new Set(triggerKeys());for(const key of this.selectedEffects)if(!current.has(key))this.selectedEffects.delete(key);
+  for(const input of this.element.querySelectorAll('[data-select-effect]'))input.checked=this.selectedEffects.has(input.dataset.selectEffect);
+  this.element.querySelector('[data-selected-count]').textContent=this.selectedEffects.size+' selected';
+  for(const action of ['enable','disable'])this.element.querySelector('[data-'+action+'-selected]').disabled=this.busy||!this.selectedEffects.size;
+ }
+ async setEnabled(keys,enabled){return this.changeEntries(keys,(entry)=>({...entry,enabled}));}
+ async resetEntry(key){if(TRIGGER_DEFAULTS[key])return this.changeEntries([key],()=>null);}
+ async changeEntries(keys,change){
+  if(this.busy)return;if(!game.user?.isGM)throw Error('Only the GM can configure automated effects.');
+  this.busy=true;try{
+   // One write per settings collection, including bulk operations. Do not
+   // modify source items or rebuild chat cards for a library preference edit.
+   for(const setting of ['triggerLibraryOverrides','triggerLibraryCustoms']){
+    const entries=foundry.utils.deepClone(game.settings.get(ID,setting)??{});let changed=false;
+    for(const key of new Set(keys)){
+     if((TRIGGER_DEFAULTS[key]?'triggerLibraryOverrides':'triggerLibraryCustoms')!==setting)continue;
+     const entry=triggerEntry(key);if(!entry)continue;const next=change(entry,key);
+     if(next===null){if(Object.hasOwn(entries,key)){delete entries[key];changed=true;}}
+     else if(next.enabled!==entry.enabled){entries[key]={...(entries[key]??{}),...(TRIGGER_DEFAULTS[key]?{enabled:next.enabled}:next)};changed=true;}
+    }
+    if(changed)await game.settings.set(ID,setting,entries);
+   }
+   for(const key of keys){const editor=this.editors.get(key);if(editor){if(change(triggerEntry(key),key)===null)editor.draft=null;else if(editor.draft)editor.draft.enabled=triggerEntry(key)?.enabled;if(editor.rendered)await editor.render({force:true});}}
+   await this.render({force:true});
+  }finally{this.busy=false;if(this.element?.querySelector('[data-selected-count]'))this.updateSelection();}
+ }
+ _onRender(context,options){
+  super._onRender(context,options);
+  const listen=(selector,event,fn)=>this.element.querySelector(selector)?.addEventListener(event,fn);
+  const run=fn=>Promise.resolve().then(fn).catch(error=>ui.notifications.error(error.message));
+  listen('[data-trigger-filter]','input',event=>{this.searchText=event.currentTarget.value;this.applySearch();});
+  listen('[data-add-entry]','click',()=>this.openCreate());
+  listen('[data-select-all]','click',()=>{this.selectedEffects=new Set(triggerKeys());this.updateSelection();});
+  listen('[data-deselect-all]','click',()=>{this.selectedEffects.clear();this.updateSelection();});
+  for(const state of ['enabled','disabled'])listen('[data-show-'+state+']','click',event=>{this.stateFilter=this.stateFilter===state?'all':state;for(const value of ['enabled','disabled'])this.element.querySelector('[data-show-'+value+']').setAttribute('aria-pressed',String(this.stateFilter===value));this.applySearch();});
+  for(const action of ['enable','disable'])listen('[data-'+action+'-selected]','click',()=>run(()=>this.setEnabled([...this.selectedEffects],action==='enable')));
+  for(const input of this.element.querySelectorAll('[data-select-effect]'))input.addEventListener('change',()=>{input.checked?this.selectedEffects.add(input.dataset.selectEffect):this.selectedEffects.delete(input.dataset.selectEffect);this.updateSelection();});
+  for(const button of this.element.querySelectorAll('[data-toggle-effect]'))button.addEventListener('click',()=>run(()=>this.setEnabled([button.dataset.toggleEffect],!triggerEntry(button.dataset.toggleEffect)?.enabled)));
+  for(const button of this.element.querySelectorAll('[data-reset-effect]'))button.addEventListener('click',()=>run(()=>this.resetEntry(button.dataset.resetEffect)));
+  for(const button of this.element.querySelectorAll('[data-edit-entry]'))button.addEventListener('click',()=>this.openEntry(button.dataset.editEntry));
+  this.applySearch();this.updateSelection();const scroller=this.element.querySelector('.rsa-effects-list');if(scroller)scroller.scrollTop=this.listScrollTop;
+ }
+ openCreate(){new TriggerSourceApp(async (item,effectId)=>{const selectedEffect=effectId==="__new__"?null:Array.from(item.effects??[]).find(e=>e.id===effectId)??Array.from(item.effects??[])[0];const key=(selectedEffect?triggerKeyForSpell(item,selectedEffect):null)??"custom-"+foundry.utils.randomID();const draft=newTriggerFromSource(item,effectId);const editor=new TriggerEntryApp(key,()=>{if(this.rendered)this.render({force:true});},draft);editor.source=item;this.editors.set(key,editor);await editor.render({force:true});}).render({force:true});}
  openEntry(key){
   if(!triggerEntry(key))return;
   let editor=this.editors.get(key);
@@ -2090,21 +2160,21 @@ export class TriggerLibraryApp extends foundry.applications.api.ApplicationV2{
 }
 export async function resolveEntrySource(entry){
  if(entry.sourceKind==="grapple")return null;
- if(entry.sourceSpellUuid){try{const item=await fromUuid(entry.sourceSpellUuid);if(item?.type==="spell")return item;}catch{}}
+ if(entry.sourceSpellUuid){try{const item=await fromUuid(entry.sourceSpellUuid);if(item?.documentName==="Item")return item;}catch{}}
  const actors=[...Array.from(game.actors??[]),...Array.from(globalThis.canvas?.tokens?.placeables??[],token=>token.actor).filter(Boolean)];
- for(const actor of actors){const item=Array.from(actor.items??[]).find(item=>item.type==="spell"&&((item.identifier??item.system?.identifier)===(entry.sourceIdentifier??"searing-smite")||item.name===entry.name));if(item)return item;}
+ for(const actor of actors){const item=Array.from(actor.items??[]).find(item=>((item.identifier??item.system?.identifier)===(entry.sourceIdentifier??"searing-smite")||item.name===entry.name));if(item)return item;}
  return null;
 }
 export function entrySourceOptions(item,entry){
- return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage"||entry?.damageFromSave&&a.type==="save").map(a=>({id:a.id,name:a.name})),save:entry?.sourceKind==="syntheticSave"?[{id:entry.saveActivityId,name:entry.saveActivity}]:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name||"Save"}))};
+ return {effects:Array.from(item?.effects??[]).map(effect=>({id:effect.id,name:effect.name})),damage:Array.from(item?.system?.activities??[]).filter(a=>a.type==="damage"||(entry?.damageFromSave||entry?.sourceKind==="customEffect"&&a.damage?.parts?.length>0)&&a.type==="save").map(a=>({id:a.id,name:a.name})),save:entry?.sourceKind==="syntheticSave"?[{id:entry.saveActivityId,name:entry.saveActivity}]:Array.from(item?.system?.activities??[]).filter(a=>a.type==="save").map(a=>({id:a.id,name:a.name||"Save"}))};
 }
 const HELP={
  healing:["Recurring healing","At the configured turn event, create a fixed healing card without a roll dialog. Caster modifier is captured when the native effect is applied. Temporary HP uses native replacement rules and never stacks; normal healing respects HP caps. Auto Apply Healing controls application. Removing or disabling the effect stops future benefits."],
- source:["Source spell","Use Choose Source to open a separate window where you can drop a spell or paste its UUID. This loads its effects and activities without changing the spell. Save the entry to keep changes."],
- effect:["Applied effect","Choose the book effect that carries this trigger on a creature. Its existing stat changes and duration stay intact. Removing, disabling, or expiring the effect stops future triggers."],
- trigger:["Turn trigger","Choose turn start, turn end, or damage taken. Optional action saves can show a card without opening a roll; the GM decides whether to use it. Damage taken means a positive damage application, including temporary HP, not healing or Undo. Turn progression stays unblocked."],
- damage:["Damage","Choose None for save-only effects such as Fear. Use spell damage preserves the native damage type and scaling at the original cast level. Custom damage replaces that calculation with a fixed formula, such as 3d6. It does not automatically scale with the spell slot."],
- save:["Saving throw","Choose a save activity from the spell. It runs after the recurring damage and uses the caster’s save DC recorded when the effect was applied. None skips this step. Fear requires GM confirmation that the affected creature cannot see the caster before its repeat save."],
+ source:["Source item","Choose a creature, item, spell, or chat card. Select its source item and applied effect. Existing settings are carried over. Configure effects and activities on the source item; this editor only saves automation rules."],
+ effect:["Applied effect","Choose the source effect that carries this trigger on a creature. Its existing stat changes and duration stay intact. Removing, disabling, or expiring the effect stops future triggers."],
+ trigger:["Turn trigger","Choose the affected creature’s turn start/end, source creature’s turn start/end where available, or damage taken. Optional action saves can show a card without opening a roll; the GM decides whether to use it. Damage taken means a positive damage application, including temporary HP, not healing or Undo. Turn progression stays unblocked."],
+ damage:["Damage","Choose None for save-only effects such as Fear. Use source damage preserves its native damage type and scaling, including the original cast level for spells. Custom damage replaces that calculation with a fixed formula, such as 3d6. It does not automatically scale with the spell slot."],
+ save:["Saving throw","Choose a save activity from the source item. It runs after the recurring damage and uses the caster’s save DC recorded when the effect was applied. None skips this step. Fear requires GM confirmation that the affected creature cannot see the caster before its repeat save."],
  area:["Targeting area lifetime","Use spell duration keeps the area for its normal duration. Remove at caster turn end treats the area as a targeting aid only, like Fear’s cone. It removes only the Region, preserving concentration and creature effects. Requires the Remove Instantaneous Areas at Turn End option and active combat. Regions configured with ongoing triggers or effects are preserved."],
  cleanup:["Effect removal","Remove the tracked effect after a successful save and completed dice animations. A failed save leaves it active. Disable this option if the table handles removal manually."]
 };
@@ -2115,7 +2185,7 @@ const dropdown=(name,choices,value,id,{none=false}={})=>{
  return `<select name="${name}">${none?`<option value="" ${!value?'selected':''}>None</option>`:""}${options.map(option=>`<option value="${escape(option.name)}" data-id="${escape(option.id)}" ${(matchId?option.id===id:option.name===value)?'selected':''}>${escape(option.name||"Unnamed activity")}</option>`).join("")}</select>`;
 };
 export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
- static DEFAULT_OPTIONS={window:{title:"Creature Effect Trigger",resizable:true},position:{width:760,height:850}};
+ static DEFAULT_OPTIONS={window:{title:"Automated Effect",resizable:true},position:{width:760,height:850}};
  constructor(key,onChange,draft=null){
   const entry=draft??triggerEntry(key);if(!entry)throw Error("Unknown trigger library entry.");
   super({id:"rsa-trigger-entry-"+key,window:{title:entry.name+" — View/Edit Trigger"}});
@@ -2123,45 +2193,46 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
  }
  async _renderHTML(){
   const e=this.draft??=triggerEntry(this.entryKey);this.source??=await resolveEntrySource(e);
-  if(e.sourceKind==="blink")return `<div style="padding:16px;display:grid;gap:12px"><h2>Blink</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable Blink automation</label><p>The initial card stays available. Roll manually on your turn, or let turn end roll automatically; only one check is allowed per turn. On 4–6, Ethereal applies after the dice finish. At turn start, return and choose your space manually.</p><p>Token visibility and movement stay under player/GM control. Ending the tracked effect clears its Ethereal effect.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
+  if(e.sourceKind==="blink")return `<div style="padding:16px;display:grid;gap:12px"><h2>Blink</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable Blink automation</label><label>Trigger <input value="End of turn: roll; start of turn: return" readonly></label><p>Blink’s trigger timing is fixed by its return workflow.</p><p>The initial card stays available. Roll manually on your turn, or let turn end roll automatically; only one check is allowed per turn. On 4–6, Ethereal applies after the dice finish. At turn start, return and choose your space manually.</p><p>Token visibility and movement stay under player/GM control. Ending the tracked effect clears its Ethereal effect.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   if(e.sourceKind==="recurringHealing")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)} - Recurring healing</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable recurring healing</label><p>${escape(e.effectName)} ${info("effect")}</p><label>Trigger <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>Start of target turn</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>End of target turn</option></select></label><p>${e.healingType==="temphp"?"Refresh temporary HP without stacking or reducing a higher existing amount.":"Restore HP up to the creature's maximum; initial healing is not repeated."}</p><label>Amount ${info("healing")} <select name="healingSource"><option value="casterMod" ${e.healingSource==="casterMod"?"selected":""}>Caster spellcasting modifier (recorded on application)</option><option value="fixed" ${e.healingSource==="fixed"?"selected":""}>Fixed amount</option></select></label><label>Fixed amount <input name="healingAmount" type="number" min="0" value="${Number(e.healingAmount??1)}"></label><p>Fixed turn benefits create a healing card without a roll dialog. Auto Apply Healing controls application; otherwise use Apply on the card. Existing native effect changes stay intact.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
-  if(e.sourceKind==="infernalWound")return `<div style="padding:16px;display:grid;gap:12px"><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable infernal wound automation</label><p>At target turn start, roll native HP loss. This bypasses temporary HP and damage resistance. An optional DC ${e.medicineDC} Wisdom (Medicine) action can close the wound. Spell healing that restores HP also closes it; otherwise it expires after one minute. Wounds do not stack.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
-  if(e.sourceKind==="monsterDamage")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable recurring damage</label><p>${escape(e.effectName)} ${info("effect")}</p><p>${e.event==="sourceTurnEnd"?"At the originating monster’s turn end, prompt native damage for its tracked targets.":e.event==="sourceTurnStart"?"At the originating monster’s turn start, prompt native damage for its tracked targets.":e.event==="turnEnd"?"At the affected creature’s turn end, prompt the native recurring damage.":"At the affected creature’s turn start, prompt the native recurring damage."} ${e.escapeCheck?(e.saveEvent&&e.saveEvent!==e.event?"At the affected creature’s turn start, show an optional Athletics or Acrobatics escape action.":"Then show an optional Athletics or Acrobatics escape action."):e.saveEvent?"At turn end, request the repeat saving throw.":e.grappleContactDamage?"Damage creatures grappled by the devil and creatures grappling it. End the grapple to stop it.":"Disable or remove the tracked effect to stop the damage."}</p><p>Native damage, source DC and effect changes are preserved. Movement and special interactions remain manual.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
-  if(e.sourceKind==="monsterEscape")return `<div style="padding:16px;display:grid;gap:12px;overflow-y:auto"><h2>${escape(e.name)} — Escape grapple</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable escape prompts</label><p>${escape(e.effectName)} ${info("effect")}</p><p>Show an optional action at turn start. The player chooses Athletics or Acrobatics against the originating monster’s recorded escape DC. No check rolls automatically.</p><label>Show escape card <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>At turn start</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>At turn end</option></select></label><label><input name="escapeDisadvantage" type="checkbox" ${e.escapeDisadvantage?"checked":""}> Default escape checks to Disadvantage</label><p>Success removes this tracked grapple and its linked conditions after the dice finish. Other effects remain separate.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
-  if(e.sourceKind==="athleticsEscape")return `<div style="padding:16px;display:grid;gap:12px"><h2>${escape(e.name)} — Escape</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable creature escape checks</label><p>${escape(e.effectName)} ${info("effect")}</p><p>Spend an action to attempt a Strength (Athletics) check against the original caster’s recorded spell DC. The GM chooses when to open the check; it never rolls automatically.</p><label>Show escape card <select name="event"><option value="turnStart" ${e.event!=="turnEnd"?"selected":""}>At turn start</option><option value="turnEnd" ${e.event==="turnEnd"?"selected":""}>At turn end</option></select></label><p>${e.damageActivity?"Turn-start damage resolves first; the optional escape check follows. Native cast-level scaling is preserved.":"The escape check deals no damage and does not repeat the initial save."}</p><p>Success removes only this spell’s tracked restraint after dice animations. Region saves and effects remain separate.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
+  if(e.sourceKind==="infernalWound")return `<div style="padding:16px;display:grid;gap:12px"><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?"checked":""}> Enable infernal wound automation</label><label>Trigger <input value="Start of affected creature’s turn" readonly></label><label>HP-loss activity ${dropdown('damageActivity',entrySourceOptions(this.source,e).damage,e.damageActivity,e.damageActivityId)}</label><label>Medicine check DC <input name="medicineDC" type="number" min="1" value="${Number(e.medicineDC)}"></label><label>Duration (seconds) <input name="durationSeconds" type="number" min="1" value="${Number(e.durationSeconds)}"></label><p>Wound timing is fixed; changes apply to newly inflicted wounds.</p><p>At target turn start, roll native HP loss. This bypasses temporary HP and damage resistance. An optional DC ${e.medicineDC} Wisdom (Medicine) action can close the wound. Spell healing that restores HP also closes it; otherwise it expires after one minute. Wounds do not stack.</p><footer><button type="button" data-reset>Reset to Default</button><button type="button" data-save>Save</button></footer></div>`;
   const choices=entrySourceOptions(this.source,e),custom=!!e.damageFormula;
+  if(e.sourceKind==="monsterEscape"||e.sourceKind==="monsterDamage"&&e.escapeCheck)choices.save=Array.from(this.source?.system?.activities??[]).filter(a=>a.type==="check").map(a=>({id:a.id,name:a.name}));
   const section=(title,key,body)=>`<section style="display:grid;gap:6px"><div style="display:flex;align-items:center;gap:6px"><strong>${title}</strong>${info(key)}</div>${body}</section>`;
   return `<div style="padding:16px;display:grid;gap:15px;min-height:0;max-height:100%;overflow-y:auto"><div><button type="button" data-choose-source style="width:auto" ${e.sourceKind==="grapple"?"disabled":""}><i class="fa-solid fa-book-open" aria-hidden="true"></i> Choose Source</button></div><h2>${escape(e.name)}</h2><label><input name="enabled" type="checkbox" ${e.enabled?'checked':''}> Enable recurring triggers</label>
-  ${section('Source spell','source',`<p>${e.sourceKind==="grapple"?'Unarmed Grapple — uses the original grappler’s recorded DC and the target’s better Strength/Dexterity save.':this.source?escape(this.source.name):'Saved recipe (source unavailable)'}</p>`)}
+  ${section('Source item','source',`<p>${e.sourceKind==="grapple"?'Unarmed Grapple — uses the original grappler’s recorded DC and the target’s better Strength/Dexterity save.':this.source?escape(this.source.name):'Saved recipe (source unavailable)'}</p>`)}
   ${e.manualResolution?"<p>Prompt only: save counts, effects and other outcomes are handled at the table. Use Stop repeat saves on the card when no further prompts are needed.</p>":""}
   ${e.saveFirst?"<p>Save first: only a failed save prompts recurring damage. Success ends this target effect after the dice finish.</p>":""}
   ${e.oneShot?"<p>One-time delayed damage: create one card at turn end, then remove this effect after its damage dice finish. A canceled roll stays on that same card for retry.</p>":""}
   ${section('Applied effect','effect',dropdown('effectName',choices.effects,e.effectName,e.effectId))}
-  ${section('Trigger','trigger',`<select name="event"><option value="turnStart" ${e.event==='turnStart'?'selected':''}>Start of affected creature’s turn</option><option value="turnEnd" ${e.event==='turnEnd'?'selected':''}>End of affected creature’s turn</option><option value="damage" ${e.event==='damage'?'selected':''}>When the affected creature takes damage</option></select><label><input name="onDamage" type="checkbox" ${e.onDamage?'checked':''}> Also trigger on damage taken</label><label><input name="damageSaveAdvantage" type="checkbox" ${e.damageSaveAdvantage?'checked':''}> Advantage on damage-triggered saves</label><label>Roll prompt <select name="promptMode"><option value="automatic" ${e.promptMode!=="manual"?'selected':''}>Prompt normally</option><option value="manual" ${e.promptMode==="manual"?'selected':''}>Card only — GM chooses whether to roll</option></select></label>`)}
-  ${section('Damage','damage',`${dropdown('damageActivity',choices.damage,e.damageActivity,e.damageActivityId,{none:true})}<select name="damageMode"><option value="native" ${!custom?'selected':''}>Use spell damage and cast-level scaling</option><option value="custom" ${custom?'selected':''}>Custom damage</option></select><label data-custom-damage ${!custom?'hidden':''}>Custom formula <input name="damageFormula" value="${escape(e.damageFormula)}" placeholder="Example: 3d6"></label>`)}
-  ${section('Saving throw','save',dropdown('saveActivity',choices.save,e.saveActivity,e.saveActivityId,{none:true})+`<label>Save eligibility <select name="saveCondition"><option value="always" ${e.saveCondition!=="gmNoLineOfSight"?'selected':''}>Every matching turn</option><option value="gmNoLineOfSight" ${e.saveCondition==="gmNoLineOfSight"?'selected':''}>GM confirms no line of sight to caster</option></select></label>`)}
+  ${section('Trigger','trigger',`<select name="event"><option value="turnStart" ${e.event==='turnStart'?'selected':''}>Start of affected creature’s turn</option><option value="turnEnd" ${e.event==='turnEnd'?'selected':''}>End of affected creature’s turn</option>${(e.sourceKind==="customEffect"||e.sourceKind==="monsterDamage"&&["sourceTurnStart","sourceTurnEnd"].includes(TRIGGER_DEFAULTS[this.entryKey]?.event))?`<option value="sourceTurnStart" ${e.event==="sourceTurnStart"?"selected":""}>Start of source creature’s turn</option><option value="sourceTurnEnd" ${e.event==="sourceTurnEnd"?"selected":""}>End of source creature’s turn</option>`:""}<option value="damage" ${e.event==='damage'?'selected':''}>When the affected creature takes damage (save only)</option></select><label><input name="onDamage" type="checkbox" ${e.onDamage?'checked':''}> Also trigger on damage taken</label><label><input name="damageSaveAdvantage" type="checkbox" ${e.damageSaveAdvantage?'checked':''}> Advantage on damage-triggered saves</label><label>Roll prompt <select name="promptMode"><option value="automatic" ${e.promptMode!=="manual"?'selected':''}>Prompt normally</option><option value="manual" ${e.promptMode==="manual"?'selected':''}>Card only — GM chooses whether to roll</option></select></label>`)}
+  ${section('Damage','damage',`${dropdown('damageActivity',choices.damage,e.damageActivity,e.damageActivityId,{none:true})}<select name="damageMode"><option value="native" ${!custom?'selected':''}>Use source damage and native scaling</option><option value="custom" ${custom?'selected':''}>Custom damage</option></select><label data-custom-damage ${!custom?'hidden':''}>Custom formula <input name="damageFormula" value="${escape(e.damageFormula)}" placeholder="Example: 3d6"></label>`)}
+  ${section(e.escapeCheck?'Escape check / DC source':'Saving throw','save',dropdown('saveActivity',choices.save,e.saveActivity,(e.sourceKind==="monsterEscape"||e.sourceKind==="monsterDamage"&&e.escapeCheck)?e.checkActivityId:e.saveActivityId,{none:true})+`<label>Save eligibility <select name="saveCondition"><option value="always" ${e.saveCondition!=="gmNoLineOfSight"?'selected':''}>Every matching turn</option><option value="gmNoLineOfSight" ${e.saveCondition==="gmNoLineOfSight"?'selected':''}>GM confirms no line of sight to caster</option></select></label>`)}
   ${section('Targeting area lifetime','area',`<select name="targetingRegionCleanup"><option value="native" ${e.targetingRegionCleanup!=="casterTurnEnd"?'selected':''}>Use spell duration</option><option value="casterTurnEnd" ${e.targetingRegionCleanup==="casterTurnEnd"?'selected':''}>Remove targeting area at caster turn end</option></select>`)}
   ${section('On a successful save','cleanup',`<label><input name="endOnSuccess" type="checkbox" ${e.endOnSuccess?'checked':''}> Remove the applied effect</label>`)}
+  ${e.sourceKind==="monsterDamage"&&(e.saveActivity||e.escapeCheck)?'<label>Separate save / escape trigger <select name="saveEvent"><option value="">After recurring damage</option>'+['turnStart','turnEnd'].map(event=>'<option value="'+event+'" '+(e.saveEvent===event?'selected':'')+'>'+ (event==='turnStart'?'Start':'End')+' of affected creature’s turn</option>').join('')+'</select></label>':''}
+  ${e.escapeCheck?'<label><input name="escapeDisadvantage" type="checkbox" '+(e.escapeDisadvantage?'checked':'')+'> Default escape checks to Disadvantage</label><p>Escape checks remain optional actions. The original source DC and check skills are preserved.</p>':''}
   <p data-preview style="padding:10px;border-left:3px solid var(--color-border-highlight)"></p><footer style="display:flex;gap:8px"><button type="button" data-reset>${TRIGGER_DEFAULTS[this.entryKey]?"Reset to Default":"Discard Changes"}</button><button type="button" data-save>Save</button></footer></div>`;
  }
  _replaceHTML(result,content){content.style.overflowY="auto";content.style.minHeight="0";content.innerHTML=result;}
  readDraft(){
   const entry={...this.draft};
   if(entry.sourceKind==="recurringHealing")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value,healingSource:this.element.querySelector('[name="healingSource"]').value,healingAmount:Number(this.element.querySelector('[name="healingAmount"]').value)};
-  if(entry.sourceKind==="infernalWound")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
-  if(entry.sourceKind==="monsterDamage")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
-  if(entry.sourceKind==="monsterEscape")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value,escapeDisadvantage:this.element.querySelector('[name="escapeDisadvantage"]').checked};
-  if(entry.sourceKind==="athleticsEscape")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,event:this.element.querySelector('[name="event"]').value};
+  if(entry.sourceKind==="infernalWound"){const damage=this.element.querySelector('[name="damageActivity"]');return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked,damageActivity:damage.value,damageActivityId:damage.selectedOptions[0]?.dataset.id??entry.damageActivityId,medicineDC:Number(this.element.querySelector('[name="medicineDC"]').value),durationSeconds:Number(this.element.querySelector('[name="durationSeconds"]').value)};}
   if(entry.sourceKind==="blink")return this.draft={...entry,enabled:this.element.querySelector('[name="enabled"]').checked};
   for(const key of ["enabled","effectName","event","onDamage","damageSaveAdvantage","promptMode","damageActivity","saveActivity","saveCondition","targetingRegionCleanup","endOnSuccess"]){const input=this.element.querySelector('[name="'+key+'"]');entry[key]=input.type==="checkbox"?input.checked:input.value;}
   for(const [name,key]of [["effectName","effectId"],["damageActivity","damageActivityId"],["saveActivity","saveActivityId"]])entry[key]=this.element.querySelector('[name="'+name+'"]').selectedOptions[0]?.dataset.id??"";
   entry.damageFormula=this.element.querySelector('[name="damageMode"]').value==="custom"?this.element.querySelector('[name="damageFormula"]').value.trim():"";
+  if(entry.sourceKind==="customEffect")entry.damageFromSave=Array.from(this.source?.system?.activities??[]).some(a=>a.id===entry.damageActivityId&&a.type==="save");
+  if(entry.sourceKind==="monsterEscape"||entry.sourceKind==="monsterDamage"&&entry.escapeCheck)entry.checkActivityId=entry.saveActivityId;
+  for(const key of ["saveEvent","escapeDisadvantage"]){const input=this.element.querySelector('[name="'+key+'"]');if(input)entry[key]=input.type==="checkbox"?input.checked:input.value;}
   return this.draft=entry;
  }
- updatePreview(){if(["blink","athleticsEscape","monsterEscape","monsterDamage","infernalWound","recurringHealing"].includes(this.draft?.sourceKind))return;const e=this.readDraft();if(e.saveFirst){this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent="At turn end, request the save. After the dice finish, failure prompts damage; success removes this target's effect.";return;}this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent=(e.event==='damage'?'When the creature takes damage':('At the affected creature’s '+(e.event==='turnEnd'?'turn end':'turn start')))+(e.onDamage?' and when it takes damage':'')+', '+(e.saveFirst?'request the saving throw first, then prompt damage only on failure. ' : e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':(e.promptMode==='manual'?'show a save card for the GM to choose whether to roll. ':'request its saving throw. ')):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
- async loadDroppedSpell(item){
+ updatePreview(){if(["blink","infernalWound","recurringHealing"].includes(this.draft?.sourceKind))return;const e={...this.readDraft()};if(e.saveFirst){this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent="At turn end, request the save. After the dice finish, failure prompts damage; success removes this target's effect.";return;}this.element.querySelector('[data-custom-damage]').hidden=this.element.querySelector('[name="damageMode"]').value!=="custom";this.element.querySelector('[data-preview]').textContent=(e.event==='damage'?'When the creature takes damage':('At the '+(e.event.startsWith('source')?'source creature’s ':'affected creature’s ')+(e.event.endsWith('End')?'turn end':'turn start')))+(e.onDamage?' and when it takes damage':'')+', '+(e.saveFirst?'request the saving throw first, then prompt damage only on failure. ' : e.damageActivity?'roll '+(e.damageFormula?'custom damage ('+e.damageFormula+')':'the spell’s damage at its original cast level')+(e.saveActivity?', then ':'. '):'')+(e.saveActivity?(e.saveCondition==='gmNoLineOfSight'?'ask the GM whether the creature has lost line of sight to the caster; if so, request its saving throw. ':(e.promptMode==='manual'?'show a save card for the GM to choose whether to roll. ':'request its saving throw. ')):'')+(e.saveActivity&&e.endOnSuccess?'Remove '+e.effectName+' on success.':'');}
+ async loadDroppedSpell(item,effectId){
   validateSourceSpell(item);
-  const choices=entrySourceOptions(item,this.draft);if((!choices.damage.length&&!choices.save.length)||!choices.effects.length)throw Error("Choose a spell with an applied effect and a damage or save activity.");
+  if(!TRIGGER_DEFAULTS[this.entryKey]){this.draft=newTriggerFromSource(item,effectId);this.source=item;await this.render({force:true});return;}
+  const choices=entrySourceOptions(item,this.draft);if((!choices.damage.length&&!choices.save.length)||!choices.effects.length)throw Error("Choose an item with an applied effect and a damage or save activity.");
   const e={...this.draft,sourceSpellUuid:item.uuid,sourceIdentifier:item.identifier??item.system?.identifier};
   for(const [list,name,id]of [[choices.effects,'effectName','effectId'],[choices.damage,'damageActivity','damageActivityId'],[choices.save,'saveActivity','saveActivityId']]){const match=list.find(option=>option.name===e[name])??list[0];e[name]=match?.name??"";e[id]=match?.id??"";}
   this.source=item;this.draft=e;await this.render({force:true});
@@ -2170,13 +2241,13 @@ export class TriggerEntryApp extends foundry.applications.api.ApplicationV2{
   super._onRender(context,options);this.updatePreview();
   for(const input of this.element.querySelectorAll('input,select'))input.addEventListener('change',()=>this.updatePreview());
   for(const button of this.element.querySelectorAll('[data-info]'))button.addEventListener('click',()=>{const [title,text]=HELP[button.dataset.info];foundry.applications.api.DialogV2.wait({window:{title},content:'<p>'+escape(text)+'</p>',rejectClose:false,buttons:[{action:'close',label:'Close',default:true}]});});
-  this.element.querySelector('[data-choose-source]')?.addEventListener('click',()=>{this.readDraft();new TriggerSourceApp(item=>this.loadDroppedSpell(item)).render({force:true});});
-  this.element.querySelector('[data-save]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const draft=this.readDraft();if(this.element.querySelector('[name="damageMode"]')?.value==="custom"&&!draft.damageFormula)throw Error("Enter a custom damage formula, or choose Use spell damage.");await saveTriggerEntry(this.entryKey,draft);this.onChange?.();await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
+  this.element.querySelector('[data-choose-source]')?.addEventListener('click',()=>{this.readDraft();new TriggerSourceApp((item,effectId)=>this.loadDroppedSpell(item,effectId)).render({force:true});});
+  this.element.querySelector('[data-save]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const draft=this.readDraft();if(this.element.querySelector('[name="damageMode"]')?.value==="custom"&&!draft.damageFormula)throw Error("Enter a custom damage formula, or choose Use spell damage.");await saveAutomatedEffect(this.entryKey,draft,this.source);this.onChange?.();await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
   this.element.querySelector('[data-reset]').addEventListener('click',async()=>{if(this.busy)return;this.busy=true;try{const overrides=foundry.utils.deepClone(game.settings.get(ID,"triggerLibraryOverrides")??{});if(TRIGGER_DEFAULTS[this.entryKey]){delete overrides[this.entryKey];await game.settings.set(ID,"triggerLibraryOverrides",overrides);}else if(!triggerEntry(this.entryKey)){await this.close();return;}this.draft=null;this.source=null;this.onChange?.();await this.render({force:true});}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}});
  }
  async close(options){this.draft=null;this.source=null;return super.close(options);}
 }
-Hooks.once("init",()=>{game.settings.register(ID,"triggerLibraryCustoms",{scope:"world",config:false,type:Object,default:{}});game.settings.register(ID,"triggerLibraryOverrides",{scope:"world",config:false,type:Object,default:{}});game.settings.registerMenu(ID,"triggerLibrary",{name:"Trigger Automation Library",label:"Creature Effect Triggers",hint:"Configure recurring triggers without replacing native book effects or Region settings.",icon:"fa-solid fa-clock",type:TriggerLibraryApp,restricted:true});});
+Hooks.once("init",()=>{game.settings.register(ID,"triggerLibraryCustoms",{scope:"world",config:false,type:Object,default:{}});game.settings.register(ID,"triggerLibraryOverrides",{scope:"world",config:false,type:Object,default:{}});game.settings.registerMenu(ID,"triggerLibrary",{name:"Automated Effects",label:"Automated Effects",hint:"Configure recurring triggers without replacing native book effects or Region settings.",icon:"fa-solid fa-clock",type:TriggerLibraryApp,restricted:true});});
 let shortcutLibrary;
 Hooks.on("renderCompendiumDirectory",(app,html)=>{
  if(!game.user.isGM)return;
@@ -2185,16 +2256,74 @@ Hooks.on("renderCompendiumDirectory",(app,html)=>{
  const region=root.querySelector(".rsa-open-spell-manager"),browser=root.querySelector(".open-compendium-browser"),actions=root.querySelector(".header-actions");
  if(!region&&!browser&&!actions)return;
  const button=document.createElement("button");button.type="button";button.className="rsa-open-trigger-library";button.style.cssText="flex:0 0 100%;width:100%;";
- button.innerHTML='<i class="fa-solid fa-clock" aria-hidden="true"></i> Open Trigger Automation Library';
+ button.innerHTML='<i class="fa-solid fa-clock" aria-hidden="true"></i> Open Automated Effects';
  button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();if(!game.user.isGM)return;shortcutLibrary??=new TriggerLibraryApp();shortcutLibrary.render({force:true});shortcutLibrary.bringToFront?.();});
  if(region)region.insertAdjacentElement("afterend",button);else if(browser)browser.insertAdjacentElement("afterend",button);else actions.append(button);
 });
 export function validateSourceSpell(item){
- if(item?.documentName!=="Item"||item.type!=="spell")throw Error("Please choose a spell from a sheet or compendium.");
- const choices=entrySourceOptions(item);const healingRecipe=Object.values(HEALING_DEFAULTS).find(entry=>entry.sourceIdentifier===(item.identifier??item.system?.identifier));if((!choices.damage.length&&!choices.save.length&&!healingRecipe)||!choices.effects.length)throw Error("Choose a spell with an applied effect and a damage or save activity.");return item;
+ if(item?.documentName!=="Item"||!item.uuid||!item.system?.activities)throw Error("Choose an item with activities from a creature, character sheet, or compendium.");
+ return item;
+}
+// Public setup API accepts documents, including usage/attack chat cards. It
+// resolves the owning source; a result card is never saved as the recipe source.
+export async function resolveAutomatedEffectSource(document){
+ if(typeof document==="string")document=await fromUuid(document.trim());
+ if(document?.documentName==="ChatMessage"){
+  const item=document.getAssociatedItem?.({scaled:false})??document.getAssociatedActivity?.()?.item,actor=document.getAssociatedActor?.()??item?.actor;
+  const owned=Array.from(actor?.items??[]).find(i=>!!item?.id&&i.id===item.id||!!item?.uuid&&i.uuid===item.uuid);
+  document=owned??item??actor;
+ }
+ if(document?.documentName==="Token")document=document.actor;
+ if(document?.documentName==="Actor")return document;
+ if(document?.documentName!=="Item")document=document?.item??(document?.parent?.documentName==="Item"?document.parent:null);
+ return validateSourceSpell(document);
+}
+export async function openAutomatedEffect(source,effectId){
+ if(!game.user?.isGM)throw Error("Only the GM can configure automated effects.");
+ const document=await resolveAutomatedEffectSource(source);
+ if(document.documentName==="Actor"){const picker=new TriggerSourceApp((item,id)=>openAutomatedEffect(item,id));picker.actor=document;await picker.render({force:true});return picker;}
+ const effect=effectId==="__new__"?null:Array.from(document.effects??[]).find(e=>e.id===effectId)??Array.from(document.effects??[])[0];
+ const key=(effect?triggerKeyForSpell(document,effect):null)??"custom-"+foundry.utils.randomID();
+ const editor=new TriggerEntryApp(key,null,newTriggerFromSource(document,effectId));editor.source=document;await editor.render({force:true});return editor;
+}
+export function automatedEffectSources(actor){
+ return Array.from(actor?.items??[]).filter(item=>item.documentName==="Item"&&item.system?.activities).map(item=>({item,effects:Array.from(item.effects??[]).length}));
+}
+export function newTriggerFromSource(item,effectId){
+ validateSourceSpell(item);
+ const effect=effectId==="__new__"?null:Array.from(item.effects??[]).find(e=>e.id===effectId)??Array.from(item.effects??[])[0];
+ if(!effect)throw Error("Configure an applied effect on the source item first, then select it here.");
+ const existing=triggerEntry(triggerKeyForSpell(item,effect));
+ if(existing)return {...foundry.utils.deepClone(existing),sourceSpellUuid:item.uuid,...(effect?{effectName:effect.name,effectId:effect.id}:{})};
+ const choices=entrySourceOptions(item,{sourceKind:"customEffect"}),damage=choices.damage[0],save=choices.save[0];
+ if(!damage&&!save)throw Error("Configure a damage or saving throw activity on the source item first.");
+ return {name:item.name,enabled:true,attachment:"creature",sourceKind:"customEffect",sourceSpellUuid:item.uuid,sourceIdentifier:item.identifier??item.system?.identifier,
+  effectName:effect?.name??item.name+" — Ongoing Effect",effectId:effect?.id??"",event:"turnEnd",promptMode:"automatic",saveCondition:"always",targetingRegionCleanup:"native",
+  damageActivity:damage?.name??"",damageActivityId:damage?.id??"",damageFromSave:Array.from(item.system.activities??[]).some(a=>a.id===damage?.id&&a.type==="save"),saveActivity:save?.name??"",saveActivityId:save?.id??"",damageFormula:"",endOnSuccess:!!save};
+}
+// Recipes configure existing source documents; this editor never creates or
+// changes source effects, activities, conditions, or resource consumption.
+const setupInFlight=new Set();
+export async function saveAutomatedEffect(key,draft,item){
+ if(!game.user?.isGM)throw Error("Only the GM can configure automated effects.");
+ const lock=item?.uuid??key;if(setupInFlight.has(lock))throw Error("This source is already being saved. Wait for that save to finish.");
+ setupInFlight.add(lock);
+ try{
+  const entry={...draft};delete entry.setup;
+  if(entry.sourceKind==="customEffect"){
+   validateSourceSpell(item);
+   if(item.uuid!==entry.sourceSpellUuid)throw Error("The source changed. Choose it again before saving.");
+   if(!Array.from(item.effects??[]).some(e=>e.id===entry.effectId))throw Error("Configure an applied effect on the source item first, then select it here.");
+   const activities=Array.from(item.system.activities??[]);
+   if(entry.damageActivity&&!activities.some(a=>a.id===entry.damageActivityId&&a.type===(entry.damageFromSave?"save":"damage")))throw Error("Choose an existing damage activity from the source item.");
+   if(entry.saveActivity&&!activities.some(a=>a.id===entry.saveActivityId&&a.type==="save"))throw Error("Choose an existing saving throw activity from the source item.");
+  }
+  await saveTriggerEntry(key,entry);return entry;
+ }finally{setupInFlight.delete(lock);}
 }
 export function newTriggerFromSpell(item){
- validateSourceSpell(item);const choices=entrySourceOptions(item);
+ validateSourceSpell(item);if(item.type!=="spell")return newTriggerFromSource(item);const choices=entrySourceOptions(item);
+ if(!choices.effects.length||!choices.damage.length&&!choices.save.length)return newTriggerFromSource(item);
  const recipe=Object.values(TRIGGER_DEFAULTS).find(entry=>entry.sourceSpellUuid===item.uuid||entry.name===item.name||entry.sourceIdentifier===(item.identifier??item.system?.identifier));
  if(recipe?.sourceKind==="recurringHealing")return {...recipe,sourceSpellUuid:item.uuid,effectId:choices.effects.find(effect=>effect.name===recipe.effectName)?.id??recipe.effectId};
  return {name:item.name,enabled:true,attachment:"creature",effectName:choices.effects[0].name,effectId:choices.effects[0].id,event:recipe?.event??"turnStart",saveCondition:recipe?.saveCondition??"always",targetingRegionCleanup:recipe?.targetingRegionCleanup??"native",damageActivity:choices.damage[0]?.name??"",damageActivityId:choices.damage[0]?.id??"",saveActivity:choices.save[0]?.name??"",saveActivityId:choices.save[0]?.id??"",damageFormula:"",sourceSpellUuid:item.uuid,sourceIdentifier:item.identifier??item.system?.identifier,endOnSuccess:recipe?.endOnSuccess??!!choices.save.length,...(recipe?{...(recipe.manualResolution?{manualResolution:true,singleSave:recipe.singleSave,manualSaveLabel:recipe.manualSaveLabel,manualSaveNote:recipe.manualSaveNote}:{}),...(recipe.saveFirst?{saveFirst:true,damageFromSave:recipe.damageFromSave}:{}),...(recipe.oneShot?{oneShot:true,initialOutcome:recipe.initialOutcome}:{}),...(recipe.sourceKind==="syntheticSave"?{sourceKind:recipe.sourceKind,saveAbility:recipe.saveAbility}:{}),...(recipe.escapeCheck?{sourceKind:recipe.sourceKind,escapeCheck:true,checkAbility:recipe.checkAbility,checkSkill:recipe.checkSkill,exitRegionEnds:recipe.exitRegionEnds,endConcentrationOnEscape:recipe.endConcentrationOnEscape}:{}),promptMode:recipe.promptMode??"automatic",onDamage:recipe.onDamage??false,damageSaveAdvantage:recipe.damageSaveAdvantage??false,effectName:recipe.effectName,effectId:choices.effects.find(e=>e.name===recipe.effectName)?.id??recipe.effectId,damageActivity:recipe.damageActivity,damageActivityId:recipe.damageActivity?choices.damage.find(a=>a.name===recipe.damageActivity)?.id??recipe.damageActivityId:undefined,saveActivity:recipe.saveActivity,saveActivityId:choices.save.find(a=>a.name===recipe.saveActivity||a.id===recipe.saveActivityId)?.id??recipe.saveActivityId}: {})};
@@ -2202,8 +2331,10 @@ export function newTriggerFromSpell(item){
 export class TriggerSourceApp extends foundry.applications.api.ApplicationV2{
  static DEFAULT_OPTIONS={window:{title:"Choose Trigger Source",resizable:true},position:{width:570,height:350}};
  constructor(onChoose){super({id:"rsa-trigger-source-"+foundry.utils.randomID()});this.onChoose=onChoose;}
- async _renderHTML(){return `<div style="padding:16px;display:grid;gap:14px;overflow-y:auto"><p>Choose the spell whose effect needs recurring automation. Its existing effects and stats will be preserved.</p><div data-source-drop style="border:2px dashed var(--color-border-light-primary);border-radius:6px;padding:24px;text-align:center"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Drop a spell from a sheet or compendium</div><label>Or paste the spell’s UUID <input name="sourceUuid" type="text" placeholder="Compendium.… or Actor.…Item.…"></label><footer style="display:flex;gap:8px"><button type="button" data-load-source>Load Spell</button><button type="button" data-cancel-source>Cancel</button></footer></div>`;}
+ async _renderHTML(){return `<div style="padding:16px;display:grid;gap:14px;overflow-y:auto"><p>Drop a creature, spell, item, or its chat card, or paste its full UUID. Choose an item and applied effect below. Configure effects and activities on the source item first; this window only sets their automation.</p><div data-source-drop style="border:2px dashed var(--color-border-light-primary);border-radius:6px;padding:24px;text-align:center">Drop a creature, spell, item, or chat card</div><label>Source UUID <input name="sourceUuid" type="text" placeholder="Actor.…, Item.…, Compendium.…, or ChatMessage.…"></label><button type="button" data-load-source>Load Source</button>${this.actor?`<label>Source item <select data-source-item><option value="">Choose an item…</option>${automatedEffectSources(this.actor).map(({item,effects})=>`<option value="${escape(item.uuid)}" ${this.item?.uuid===item.uuid?'selected':''}>${escape(item.name)} (${effects} effects)</option>`).join('')}</select></label>`:''}${this.item?`<p>Source: ${escape(this.item.name)}</p><label>Applied effect <select data-source-effect>${Array.from(this.item.effects??[]).map(e=>`<option value="${escape(e.id)}">${escape(e.name)}</option>`).join('')}</select></label>${Array.from(this.item.effects??[]).length?'<button type="button" data-use-source>Configure Effect</button>':'<p>Add an applied effect to this source item first, then load it again.</p>'}`:''}<button type="button" data-cancel-source>Cancel</button></div>`;}
  _replaceHTML(result,content){content.style.display="block";content.style.minHeight="0";content.style.overflowY="auto";content.style.scrollbarGutter="stable";content.innerHTML=result;}
- async chooseUuid(uuid){if(this.busy)return;this.busy=true;try{if(!uuid?.trim())throw Error("Drop a spell or enter its UUID.");const item=validateSourceSpell(await fromUuid(uuid.trim()));await this.onChoose(item);await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}}
- _onRender(context,options){super._onRender(context,options);const drop=this.element.querySelector('[data-source-drop]');drop.addEventListener('dragover',event=>event.preventDefault());drop.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();const data=foundry.applications.ux.TextEditor.getDragEventData(event);this.chooseUuid(data?.uuid);});this.element.querySelector('[data-load-source]').addEventListener('click',()=>this.chooseUuid(this.element.querySelector('[name="sourceUuid"]').value));this.element.querySelector('[data-cancel-source]').addEventListener('click',()=>this.close());this.element.querySelector('[name="sourceUuid"]').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();this.chooseUuid(event.currentTarget.value);}});}
+ async chooseUuid(uuid){if(this.busy)return;this.busy=true;try{if(!uuid?.trim())throw Error("Drop a source or enter its full UUID.");const source=await resolveAutomatedEffectSource(uuid);if(source.documentName==="Actor"){this.actor=source;this.item=null;if(!automatedEffectSources(source).length)throw Error("This creature has no items with activities. Add an attack or feature to its sheet first.");}else this.item=source;await this.render({force:true});}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}}
+ async useSource(){if(this.busy||!this.item)return;this.busy=true;try{await this.onChoose(this.item,this.element.querySelector('[data-source-effect]')?.value);await this.close();}catch(error){ui.notifications.error(error.message);}finally{this.busy=false;}}
+ _onRender(context,options){super._onRender(context,options);const drop=this.element.querySelector('[data-source-drop]');drop.addEventListener('dragover',event=>event.preventDefault());drop.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();const data=foundry.applications.ux.TextEditor.getDragEventData(event);this.chooseUuid(data?.uuid);});this.element.querySelector('[data-load-source]').addEventListener('click',()=>this.chooseUuid(this.element.querySelector('[name="sourceUuid"]').value));this.element.querySelector('[data-source-item]')?.addEventListener('change',event=>{if(event.currentTarget.value)this.chooseUuid(event.currentTarget.value);});this.element.querySelector('[data-use-source]')?.addEventListener('click',()=>this.useSource());this.element.querySelector('[data-cancel-source]').addEventListener('click',()=>this.close());this.element.querySelector('[name="sourceUuid"]').addEventListener('keydown',event=>{if(event.key==='Enter'){event.preventDefault();this.chooseUuid(event.currentTarget.value);}});}
 }
+Hooks.once("ready",()=>{globalThis.Ugmuls55eAutomationAutomatedEffects={open:openAutomatedEffect,resolveSource:resolveAutomatedEffectSource,inspectSource:entrySourceOptions,draft:newTriggerFromSource,save:saveAutomatedEffect};});

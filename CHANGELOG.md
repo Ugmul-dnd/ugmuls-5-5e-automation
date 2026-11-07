@@ -2,6 +2,38 @@
 
 ## Unreleased
 
+## v1.0.0 — Official Release (2026-11-07)
+
+- Limit the Legendary Resistance effect-automation hold to failed saving throws. Native attack riders such as Starry Wisp’s Illuminated now apply to legendary targets through the normal hit/damage and Effect Undo workflow; successful-save and single utility effects are not incorrectly held. Preserve failed-save decisions, misses, source targeting, and resistance resources.
+
+- Restrict character-builder equipment browser results to validated candidate UUIDs, so Holy Focus and other choices hide ineligible items instead of displaying red prerequisite locks. Preserve Focus/category filters, enabled sources, and final selection validation.
+
+- Preselect matching native Compendium Browser filters for character-builder equipment choices, including Artisan’s Tools, Musical Instruments, Gaming Sets, weapon/armor categories, and spellcasting focuses. Derive specific-tool/focus categories from allowed source items, preserve editable browser filters and existing source/choice validation, and avoid restrictive guesses for incomplete imported metadata.
+
+- Register legendary-slot initiative sorting and Next Turn integration through libWrapper when available, preserving Monk’s Combat Details and other registered wrappers. Retain standalone fallback behavior when libWrapper is absent.
+
+- Add Legendary Action under Common with automatically placed hidden, actorless slots after player turns. Show only the current/upcoming GM reminder, preserve intervening NPC turns and tied initiatives, adopt an existing manual slot, and skip/hide reminders as legendary points run out. Keep internal slots anchored during combat so once-per-turn identifiers do not change, then remove them on combat end/reset. Native combatant operations preserve the active actor without extra turn events. Ordinary uses by living, non-incapacitated legendary NPCs in that slot bypass Reaction, Bonus Action, and spell-casting tracker gates/markers while preserving native resource spending and existing markers. Explicit reactions and other participants remain tracked. Skip empty slots before the combat update commits when no eligible legendary NPC has points; preserve normal turn direction and round boundaries.
+
+- Add global search above the Module Options category buttons. Match setting titles, descriptions, and class/category names; hide nonmatching settings and empty categories/class choices, and find manager shortcuts too. Preserve unsaved preferences, GM/client permissions, mastery parent locks, and search focus while typing. Clearing restores normal navigation.
+
+- Clarify the Automated Effects introduction and use compact toolbar buttons matching Region Effect Management. Rename the Region list heading to Configured Regions.
+
+- Align Automated Effects with Region Effect Management: enlarge the default window, use compact source/effect rows with direct enable/disable, Edit, and reset controls, and add selection, bulk enable/disable, and enabled/disabled search filters. Batch preference writes and preserve recipe customizations. Keep both managers’ top controls fixed while their configured lists scroll.
+
+- Rename the Region manager interface to Region Effect Management. Keep Search Effects visible above the independently scrolling Automated Effects list. Expose source/effect, trigger, damage, save/escape, removal, and separate-save timing controls on prebuilt recurring-damage and escape recipes; preserve specialized workflow metadata and reset defaults. Show fixed Blink/wound timing and expose wound activity, Medicine DC, and duration options.
+
+- Initialize fresh application clocks for custom Automated Effects recipes, including creature eye rays, so applied copies do not inherit expired source timestamps. Preserve native durations, conditions, stat changes, source templates, and external automation; existing expired effects are not revived.
+
+- Rename the trigger-library interface to Automated Effects. Add creature/item/spell/chat-card source selection and effect inspection, reuse existing recipes, and configure only existing source effects and activities. Keep manual creation on the source item’s normal sheet, preserve native application/resource settings, and reject overlapping source saves. General custom recipes support affected/source turn start/end and damage-taken saves through the existing authoritative recurring workflow, with source-token filtering and duplicate-trigger guards.
+
+- Simplify Chat & Sheets option wording, including Reduce Attack Card Clutter, latest-message scrolling, sheet compendium browsing, and adding missing class spells.
+
+- Clarify GM/NPC damage and healing option titles and descriptions, including Smart Damage and Effect Automation, NPC saving throws, HP application, and save/on-hit effects. Setting behavior and saved preferences are unchanged.
+
+- Move the remaining seven base settings into Module Options: Preserve Life, Supreme Healing, Invoke Duplicity, and Guided Strike under Cleric; Command and Mirror Image under Spells; inactive combat effect cleanup under Common. Preserve existing saved values and permissions.
+
+- Add Tavern Brawler under Feats: reroll base unarmed strike damage dice showing 1 once, including native Monk scaling and critical dice. Preserve modifiers, separate riders, preview rolls, and cached critical corrections.
+
 - Add Goliath Hill’s Tumble automation under Common. Attach native Prone to the owned feature’s utility activity and apply it to one recorded Large-or-smaller target when used. Preserve native use consumption, existing Prone, and shared Effect Undo; off-turn use does not spend an additional Reaction.
 
 - Add Elemental Adept under Feats. The active GM creates one disabled actor effect for each native elemental choice (Acid, Cold, Fire, Lightning, Thunder), preserving player enable/disable choices, repeatable feat selections, and unrelated effects. Batch compatible effect creation/source rebinds, avoid unchanged writes, and remove managed effects when the last feat is removed. Enabled types merge spell-only resistance bypass into native damage preview/application options without bypassing immunity. Apply native min2 modifiers to matching spell dice before evaluation, including mixed typed parts, nested dice, critical dice, and skipped/automatic damage dialogs; preserve stronger minima, other modifiers, original evaluated rolls, and critical-mode caches. Use the shared targeted refresh queue for changed elemental effects.

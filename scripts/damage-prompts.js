@@ -96,7 +96,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit,{preview:true})??spirit;
                 const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
                 const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
-                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,greatRolls)??greatRolls;
+                const tavernRolls=globalThis.Ugmuls55eAutomationTavernBrawler?.finalize(this,greatRolls)??greatRolls;
+                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,tavernRolls)??tavernRolls;
             }
             async _prepareContext(options) {
                 if(kind==="damage")await globalThis.Ugmuls55eAutomationPendingDamage?.prepareDamageDialog(this);
@@ -153,7 +154,8 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit)??spirit;
                 const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
                 const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
-                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,greatRolls)??greatRolls;
+                const tavernRolls=globalThis.Ugmuls55eAutomationTavernBrawler?.finalize(this,greatRolls)??greatRolls;
+                return globalThis.Ugmuls55eAutomationElementalAdept?.finalize(this,tavernRolls)??tavernRolls;
                 }
                 if(kind === "attack"){globalThis.Ugmuls55eAutomationRot?.finalizeRoots(this,rolls);const reckless=globalThis.Ugmuls55eAutomationReckless?.finalizeRecklessRolls(this,rolls)??rolls;return globalThis.Ugmuls55eAutomationBrutal?.finalizeBrutalAttack(this,reckless)??reckless;}
                 return rolls;

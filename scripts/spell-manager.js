@@ -75,7 +75,7 @@ class RegionSpellManager
 
         window: {
             title:
-                "Spell and Region Management"
+                "Region Effect Management"
         },
 
         position: {
@@ -632,11 +632,14 @@ class RegionSpellManager
 
         return `
             <div
-                data-rsa-manager-scroll
+                class="rsa-region-manager"
                 style="
                     padding:12px;
                     height:100%;
-                    overflow:auto;
+                    min-height:0;
+                    display:flex;
+                    flex-direction:column;
+                    overflow:hidden;
                 "
             >
 
@@ -644,7 +647,7 @@ class RegionSpellManager
                 <!-- DROP ZONE                                -->
                 <!-- ======================================== -->
 
-                <p>Module defaults are included automatically. Edits are saved as world overrides; reset restores the module recipe. Custom spells stay local.</p>
+                <p>Basic regions come configured using the rules in official Wizards of the Coast manuals. Add new regions and automate their effects, or edit or disable the included defaults to suit your game. Your changes are saved for this world, and Reset to Default restores the original configuration.</p>
                 <div style="margin-bottom:12px;">
                     <div style="display:flex;gap:6px;">
                     <button type="button" id="rsa-add-new-spell">
@@ -720,7 +723,7 @@ class RegionSpellManager
                 >
 
                     <strong>
-                        Configured Spells
+                        Configured Regions
                     </strong>
 
 
@@ -762,6 +765,7 @@ class RegionSpellManager
 
                 <div
                     id="rsa-spell-list"
+                    data-rsa-manager-scroll
 
                     style="
                         border:
@@ -770,7 +774,9 @@ class RegionSpellManager
 
                         border-radius:6px;
 
-                        overflow:hidden;
+                        flex:1;
+                        min-height:0;
+                        overflow:auto;
                     "
                 >
                     ${spellRows}
@@ -793,6 +799,10 @@ class RegionSpellManager
 
         const previousScroll = content.querySelector?.("[data-rsa-manager-scroll]");
         if (previousScroll) this.managerScrollTop = previousScroll.scrollTop;
+        content.style.display="flex";
+        content.style.flexDirection="column";
+        content.style.minHeight="0";
+        content.style.overflow="hidden";
         content.innerHTML =
             result;
     }
@@ -2630,7 +2640,7 @@ Hooks.on("renderCompendiumDirectory", (app, html) => {
     button.type = "button";
     button.className = "rsa-open-spell-manager";
     button.style.cssText = "flex:0 0 100%;width:100%;";
-    button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Open Spell and Region Manager';
+    button.innerHTML = '<i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Open Region Effect Management';
     button.addEventListener("click", event => {
         event.preventDefault();
         event.stopPropagation();
@@ -2649,10 +2659,10 @@ Hooks.once("init", () => {
         "spellManager",
         {
             name:
-                "Spell and Region Management",
+                "Region Effect Management",
 
             label:
-                "Manage Spells and Regions",
+                "Manage Region Effects",
 
             hint:
                 "Configure spell, player feature, and monster ability Regions, triggers, conditions, and effects.",

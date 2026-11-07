@@ -104,11 +104,11 @@ export function handleSheetAdd(event) {
     return new Browser(sheetBrowserOptions(actor,tab)).render({force:true});
 }
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"sheetAddCompendiumBrowser",{
-    name:"Open Compendium Browser from Add Item",
-    hint:"Character Inventory and Spells Add Item buttons open the matching compendium browser tab. Spells preselect the character's class lists and offer multi-select to add spells without dragging; filters remain editable.",
+    name:"Browse Items and Spells from Character Sheets",
+    hint:"Use Add Item on a character's Inventory or Spells tab to open the compendium browser. Spell browsing starts with the character's class lists and lets you select several spells to add at once. You can change the filters.",
     scope:"world",config:true,type:Boolean,default:true
 }));
-Hooks.once("init",()=>game.settings.register(MODULE_ID,"sheetLoadUnpreparedSpells",{name:"Offer Load Unprepared Class Spells",hint:"Spell Add/New buttons offer Browse Compendium or loading missing spells for full-list preparation classes. Requires configured spell slots and enabled Add Item compendium navigation.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(MODULE_ID,"sheetLoadUnpreparedSpells",{name:"Offer to Add Missing Class Spells",hint:"When adding spells, offer to fill in missing spells for classes that prepare from their full spell list. Added spells start unprepared. Requires configured spell slots and Browse Items and Spells from Character Sheets to be enabled.",scope:"world",config:true,type:Boolean,default:true}));
 function reportSheetBrowserError(error){console.error("Ugmuls 5.5e Automation | Sheet compendium browser failed:",error);ui.notifications.error(error.message??"Could not open spell options.");}
 Hooks.once("ready",()=>document.addEventListener("click",event=>{
     try {Promise.resolve(handleSheetAdd(event)).catch(reportSheetBrowserError);}

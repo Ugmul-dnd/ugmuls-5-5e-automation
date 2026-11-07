@@ -353,12 +353,12 @@ export async function stopAutomaticDamage(clicked,user=game.user) {
 }
 Hooks.once("init",()=>{
     for(const [key,name,hint]of [
-        ["autoRollNpcSaves","Automatically Roll GM NPC Saves","Resolve prompted saves for GM-run NPCs with native recommended advantage/disadvantage. Player-owned NPCs remain manual."],
+        ["autoRollNpcSaves","Automatically Roll Saving Throws for GM-Controlled NPCs","Roll requested saving throws for NPCs controlled by the GM, using the system's recommended Advantage and Disadvantage. Players still roll for NPCs they own."],
         ["magicResistanceSaves","Magic Resistance Saving Throws","Recognize the Magic Resistance feature and recommend advantage against spells or features marked Magical. Combines with other advantage/disadvantage sources, including Automated Conditions."],
-        ["autoApplyCardDamage","Auto Apply Damage","Apply damage after required saves and dice animations finish. Non-save attacks apply to hit targets only. Manual card interaction stops automation."],
-        ["autoApplyCardHealing","Auto Apply Healing","Apply healing and temporary HP after the healing roll and dice animations finish. Manual card interaction stops automation."],
-        ["autoApplySavedEffects","Auto Apply Saved Effects","After every required save and dice animation finishes, apply assigned activity effects on failed saves, and effects marked On Save on successful saves. Runs with automatic damage when enabled, or independently when damage is manual."],
-        ["autoApplyHitEffects","Auto Apply Status on Hit","Apply configured attack effects together with damage Apply, automatically or manually, to the recorded hit targets receiving that damage. Rolling a hit alone does not apply effects. Misses remain unaffected; native durations, concentration and Undo are preserved."]
+        ["autoApplyCardDamage","Automatically Apply Damage","Update targets' HP after damage rolls, required saving throws, and dice animations finish. Attacks damage only the targets they hit. Manually interacting with the card stops automatic application for that use."],
+        ["autoApplyCardHealing","Automatically Apply Healing and Temporary HP","Apply rolled healing or temporary HP to the selected recipients after dice animations finish. Manually interacting with the card stops automatic application for that use."],
+        ["autoApplySavedEffects","Automatically Apply Effects After Saving Throws","Apply the spell or feature's configured effects after all required saving throws and dice animations finish. Failed saves receive the normal effects; successful saves receive effects marked On Save. Works with automatic damage or on its own when damage is applied manually."],
+        ["autoApplyHitEffects","Apply On-Hit Effects with Damage","Apply an attack's configured effects to hit targets when you apply their damage, whether automatically or with the Apply button. A hit roll alone does not apply these effects, and missed targets are unaffected."]
     ])game.settings.register(MODULE_ID,key,{name,hint,scope:"world",config:true,type:Boolean,default:true});
 });
 Hooks.once("ready",async()=>{

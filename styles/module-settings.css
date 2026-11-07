@@ -27,3 +27,30 @@
 
 .rsa-class-filter { display:flex;align-items:center;gap:12px;flex:0 0 auto;margin:0 0 14px; }
 .rsa-class-filter select { flex:1;min-width:0;max-width:280px; }
+
+/* Keep search visible while only the effects table scrolls. */
+.rsa-effects-library { display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden;padding:12px;gap:10px; }
+.rsa-effects-toolbar { flex:0 0 auto; }
+.rsa-effects-toolbar > label { margin-top:12px; }
+.rsa-effects-list { flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable; }
+
+.rsa-effects-actions { display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin:10px 0; }
+.rsa-effects-toolbar > p:first-child { margin-top:0; }
+.rsa-effects-toolbar > button { width:auto; }
+.rsa-effects-actions button { width:auto;flex:0 0 auto; }
+.rsa-effects-toolbar > label { display:grid;gap:4px; }
+.rsa-effects-list { border:1px solid var(--color-border-light-2,#555);border-radius:6px; }
+.rsa-effect-row { display:flex;align-items:center;gap:8px;padding:8px;border-bottom:1px solid var(--color-border-light-2,#555); }
+.rsa-effect-row:last-child { border-bottom:0; }
+.rsa-effect-row > input { flex:0 0 auto; }
+.rsa-effect-name { flex:1;min-width:0; }
+.rsa-effect-name strong, .rsa-effect-name small { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.rsa-effect-name small { font-weight:normal;opacity:.75; }
+.rsa-effect-row > button { width:auto;flex:0 0 auto; }
+.rsa-region-manager > :not(#rsa-spell-list) { flex-shrink:0; }
+
+.rsa-options-search { flex:0 0 auto;display:grid;gap:5px; }
+.rsa-options-search > div { display:flex;align-items:center;gap:8px; }
+.rsa-options-search input { flex:1;min-width:0; }
+.rsa-options-search button { width:auto;flex:0 0 auto; }
+.rsa-options-search p { margin:0;opacity:.8;font-size:var(--font-size-12,12px); }

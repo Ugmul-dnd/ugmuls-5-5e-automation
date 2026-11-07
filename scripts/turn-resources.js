@@ -26,7 +26,7 @@ export function resourceEffect(actor,kind) {
         (effect.getFlag?.(ID,def.flag)===true||effect.name===def.name)&&
         (kind!=="spell"||!effect.getFlag?.(ID,"resourceTurn")||effect.getFlag(ID,"resourceTurn")===stamp(game.combat)));
 }
-export function resourceUsed(actor,kind) {return !!definitions[kind]&&enabled(kind)&&!!applies(actor,kind)&&(!!resourceEffect(actor,kind)||creating.has(actor?.uuid+":"+kind));}
+export function resourceUsed(actor,kind) {return !globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(actor)&&!!definitions[kind]&&enabled(kind)&&!!applies(actor,kind)&&(!!resourceEffect(actor,kind)||creating.has(actor?.uuid+":"+kind));}
 export async function reuseMarker(actor,data,flag) {
     // D&D5e persists expiry separately from disabled and start; every renewal must clear it.
     data={...data,duration:{...data.duration,expired:false},start:data.start??CONFIG.ActiveEffect.documentClass.getEffectStart()};
@@ -38,6 +38,7 @@ export async function reuseMarker(actor,data,flag) {
     return existing;
 }
 export async function markResource(actor,kind,{usage=null,combat=game.combat}={}) {
+    if(globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(actor,combat))return null;
     if(!definitions[kind]||!enabled(kind)||!actor?.isOwner||!applies(actor,kind,combat))return null;
     const key=actor.uuid+":"+kind;
     if(creating.has(key))return creating.get(key);
@@ -68,6 +69,7 @@ function slotUpdates(activity,updates) {
     });
 }
 export function allowTurnResourceUse(activity,usage,message,updates) {
+    if(globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(activity))return;
     const actor=actorFor(activity);if(!inCombat(actor)||!manual(activity,message))return;
     if(enabled("bonus")&&activity.activation?.type==="bonus") {
         if(effectiveCombatant(actor)?.id!==game.combat.combatant?.id) {
@@ -81,6 +83,7 @@ export function allowTurnResourceUse(activity,usage,message,updates) {
     }
 }
 export async function recordTurnResources(activity,usage,message) {
+    if(globalThis.Ugmuls55eAutomationLegendaryAction?.isUse(activity))return;
     const actor=actorFor(activity);if(!inCombat(actor)||!actor?.isOwner||!manual(activity,message))return;
     const tasks=[];
     if(activity.activation?.type==="bonus")tasks.push(markResource(actor,"bonus",{usage:message?.data?.flags?.[ID]?.castSession??null}));

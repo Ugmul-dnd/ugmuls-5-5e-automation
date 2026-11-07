@@ -99,9 +99,11 @@ export function prepareMonsterRepeatEffect(effect){
  const activity=effect.system?.origin?.activity?globalThis.fromUuidSync?.(effect.system.origin.activity,{strict:false}):null;
  const source=effect._stats?.duplicateSource?globalThis.fromUuidSync?.(effect._stats.duplicateSource,{strict:false}):null;
  const item=activity?.item??source?.parent,entry=triggerEntry(triggerKeyForSpell(item,effect));
- if(!entry?.enabled||!["monsterSave","monsterEscape","monsterDamage"].includes(entry.sourceKind))return;
+ if(!entry?.enabled||!["monsterSave","monsterEscape","monsterDamage","customEffect"].includes(entry.sourceKind))return;
  // Imported book effects can carry start.time=0 and expired=true. A newly
- // applied copy needs its own clock; never alter the source effect or duration.
+ // applied copy needs its own clock, including user-created Automated Effects
+ // recipes for native rays. Never alter the source effect or duration, or
+ // revive an already-applied effect from an update/render hook.
  const start=CONFIG.ActiveEffect.documentClass.getEffectStart();
  effect.updateSource({start,"duration.expired":false,...(entry.durationUntilConcentration?{duration:{value:null,units:"seconds",expiry:null,expired:false},["flags.dnd5e.isTemporary"]:true}:{})});
 }
@@ -133,7 +135,7 @@ export async function registerNativeEffect(effect){
   const actor=sourceCard.getAssociatedActor?.(),owned=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier&&(!cunning.sourceFeature||item.uuid===cunning.sourceFeature));
   if(owned)spell=owned;
  }
- if(spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage","athleticsEscape","classSave"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
+ if(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind!=="customEffect"&&spell?.type!=="spell"&&!(["feat","weapon"].includes(spell?.type)&&["monsterSave","monsterEscape","monsterDamage","athleticsEscape","classSave"].includes(triggerEntry(triggerKeyForSpell(spell,effect))?.sourceKind)))return;
  await registerRecurringEffect(effect,{spell,level:effect.getFlag?.("dnd5e","spellLevel")??sourceCard?.system?.level,sourceCard});
 }
 export function buildRecurringItem(spell,entry,record,phase){
@@ -143,7 +145,7 @@ export function buildRecurringItem(spell,entry,record,phase){
  const data=spell.toObject(),id=source.id;data._id=foundry.utils.randomID();data.name=entry.name+" — "+(phase==="damage"?"Recurring damage":"End effect save");
  const selected=data.system.activities[id];data.system.activities={[id]:selected};selected.effects=[];
  if(phase==="damage"&&entry.damageFromSave){selected.type="damage";delete selected.save;delete selected.damage.onSave;selected.damage.critical={allow:false};}
- if(entry.saveFirst||["monsterSave","monsterDamage","classSave"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
+ if(entry.saveFirst||["monsterSave","monsterDamage","classSave","customEffect"].includes(entry.sourceKind)){selected.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};data.effects=[];}
 
  selected.activation={type:"special",override:true};selected.duration={units:"inst",concentration:false,override:true};selected.target={override:true,prompt:false,affects:{type:"creature",count:"1",choice:false},template:{type:""}};selected.range={override:true,units:"any"};
  if(phase!=="damage"){
@@ -190,7 +192,7 @@ async function createRecurringCard(effect,token,record,stamp,phase){
  if(entry.requiresLivingSource){const source=record.sourceToken?await fromUuid(record.sourceToken,{strict:false}):null;if(!source?.actor||source.parent?.id!==token.parent?.id||source.combatant?.defeated||source.actor.statuses?.has("dead")||Number.isFinite(source.actor.system?.attributes?.hp?.value)&&source.actor.system.attributes.hp.value<=0)return;}
  const spell=entry.sourceKind==="grapple"?{actor:await fromUuid(record.caster),system:{level:0}}:await resolveRecurringSource(effect,record);if(!spell?.actor)throw Error("The recurring effect’s source caster or spell is unavailable.");
  const {data,id}=entry.sourceKind==="recurringHealing"?buildRecurringHealingItem(spell,entry,record):entry.sourceKind==="grapple"?buildGrappleEscapeItem(token.actor,record):entry.escapeCheck&&phase!=="damage"?buildEscapeCheckItem(spell,entry,record):buildRecurringItem(spell,entry,record,phase),item=new CONFIG.Item.documentClass(data,{parent:spell.actor});
- if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage","classSave"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
+ if(phase==="healing"||["monsterSave","monsterEscape","monsterDamage","classSave","customEffect"].includes(entry.sourceKind))item.prepareFinalAttributes?.();
  const descriptor={token:token.uuid,actor:token.actor.uuid,name:token.name,img:token.texture?.src??token.actor.img};
  const link={effect:effect.uuid,instance:record.instance,stamp,phase,key:record.key,...(stamp.startsWith("damage:")&&entry.damageSaveAdvantage?{advantage:true}:{})};
  const sourceRef=record.sourceCard??effect.system?.origin?.message;
@@ -214,10 +216,21 @@ export async function processRecurringTurn(combat,changes){
  const incoming=combat.combatant,prior=combat.previous;
  const subjects=[{combatant:incoming,event:"turnStart",round:combat.round,turn:combat.turn}];
  if(changes.started!==true&&prior?.combatantId&&(prior.combatantId!==incoming.id||prior.round!==combat.round)){const outgoing=combat.combatants.get(prior.combatantId);if(outgoing)subjects.unshift({combatant:outgoing,event:"turnEnd",round:prior.round,turn:prior.turn});}
+ // Only custom source-turn recipes need to inspect other combatants. Reuse
+ // this authoritative turn processor and its per-effect receipts/in-flight
+ // guards, rather than adding independent hooks or recent-message scans.
+ const sourceRecipes=Object.entries(game.settings.get(ID,"triggerLibraryCustoms")??{}).filter(([,e])=>e.enabled&&e.sourceKind==="customEffect"&&["sourceTurnStart","sourceTurnEnd"].includes(e.event));
+ const sourceEvents=new Set(sourceRecipes.map(([,e])=>e.event));
+ if(sourceEvents.size)for(const subject of [...subjects]){
+  const event=subject.event==="turnStart"?"sourceTurnStart":"sourceTurnEnd";if(!sourceEvents.has(event))continue;
+  if(!subject.combatant.actor?.uuid||!subject.combatant.token?.uuid||!sourceRecipes.some(([key,e])=>e.event===event&&values(subject.combatant.actor.items).some(item=>triggerKeyForSpell(item,{name:e.effectName})===key)))continue;
+  for(const combatant of values(combat.combatants))if(combatant.actor&&combatant.token)subjects.push({...subject,combatant,event,sourceActor:subject.combatant.actor?.uuid,sourceToken:subject.combatant.token?.uuid});
+ }
  for(const subject of subjects){const actor=subject.combatant.actor,token=subject.combatant.token;if(!actor||!token)continue;
  const stamp=combat.id+":"+subject.round+":"+subject.turn+":"+subject.event,groups=new Set();
  for(const effect of actor.effects??[]){const record=effect.getFlag?.(ID,"recurringEffect"),entry=record&&triggerEntry(record.key);if(record&&effect.getFlag(ID,"recurringLastTrigger")===stamp){const group=manualSaveGroup(record,entry);if(group)groups.add(group);}}
  for(const effect of actor.effects??[]){const record=effect.getFlag?.(ID,"recurringEffect"),entry=record&&triggerEntry(record.key);if(!entry?.enabled||(entry.event!==subject.event&&entry.saveEvent!==subject.event)||!active(effect)||hasExternalTurnAutomation(effect))continue;
+ if(subject.sourceActor&&(entry.sourceKind!=="customEffect"||record.caster!==subject.sourceActor||record.sourceToken&&record.sourceToken!==subject.sourceToken))continue;
  const group=manualSaveGroup(record,entry);if(group&&groups.has(group))continue;
  if(effect.getFlag(ID,"recurringPaused")===true||((entry.oneShot||entry.singleSave)&&effect.getFlag(ID,"recurringOneShotCard"))||effect.getFlag(ID,"recurringLastTrigger")===stamp||running.has(effect.uuid))continue;
  running.add(effect.uuid);try{await effect.setFlag(ID,"recurringLastTrigger",stamp);const card=await createRecurringCard(effect,token,record,stamp,entry.sourceKind==="recurringHealing"?"healing":entry.damageActivity&&!entry.saveFirst&&entry.event===subject.event?"damage":savePhase(entry));if(card&&group)groups.add(group);if(card&&(entry.oneShot||entry.singleSave))await effect.setFlag(ID,"recurringOneShotCard",card.uuid??("ChatMessage."+card.id));else if(!card)await effect.unsetFlag(ID,"recurringLastTrigger");}catch(error){await effect.unsetFlag(ID,"recurringLastTrigger");report(error);}finally{running.delete(effect.uuid);}

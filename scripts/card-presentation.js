@@ -325,8 +325,8 @@ function refreshOrigin(message){
     });
 }
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"simplifyAttackCards",{
-    name:"Simplify Processed Attack Cards",
-    hint:"Hide the base card once its attack result is visible, retaining it while dice animations delay the result. Damage and Retarget stay on the attack roll; Damage hides once linked damage exists. Roll messages and damage history are retained.",
+    name:"Reduce Attack Card Clutter",
+    hint:"Keep chat tidy by hiding the original item or feature card once its attack result appears. Keep the attack result and any needed Damage and Retarget buttons visible. Rolls and damage history are preserved.",
     scope:"world",config:true,type:Boolean,default:true,onChange:()=>ui.chat?.render({force:true})
 }));
 Hooks.once("ready",()=>{
@@ -358,7 +358,7 @@ export async function scrollOnChatTab(tab) {
     await ui.chat.scrollBottom({waitImages:true});
 }
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"scrollChatOnOpen",{
-    name:"Scroll Chat to Bottom on Open",hint:"When switching to the Chat tab, scroll to the newest message after the log becomes visible.",
+    name:"Show Latest Messages When Opening Chat",hint:"Scroll to the newest message whenever you open the Chat tab.",
     scope:"client",config:true,type:Boolean,default:true
 }));
 Hooks.on("changeSidebarTab",tab=>scrollOnChatTab(tab).catch(err=>console.error("Ugmuls 5.5e Automation | Chat scroll failed:",err)));

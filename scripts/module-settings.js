@@ -3,7 +3,7 @@ export const CLASS_AUTOMATIONS=[
     {name:"Artificer",keys:["flashOfGeniusAutomation","arcaneJoltAutomation","steelDeflectAutomation","guidedPrecisionAutomation","reanimatorSummonAutomation","lifeTransferAutomation","arcaneFirearmAutomation","spellStoringItemAutomation","experimentalElixirAutomation","alchemicalSavantAutomation","chemicalMasteryAutomation"]},
     {name:"Barbarian",keys:["recklessAttackAutomation","frenzyAutomation","divineFuryAutomation","fanaticalFocusAutomation","zealousPresenceAutomation","brutalStrikeAutomation","indomitableMightAutomation","primalKnowledgeAutomation","relentlessRageAutomation","mindlessRageAutomation","wildRageAutomation","vitalitySurgeAutomation"]},
     {name:"Bard",keys:["bardicInspirationAutomation","fontInspirationAutomation","superiorInspirationAutomation","wordsCreationAutomation","tandemFootworkAutomation","leadingEvasionAutomation","mantleMajestyAutomation","unbreakableMajestyAutomation","countercharmAutomation","cuttingWordsAutomation","peerlessSkillAutomation","combatInspirationAutomation","spiritsBeyondAutomation","empoweredChannelingAutomation","inspiredEclipseAutomation","lunarVitalityAutomation","blessingMoonlightAutomation"]},
-    {name:"Cleric",keys:["channelDivinityAutomation","divineStrikeAutomation","clericPotentSpellcastingAutomation","clericPotentVitalityAutomation","wardingFlareAutomation","coronaLightAutomation","modifyMagicAutomation","circleMortalityAutomation","pathGraveAutomation","sentinelDeathAutomation","divineReaperAutomation","mindMagicAutomation","blessedHealerAutomation","discipleLifeAutomation"]},
+    {name:"Cleric",keys:["preserveLifeAutomation","supremeHealingAutomation","invokeDuplicityAutomation","guidedStrikeAutomation","channelDivinityAutomation","divineStrikeAutomation","clericPotentSpellcastingAutomation","clericPotentVitalityAutomation","wardingFlareAutomation","coronaLightAutomation","modifyMagicAutomation","circleMortalityAutomation","pathGraveAutomation","sentinelDeathAutomation","divineReaperAutomation","mindMagicAutomation","blessedHealerAutomation","discipleLifeAutomation"]},
     {name:"Druid",keys:["primalStrikeAutomation","potentSpellcastingAutomation","lunarRadianceAutomation","lunarFormAutomation","moonlightStepAutomation","landRestAutomation","naturalRecoveryAutomation","landsAidAutomation","wrathSeaAutomation","starryFormAutomation","cosmicOmenAutomation","beastSpellsAutomation","immediateWildShapeAutomation"]},
     {name:"Fighter",keys:["precisionAttackAutomation","tripAttackAutomation","distractingAttackAutomation","menacingAttackAutomation","goadingAttackAutomation","maneuveringAttackAutomation","pushingAttackAutomation","parryAutomation","relentlessAutomation","psionicStrikeAutomation","psionicStrikeCriticalDamage","telekineticThrustAutomation","protectiveFieldAutomation","indomitableAutomation","studiedAttacksAutomation","survivorAutomation","arcaneShotEffectsAutomation","banneretAutomation","sharedResilienceAutomation"]},
     {name:"Monk",keys:["uncannyMetabolismAutomation","stunningStrikeAutomation","deflectAttacksAutomation","disciplinedSurvivorAutomation","flurryOfBlowsAutomation","openHandTechniqueAutomation","handOfHarmAutomation","handOfHarmCriticalDamage","elementalStrikesAutomation","elementalEpitomeAutomation","focusedStrikeAutomation"]},
@@ -17,9 +17,9 @@ export const CLASS_AUTOMATIONS=[
 export const AUTOMATION_GROUPS=[
     {id:"classes",name:"Unique Classes",icon:"fa-hat-wizard",sections:CLASS_AUTOMATIONS,keys:CLASS_AUTOMATIONS.flatMap(section=>section.keys)},
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
-    {id:"feats",name:"Feats",icon:"fa-star",keys:["elementalAdeptAutomation","mageSlayerAutomation","luckyAutomation","defensiveDuelistAutomation","crusherAutomation","slasherAutomation","piercerAutomation","savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
-    {id:"common",name:"Common",icon:"fa-gears",keys:["hillsTumbleAutomation","summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
-    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
+    {id:"feats",name:"Feats",icon:"fa-star",keys:["tavernBrawlerAutomation","elementalAdeptAutomation","mageSlayerAutomation","luckyAutomation","defensiveDuelistAutomation","crusherAutomation","slasherAutomation","piercerAutomation","savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
+    {id:"common",name:"Common",icon:"fa-gears",keys:["legendaryActionAutomation","cleanupInactiveCombatEffects","hillsTumbleAutomation","summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
+    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["commandedMarkerAutomation","mirrorImageAutomation","showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},
@@ -30,11 +30,30 @@ export const SETTINGS_GROUPS=[
     {id:"chat",name:"Chat & Sheets",icon:"fa-comments",keys:["simplifyAttackCards","scrollChatOnOpen","sheetAddCompendiumBrowser","sheetLoadUnpreparedSpells"]}
 ];
 const settingPages=()=>SETTINGS_GROUPS.flatMap(group=>group.children??[group]);
+export function searchSettingsGroups(query){
+    const terms=query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
+    if(!terms.length)return SETTINGS_GROUPS;
+    const matches=text=>terms.every(term=>text.toLocaleLowerCase().includes(term));
+    const pageMatches=(page,group)=>{
+        const keys=page.keys.filter(key=>{
+            const setting=game.settings.settings.get(`${MODULE_ID}.${key}`);if(!setting)return false;
+            const section=page.sections?.find(section=>section.keys.includes(key));
+            return matches([game.i18n.localize(setting.name),game.i18n.localize(setting.hint??""),group.name,page.name,section?.name??""].join(" "));
+        });
+        const regionManager=page.id==="regions"&&matches("Region Effect Management spell feature regions");
+        const triggerLibrary=page.id==="spells"&&matches("Automated Effects lingering effects recurring damage repeat saving throws");
+        return {...page,keys,sections:page.sections?.map(section=>({...section,keys:section.keys.filter(key=>keys.includes(key))})).filter(section=>section.keys.length),regionManager,triggerLibrary};
+    };
+    return SETTINGS_GROUPS.map(group=>group.children?{...group,children:group.children.map(page=>pageMatches(page,group)).filter(page=>page.keys.length||page.triggerLibrary)}:pageMatches(group,group))
+        .filter(group=>group.children?group.children.length:group.keys.length||group.regionManager);
+}
 export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
     static DEFAULT_OPTIONS={id:"rsa-module-options",window:{title:"Ugmuls 5.5e Automation — Options",resizable:true},position:{width:780,height:650}};
     activeTab="automations";
     activeAutomationTab="classes";
     activeClass="all";
+    searchQuery="";
+    searchClass="all";
     draft=new Map();
     initialValues=new Map();
     saving=false;
@@ -48,8 +67,13 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
     async _renderHTML(){
         this.ensureDraft();
         const escape=foundry.utils.escapeHTML;
-        const group=SETTINGS_GROUPS.find(group=>group.id===this.activeTab)??SETTINGS_GROUPS[0];
+        const groups=searchSettingsGroups(this.searchQuery),searching=!!this.searchQuery.trim();
+        const group=groups.find(group=>group.id===this.activeTab)??groups[0]??{id:"search",name:"Search Results",keys:[]};
         const page=group.children?.find(page=>page.id===this.activeAutomationTab)??group.children?.[0]??group;
+        const classes=page.sections??CLASS_AUTOMATIONS;
+        const selectedClass=searching?this.searchClass:this.activeClass;
+        const activeClass=classes.some(section=>section.name===selectedClass)?selectedClass:"all";
+        const resultCount=groups.flatMap(group=>group.children??[group]).reduce((count,page)=>count+page.keys.length+Number(!!page.regionManager)+Number(!!page.triggerLibrary),0);
         const renderRows=keys=>keys.map(key=>{
             const setting=game.settings.settings.get(`${MODULE_ID}.${key}`);if(!setting)return "";
             const client=setting.scope==="client",editable=client||game.user.isGM;
@@ -63,19 +87,20 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
                     aria-label="${escape(game.i18n.localize(setting.name))}">
             </label>`;
         }).join("");
-        const sections=page.sections?.filter(section=>this.activeClass==="all"?section.keys.length>0:section.name===this.activeClass);
+        const sections=page.sections?.filter(section=>activeClass==="all"?section.keys.length>0:section.name===activeClass);
         const rows=sections?sections.map(section=>`<section class="rsa-class-options"><h3>${escape(section.name)}</h3>${section.keys.length?renderRows(section.keys):"<p>No class-specific automations are available for this class yet.</p>"}</section>`).join(""):renderRows(page.keys);
         return `<div class="rsa-options">
+            <div class="rsa-options-search"><label for="rsa-options-search">Search options</label><div><input id="rsa-options-search" data-rsa-options-search type="search" placeholder="Find a feature, spell, class, or setting…" value="${escape(this.searchQuery)}"><button type="button" data-rsa-clear-search ${searching?"":"hidden"}>Clear</button></div>${searching?`<p role="status">${resultCount?resultCount+" matching options across categories":"No matching options. Try another search."}</p>`:""}</div>
             <nav class="rsa-options-tabs" role="tablist" aria-label="Module options">
-                ${SETTINGS_GROUPS.map(tab=>`<button type="button" role="tab" data-rsa-tab="${tab.id}" aria-selected="${tab.id===group.id}" aria-controls="rsa-options-panel">
+                ${groups.map(tab=>`<button type="button" role="tab" data-rsa-tab="${tab.id}" aria-selected="${tab.id===group.id}" aria-controls="rsa-options-panel">
                     <i class="fa-solid ${tab.icon}" aria-hidden="true"></i> ${tab.name}</button>`).join("")}
             </nav>
             <section id="rsa-options-panel" class="rsa-options-panel${group.children?" rsa-has-submenus":""}" role="tabpanel">
                 <h2>${group.name}</h2>
-                ${group.children?`<nav class="rsa-automation-tabs" role="tablist" aria-label="Automation categories">${group.children.map(tab=>`<button type="button" role="tab" data-rsa-automation-tab="${tab.id}" aria-selected="${tab.id===page.id}" aria-controls="rsa-automation-panel"><i class="fa-solid ${tab.icon}" aria-hidden="true"></i> ${tab.name}</button>`).join("")}</nav>${page.id==="classes"?`<div class="rsa-class-filter"><label for="rsa-class-filter">Class</label><select id="rsa-class-filter" data-rsa-class-filter aria-controls="rsa-automation-panel"><option value="all" ${this.activeClass==="all"?"selected":""}>All</option>${CLASS_AUTOMATIONS.map(section=>`<option value="${escape(section.name)}" ${this.activeClass===section.name?"selected":""}>${escape(section.name)}</option>`).join("")}</select></div>`:""}<section id="rsa-automation-panel" role="tabpanel"><h3 class="rsa-automation-heading">${page.name}</h3>`:""}
+                ${group.children?`<nav class="rsa-automation-tabs" role="tablist" aria-label="Automation categories">${group.children.map(tab=>`<button type="button" role="tab" data-rsa-automation-tab="${tab.id}" aria-selected="${tab.id===page.id}" aria-controls="rsa-automation-panel"><i class="fa-solid ${tab.icon}" aria-hidden="true"></i> ${tab.name}</button>`).join("")}</nav>${page.id==="classes"?`<div class="rsa-class-filter"><label for="rsa-class-filter">Class</label><select id="rsa-class-filter" data-rsa-class-filter aria-controls="rsa-automation-panel"><option value="all" ${activeClass==="all"?"selected":""}>All</option>${classes.map(section=>`<option value="${escape(section.name)}" ${activeClass===section.name?"selected":""}>${escape(section.name)}</option>`).join("")}</select></div>`:""}<section id="rsa-automation-panel" role="tabpanel"><h3 class="rsa-automation-heading">${page.name}</h3>`:""}
                 ${page.hint?`<p>${escape(page.hint)}</p>`:""}
-                ${group.id==="regions"?'<p>Configure individual spell and feature Regions in the manager.</p><button type="button" data-rsa-manager '+(game.user.isGM?'':'disabled')+'>Open Spell and Region Manager</button>':""}
-                ${page.id==="spells"?'<p><button type="button" data-rsa-trigger-library '+(game.user.isGM?'':'disabled')+'>Creature Effect Trigger Library</button></p>':""}
+                ${group.id==="regions"&&(!searching||page.regionManager)?'<p>Configure individual spell and feature Regions in the manager.</p><button type="button" data-rsa-manager '+(game.user.isGM?'':'disabled')+'>Open Region Effect Management</button>':""}
+                ${page.id==="spells"&&(!searching||page.triggerLibrary)?'<p><button type="button" data-rsa-trigger-library '+(game.user.isGM?'':'disabled')+'>Automated Effects</button></p>':""}
                 ${!game.user.isGM?'<p>World options are managed by the GM. Client options apply to this browser.</p>':""}
                 ${rows}
                 ${group.children?"</section>":""}
@@ -89,7 +114,14 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
     _replaceHTML(result,content){content.innerHTML=result;}
     _onRender(context,options){
         super._onRender(context,options);
-        this.element.querySelector("[data-rsa-class-filter]")?.addEventListener("change",event=>{this.activeClass=event.currentTarget.value;this.render({force:true});});
+        const search=this.element.querySelector("[data-rsa-options-search]");
+        search?.addEventListener("input",event=>{
+            const input=event.currentTarget;this.searchQuery=input.value;this.searchClass="all";
+            this.searchFocus={start:input.selectionStart,end:input.selectionEnd};this.render({force:true});
+        });
+        this.element.querySelector("[data-rsa-clear-search]")?.addEventListener("click",()=>{this.searchQuery="";this.searchClass="all";this.searchFocus={start:0,end:0};this.render({force:true});});
+        if(this.searchFocus&&search){search.focus();if(this.searchFocus.start!==null)search.setSelectionRange(this.searchFocus.start,this.searchFocus.end);this.searchFocus=null;}
+        this.element.querySelector("[data-rsa-class-filter]")?.addEventListener("change",event=>{if(this.searchQuery.trim())this.searchClass=event.currentTarget.value;else this.activeClass=event.currentTarget.value;this.render({force:true});});
         for(const input of this.element.querySelectorAll("[data-rsa-setting]"))input.addEventListener("change",()=>{
             this.draft.set(input.dataset.rsaSetting,input.checked);
             if(settingPages().some(page=>page.parent===input.dataset.rsaSetting))this.render({force:true});
