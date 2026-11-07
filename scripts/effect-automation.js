@@ -2,6 +2,7 @@ import {hasEquivalentActiveEffect,regionOwnsEffect} from "./shared-activity-card
 import {regionManagesCardEffect} from "./region-library.js";
 import {applyBardicGrant} from "./bardic-inspiration.js";
 const MODULE_ID="ugmuls-5-5e-automation";
+const hillsTumbleActivity=activity=>globalThis.Ugmuls55eAutomationHillsTumble?.activity(activity)===true,hillsTumbleTarget=actor=>globalThis.Ugmuls55eAutomationHillsTumble?.target(actor)===true;
 const completed=new Set();
 const pending=new Set();
 export function isHuntersMarkActivity(activity) {
@@ -33,7 +34,8 @@ export function eligibleBuffActivity(activity) {
 }
 
 export async function applyBuffEffects(message) {
-    if (game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true || !message?.id || completed.has(message.id) || pending.has(message.id)) return;
+    const tumble=hillsTumbleActivity(message?.getAssociatedActivity?.({scaled:true}));
+    if ((!tumble&&game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true) || !message?.id || completed.has(message.id) || pending.has(message.id)) return;
     if(message.getFlag?.(MODULE_ID,"manualDamageWorkflow")||message.getFlag?.(MODULE_ID,"manualEffectDecision"))return;
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     const activity=message.getAssociatedActivity?.({scaled:true});
@@ -45,7 +47,7 @@ export async function applyBuffEffects(message) {
     const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,null);if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(message,decision);return;}
     const caster=message.getAssociatedActor?.();
     const mark=isHuntersMarkActivity(activity),inspire=isBardicInspireActivity(activity),pathGrave=globalThis.Ugmuls55eAutomationPathGrave?.curseActivity?.(activity)===true;
-    if((mark||inspire||pathGrave)&&message.system.targets?.length!==1)return;
+    if((mark||inspire||pathGrave||tumble)&&message.system.targets?.length!==1)return;
     const actors=new Map();
     const type=activity.target?.affects?.type;
     if (type === "self" || globalThis.Ugmuls55eAutomationMoonlight?.transport?.(activity)&&game.settings.get(MODULE_ID,"moonlightStepAutomation")===true) {
@@ -62,11 +64,11 @@ export async function applyBuffEffects(message) {
         const friendly=globalThis.CONST?.TOKEN_DISPOSITIONS?.FRIENDLY??1;
         const casterDisposition=casterDoc?.disposition??(caster?.type==="character"?friendly:null);
         for (const {token,actor} of recipients) {
-            if (!actor) continue;
+            if (!actor || tumble&&!hillsTumbleTarget(actor)) continue;
             // Do not infer a no-save offensive effect as a buff. Self, explicit
             // allies, explicitly selected willing creatures, and friendly-disposition recipients are eligible.
             if(inspire&&actor.uuid===caster?.uuid)continue;
-            if (healingBuff || mark || inspire || pathGrave || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
+            if (tumble || healingBuff || mark || inspire || pathGrave || actor.uuid === caster?.uuid || type === "ally" || type === "willing" ||
                 (type === "creature" && casterDisposition!=null && token && token.disposition === casterDisposition)) actors.set(actor.uuid,actor);
         }
     }
@@ -118,7 +120,7 @@ function report(err) {
 }
 
 async function requestBuffs(message) {
-    if (game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true || message?.author?.id !== game.user.id) return;
+    if ((!hillsTumbleActivity(message?.getAssociatedActivity?.({scaled:true}))&&game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true) || message?.author?.id !== game.user.id) return;
     const gm=game.users.activeGM;
     if (gm && gm.id !== game.user.id) {
         game.socket.emit(`module.${MODULE_ID}`,{action:"applyBuffEffects",messageId:message.id,userId:game.user.id,gmId:gm.id});

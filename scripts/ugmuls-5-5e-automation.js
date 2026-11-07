@@ -1,3 +1,4 @@
+import './hills-tumble.js';
 import './elemental-adept.js';
 import './mage-slayer.js';
 import './lucky.js';
