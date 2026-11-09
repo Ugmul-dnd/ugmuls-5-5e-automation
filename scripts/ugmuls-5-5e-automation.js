@@ -64,6 +64,7 @@ import "./lifedrinker.js";
 import "./hex-choice.js";
 import "./frozen-haunt.js";
 import "./chilling-retribution.js";
+import "./fount-of-moonlight.js";
 import "./automatic-healing.js";
 import "./fortifying-soul.js";
 import "./modify-magic.js";

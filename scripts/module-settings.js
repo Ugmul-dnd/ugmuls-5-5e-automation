@@ -19,7 +19,7 @@ export const AUTOMATION_GROUPS=[
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["tavernBrawlerAutomation","elementalAdeptAutomation","mageSlayerAutomation","luckyAutomation","defensiveDuelistAutomation","crusherAutomation","slasherAutomation","piercerAutomation","savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["legendaryActionAutomation","cleanupInactiveCombatEffects","hillsTumbleAutomation","summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
-    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["commandedMarkerAutomation","mirrorImageAutomation","showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
+    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["fountMoonlightAutomation","commandedMarkerAutomation","mirrorImageAutomation","showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},

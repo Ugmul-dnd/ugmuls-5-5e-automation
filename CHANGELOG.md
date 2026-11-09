@@ -1,6 +1,14 @@
 # Changelog
 
-## Unreleased
+## Unreleased — v1.0.1
+
+- Shorten the Fount of Moonlight card button to “Blinding Reaction,” keeping the spell name and explanation in its tooltip so the control fits the chat log.
+
+- Fix Fount of Moonlight prompts on completed pending damage cards: capture eligibility from the incoming roll before the placeholder flag clears, without rescanning or repopulating later.
+
+- Recognize Fount of Moonlight’s native Wreathed in Light marker in Wild Shape, using the original Druid’s spell when the form does not retain it and spending the form’s Reaction.
+
+- Offer Fount of Moonlight’s native blinding Reaction on incoming damage cards, targeting the recorded attacker within 60 feet at roll time. Preserve the offer after concentration loss, consume the Reaction once, and leave incoming damage automation uninterrupted.
 
 - Finish legendary initiative sorting compatibility with Monk’s Combat Details: invoke the libWrapper chain for slot/anchor comparisons as well as ordinary comparisons, preserving anchored slot order without the missing-chain conflict warning.
 
