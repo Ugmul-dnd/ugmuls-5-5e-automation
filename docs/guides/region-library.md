@@ -195,17 +195,17 @@ The [main guide](main-automation.md) details name/type duplicate checks, delayed
 
 The saved-to-attached configuration contract, array overrides, and editing concurrency are recorded for later investigation in [IMP-010](../improvement-notes/IMP-010-region-configuration-lifecycle.md). No reconciliation or storage behavior was changed for this guide.
 
-## 10. One specialized workflow also lives here: Stinking Cloud expiry
+## 10. Stinking Cloud consumes the library from its own spell module
 
-The library is not entirely a data/settings module. It also recognizes actor-applied native Stinking Cloud effects from supported source references.
+The Stinking Cloud recipe remains in this library. Its spell-specific recognition and expiry handlers moved to [stinking-cloud.js](../../scripts/stinking-cloud.js) on 2026-11-10. That module imports `getRegionSpellTable` to respect current enablement and is manifest-loaded immediately after the library, preserving the prior setup order without a circular import.
 
 `prepareStinkingCloudEffect`, attached to `preCreateActiveEffect`, changes only the applied copy's duration fields to an unexpired `targetEnd` policy; it does not edit the book effect or invent a different condition.
 
 `endStinkingCloudTurn`, called on `updateCombat`, runs on the active GM for real turn/round transitions. It inspects the outgoing combatant's actor and deletes matching target-end Stinking Cloud effects, covering same-application-turn expiry that the native special duration can skip. It does not enumerate all world actors for that cleanup.
 
-Disabling the configured entry affects recognition. This is another reason not to describe editing a recipe as merely changing labels; behavior consumers can read it during timing-sensitive work. A potential future file-boundary move must preserve these hooks rather than treating the whole module as pure recipe data.
+Disabling the configured entry affects recognition. This is another reason not to describe editing a recipe as merely changing labels; behavior consumers can read it during timing-sensitive work. The extraction preserved the existing handlers and hook timing; library settings/migration hooks stay here.
 
-The proposed separation into a dedicated spell module is recorded in [IMP-011](../improvement-notes/IMP-011-stinking-cloud-module.md). It is cleanup for later; the active handlers remain here for now.
+The implementation and verification record is in [IMP-011](../improvement-notes/IMP-011-stinking-cloud-module.md). On 2026-11-10, the user confirmed GM/client casting, the start-turn check with no application on cast, working turn/expiry behavior, and cleanup when concentration breaks. Additional detailed regression scenarios remain listed in the finding.
 
 ## 11. Public reference and connections
 
@@ -217,7 +217,6 @@ The proposed separation into a dedicated spell module is recorded in [IMP-011](.
 | `migrateRegionLibrary`, `saveRegionSpellTable`, `resetRegionSpell` | GM migration and locally serialized edit/reset paths. |
 | `resolveRegionTriggerActivity`, `buildRegionDamageSpellData` | Native Activity selection and deliberate temporary damage-only copy. |
 | `regionManagesCardEffect` | Keep configured continuous Region effects out of card outcomes. |
-| `prepareStinkingCloudEffect`, `endStinkingCloudTurn` | Applied-copy preparation and outgoing-turn cleanup. |
 
 Representative consumers include [spell-manager.js](../../scripts/spell-manager.js) for editing, the [main script](../../scripts/ugmuls-5-5e-automation.js) for execution/attachment, [region-conditions.js](../../scripts/region-conditions.js) for configured condition membership, [region-effect-authority.js](../../scripts/region-effect-authority.js) for managed native-effect authority, and card application/Undo policy. This is a connection map rather than a full importer inventory.
 

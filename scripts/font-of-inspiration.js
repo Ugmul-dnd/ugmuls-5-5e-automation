@@ -1,4 +1,5 @@
-import {createEventQueue,startupActors} from './shared-activity-card.js';
+import {startupActors} from "./startup-actors.js";
+import {createEventQueue} from "./shared-activity-card.js";
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export async function syncFontRecovery(actor){

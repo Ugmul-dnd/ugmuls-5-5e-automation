@@ -1,4 +1,4 @@
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation',prepared=new WeakSet(),values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 export function wordsEligible(activity){
  const item=activity?.item,actor=activity?.actor??item?.actor;
@@ -11,7 +11,7 @@ export function wordsWarning(activity,targets){
  if(targets.length<1||targets.length>2)return 'Words of Creation requires one or two targets. Cast canceled; no resources consumed.';
  if(targets.length===1)return;
  const [a,b]=targets,limit=/^(m|meters?|metres?)$/i.test(String(a.parent?.grid?.units))?3.048:10;
- if(!a.actor||!b.actor||a.actor.uuid===b.actor.uuid||!a.parent||a.parent.id!==b.parent?.id||blessingDistance(a,b)>limit+1e-7)return 'Words of Creation requires two different creatures within 10 feet of each other. Cast canceled; no resources consumed.';
+ if(!a.actor||!b.actor||a.actor.uuid===b.actor.uuid||!a.parent||a.parent.id!==b.parent?.id||tokenDistance(a,b)>limit+1e-7)return 'Words of Creation requires two different creatures within 10 feet of each other. Cast canceled; no resources consumed.';
 }
 export function prepareWords(activity,usage,dialog,message){
  if(!wordsEligible(activity)||usage.cause?.activity)return;

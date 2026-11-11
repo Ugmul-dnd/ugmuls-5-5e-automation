@@ -1,3 +1,4 @@
+import {tokenDistance} from "./shared-distance.js";
 import {createEventQueue,describeTarget} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),contexts=new Map(),wrapped=new WeakSet();
 const values=v=>v?.values?Array.from(v.values()):Array.isArray(v)?v:Object.values(v??{}),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
@@ -26,14 +27,6 @@ export function captureBlessingDrop(actor,changes,options={}){
  const context=contexts.get(actor.uuid),token=victimToken(actor,context);if(!token)return;
  changes['flags.'+ID+'.darkBlessingDrop']={key:foundry.utils.randomID(),token:token.uuid,source:context?.source??null};
 }
-export function blessingDistance(a,b){
- const size=a.parent.grid.size,point=t=>({x:t.x+size/2,y:t.y+size/2,w:Math.max(1,t.width??1),h:Math.max(1,t.height??1)}),s=point(a),t=point(b);
- const x=Math.max(s.x,Math.min(t.x,s.x+(s.w-1)*size)),y=Math.max(s.y,Math.min(t.y,s.y+(s.h-1)*size)),tx=Math.max(t.x,Math.min(x,t.x+(t.w-1)*size)),ty=Math.max(t.y,Math.min(y,t.y+(t.h-1)*size));
- // Use the victim's scene grid: the active canvas can be on another scene (or
- // unavailable on the GM processing a player's kill).
- const grid=a.parent.grid,activeGrid=globalThis.canvas?.scene?.id===a.parent.id?globalThis.canvas?.grid:null;
- const distance=(grid.measurePath?grid:activeGrid)?.measurePath?.([{x,y},{x:tx,y:ty}])?.distance;return Math.max(distance??Infinity,Math.abs(Number(a.elevation??0)-Number(b.elevation??0)));
-}
 export function blessingRecipients(victim,sourceActor,sourceToken=null){
  if(!victim?.parent)return [];
  const recipients=new Map(),near=/^(m|meters?|metres?)$/i.test(victim.parent.grid.units??"ft")?10*0.3048:10;
@@ -41,7 +34,7 @@ export function blessingRecipients(victim,sourceActor,sourceToken=null){
   const actor=token.actor,feature=blessingFeature(actor);if(!feature||actor.statuses?.has("dead")||token.uuid===victim.uuid||token.disposition===0||victim.disposition!==(token.disposition===1?-1:1))continue;
   const own=actor.uuid===sourceActor?.uuid;if(own&&sourceToken?.uuid&&token.uuid!==sourceToken.uuid)continue;
   const levels=values(token.levels),other=values(victim.levels);if(!own&&levels.length&&other.length&&!levels.some(l=>other.includes(l)))continue;
-  if(actor.uuid===sourceActor?.uuid||blessingDistance(token,victim)<=near)recipients.set(actor.uuid,{actor,token,feature});
+  if(actor.uuid===sourceActor?.uuid||tokenDistance(token,victim)<=near)recipients.set(actor.uuid,{actor,token,feature});
  }
  return [...recipients.values()];
 }

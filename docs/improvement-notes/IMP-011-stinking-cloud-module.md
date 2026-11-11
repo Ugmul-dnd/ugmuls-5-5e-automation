@@ -2,14 +2,14 @@
 
 [Findings register](README.md) · [Region library guide](../guides/region-library.md)
 
-- **Status:** Proposed cleanup for later; not implemented.
+- **Status:** Implemented; core casting, turn, expiry, and concentration behavior user-confirmed.
 - **Type:** Separate spell-specific behavior from general library responsibilities.
 - **Recorded/source reviewed:** 2026-11-10, `v1.0.1-dev`.
-- **Authorization:** The user requested recording this for a future update. No runtime extraction is authorized by this note.
+- **Authorization:** Initially recorded for later; the user explicitly requested the Stinking Cloud extraction on 2026-11-10.
 
 ## Observation and history
 
-[region-library.js](../../scripts/region-library.js) primarily provides built-in recipes, composition/overrides, migration, save/reset, and native source-resolution calls. Its final section also implements active Stinking Cloud effect timing through private `isStinkingCloudEffect`, exported `prepareStinkingCloudEffect` and `endStinkingCloudTurn`, and a separate ready callback registering `preCreateActiveEffect` and `updateCombat` listeners.
+[region-library.js](../../scripts/region-library.js) provides built-in recipes, composition/overrides, migration, save/reset, and native source-resolution calls. Before this extraction, its final section also implemented Stinking Cloud effect timing through private `isStinkingCloudEffect`, exported `prepareStinkingCloudEffect` and `endStinkingCloudTurn`, and spell hook registration. Those handlers now live in [stinking-cloud.js](../../scripts/stinking-cloud.js).
 
 Git blame identifies that section as added in commit `36653a1` ("Lots of spell and region updates") on 2026-10-18, separately from the earlier library settings/migration hooks. It remains active functionality, not established obsolete code. The history does not explain why that file was chosen.
 
@@ -42,6 +42,10 @@ The intended first change is organizational only. Do not change the spell's cond
 
 ## Record
 
-- **Runtime changes:** None.
-- **New extraction tests/in-game checks:** Not performed for this note.
-- **Next step:** Include this targeted move in a separately requested cleanup pass.
+- **Implementation:** 2026-11-10, `v1.0.1-dev` working tree; not committed or published by this task.
+- **Runtime changes:** Moved recognition, applied-copy preparation, outgoing-turn cleanup, and their hooks unchanged into `stinking-cloud.js`. Added one manifest entry immediately after the Region library. Kept recipe/settings/migration in the library; no runtime importers of the removed spell exports were found, so no compatibility re-export/cycle was introduced.
+- **Tests:** Updated the existing ignored local Stinking Cloud fixture to load the dedicated module while preserving its recipe, placement, native-source, disabled/unrelated, same-turn/round, and authority assertions. Added a hook-boundary case using the shared hook-bus helper: no spell listeners from the library, one listener per event from the spell, working applied-copy preparation, and one ordered manifest entry.
+- **Targeted verification:** Four selected Stinking Cloud/library/card-effect/placement files passed before and after extraction.
+- **Full verification:** `node tools/run-tests.mjs --checks` passed: 365 discovered test files, zero failures; syntax checked for 314 runtime scripts, manifest files and relative imports verified.
+- **User-confirmed in-game checks, 2026-11-10:** Casting works from both GM and client. The user additionally confirmed working turn handling and expiry, the check occurring at the start of the turn, no application on cast, and working cleanup when concentration breaks. The report does not establish that every scenario was repeated on both clients; exact round-rollover, disabled-option, and unrelated-effect scenarios were not separately specified.
+- **Next step:** Core extraction is implemented and its reported gameplay path is confirmed. Retain the remaining detailed scenarios as regression checks for future changes; no further spell behavior changes are proposed.

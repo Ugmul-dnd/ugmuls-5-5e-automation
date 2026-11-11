@@ -1,6 +1,7 @@
-import {createEventQueue,describeTarget,startupActors} from './shared-activity-card.js';
+import {startupActors} from "./startup-actors.js";
+import {createEventQueue,describeTarget} from "./shared-activity-card.js";
 import {failureState} from './bardic-inspiration.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {eclipseSeesDestination} from './inspired-eclipse.js';
 import {syncPaladinLights} from './paladin-lighting.js';
 
@@ -100,7 +101,19 @@ function saveSource(card,{inactive=false}={}){
  }return null;
 }
 export function captureMoonlightSave(card){return enqueue(async()=>{
- if(!authority()||!enabled()||card?.type!=='save'||!card.rolls?.length||!values(card.rolls).every(r=>r._evaluated)||flag(card,'blessingMoonlightSave')!==undefined)return;
+ if(!authority()||!enabled()||card?.type!=='save'||!card.rolls?.length||!values(card.rolls).every(r=>r._evaluated))return;
+ const captured=flag(card,'blessingMoonlightSave');
+ if(captured!==undefined){
+  const current=saveSource(card);
+  // Roll corrections can turn a success into a failure. Extend only the
+  // original casting/buff snapshot; never borrow a newer Moonlight source or
+  // clear a reserved/completed heal when that save is corrected again.
+  if(!current||captured?.actor!==current.actor.uuid||captured.feature!==current.feature.uuid||captured.cast!==current.cast.id||captured.buff!==current.buff.uuid||captured.token!==current.token?.uuid||captured.failed!==card.getAssociatedActor?.()?.uuid)return;
+  const indices=values(card.rolls).flatMap((_roll,index)=>failureState(card,index)==='failed'&&!captured.indices.includes(index)?[index]:[]);
+  if(!indices.length)return;
+  await card.setFlag(ID,'blessingMoonlightSave',{...captured,indices:[...captured.indices,...indices]});
+  globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return;
+ }
  let c=saveSource(card);
  if(!c){const initial=saveSource(card,{inactive:true});if(initial){
   if(flag(initial.cast,'targetsConfirmationCanceled'))return;
@@ -110,8 +123,9 @@ export function captureMoonlightSave(card){return enqueue(async()=>{
   await globalThis.Ugmuls55eAutomationPendingCast?.commit?.(initial.cast);await activateMoonlight(initial.cast);c=saveSource(card);
  }}if(!c)return;
  const saved=initialSaves.get(c.cast.id);saved?.delete(card.id);if(saved&&!saved.size)initialSaves.delete(c.cast.id);
- // Freeze the eligible failures and the exact casting/buff when dice publish.
- // Later feature/resource changes cannot create new healing entitlements.
+ // Capture the exact casting/buff when dice publish. Later roll corrections
+ // may add failures to this snapshot, but feature/resource changes cannot
+ // replace it with a different source.
  const indices=values(card.rolls).flatMap((_r,i)=>failureState(card,i)==='failed'?[i]:[]);
  await card.setFlag(ID,'blessingMoonlightSave',{actor:c.actor.uuid,feature:c.feature.uuid,cast:c.cast.id,buff:c.buff.uuid,token:c.token?.uuid,failed:card.getAssociatedActor?.()?.uuid,indices,entries:[{actor:c.actor.uuid}]});
  globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
@@ -123,7 +137,7 @@ export function moonlightSaveContext(card,index,user=game.user){
 }
 export function moonlightHealingTarget(c,target){
  const failed=c.card.getAssociatedActor?.(),limit=/^(m|meters?|metres?)$/i.test(c.token?.parent?.grid?.units??'ft')?60*0.3048:60;
- if(!target?.actor||!c.token?.actor||target.actor.uuid===failed?.uuid||target.parent?.id!==c.token.parent?.id||target.hidden||target.level!==c.token.level||c.actor.statuses?.has('blinded')||blessingDistance(c.token,target)>limit)throw Error('Select another visible creature within 60 feet of the Bard for Moonlight Healing.');
+ if(!target?.actor||!c.token?.actor||target.actor.uuid===failed?.uuid||target.parent?.id!==c.token.parent?.id||target.hidden||target.level!==c.token.level||c.actor.statuses?.has('blinded')||tokenDistance(c.token,target)>limit)throw Error('Select another visible creature within 60 feet of the Bard for Moonlight Healing.');
  if(target.actor.uuid!==c.actor.uuid&&(!target.object?.center||!eclipseSeesDestination(c.token,{...target.object.center,elevation:target.elevation??0})))throw Error('The Bard must be able to see the Moonlight Healing recipient.');return target;
 }
 // Blessing is an explicitly permitted feature-healing source for Lunar Vitality.

@@ -1,4 +1,4 @@
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation',BOOK='rhwCSDivineRea8I',KEEPER='pUr8uamxX6DHwfFE',prepared=new WeakSet(),installed=new WeakSet();
 const values=v=>Array.from(v?.values?.()??(v&&typeof v==='object'&&!Array.isArray(v)?Object.values(v):v)??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],enabled=()=>game.settings.get(ID,'divineReaperAutomation')===true;
 const resolve=r=>{try{return globalThis.fromUuidSync?.(r,{strict:false});}catch{return null;}},remaining=i=>Number(i?.system?.uses?.value??(Number(i?.system?.uses?.max)-Number(i?.system?.uses?.spent??0)));
@@ -30,7 +30,7 @@ export function enhancedTarget(activity,token){
  if(!token?.actor||token.hidden||!caster?.actor||caster.parent?.uuid!==token.parent?.uuid)return false;
  const metric=/^(m|meters?|metres?)$/i.test(caster.parent.grid?.units??'ft'),factor=metric?0.3048:1,units=range.units;
  const distance=units==='touch'?5*factor:units==='ft'?Number(range.value)*factor:units==='m'?Number(range.value)*(metric?1:1/0.3048):units==='mi'?Number(range.value)*5280*factor:units==='any'?Infinity:NaN;
- return !Number.isNaN(distance)&&blessingDistance(caster,token)<=distance+1e-7;
+ return !Number.isNaN(distance)&&tokenDistance(caster,token)<=distance+1e-7;
 }
 export function validateEnhancedTargets(activity,targets){
  if(!enhancedTargets(activity))return targets;const state=flag(activity.item,'enhancedNecromancy'),unique=new Map(targets.map(t=>[t.token,t]));

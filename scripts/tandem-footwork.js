@@ -1,6 +1,6 @@
 import {indexedMessages} from './chat-message-index.js';
 import {createEventQueue} from './shared-activity-card.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {inspiredRoll} from './bardic-inspiration.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),installed=new WeakSet(),sessions=new Map(),waiting=new Map(),initiativeCards=new Map(),active=new WeakMap();
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
@@ -16,7 +16,7 @@ function sourceToken(actor){const own=actor?.token?.document??actor?.token;if(ow
 export function tandemAlly(source,target){
  if(!source?.actor||!target?.actor||source.parent?.id!==target.parent?.id)return false;if(source.uuid===target.uuid)return true;
  if(!source.disposition||source.disposition!==target.disposition)return false;
- const limit=/^(m|meters?|metres?)$/i.test(String(source.parent.grid?.units))?9.144:30;if(blessingDistance(source,target)>limit)return false;
+ const limit=/^(m|meters?|metres?)$/i.test(String(source.parent.grid?.units))?9.144:30;if(tokenDistance(source,target)>limit)return false;
  const viewer=target.object,center=source.object?.center;if(!viewer?.center||!center)return false;
  const sight=!target.actor.statuses?.has('blinded')&&!source.actor.statuses?.has('invisible')&&!viewer.checkCollision?.(center,{type:'sight',mode:'any'});
  if(sight)return true;

@@ -12,7 +12,6 @@ A single action can produce several messages: a usage card, multiple attacks, sa
 
 | Responsibility | Exported functions |
 | --- | --- |
-| Discover startup actors | `startupActors` |
 | Connect HP cards to a roll | `linkedHpCards`, `invalidateLinkedHpIndex` |
 | Decide whether a roll adjustment is locked | `isRollAdjustmentLocked` |
 | Classify cards | `isDamageOrHealingCard`, `isHealingCard` |
@@ -176,6 +175,8 @@ For effect-source matching, `effectSources` constructs a `Set` from UUID, duplic
 These helpers help [effect automation](../../scripts/effect-automation.js) and [Region conditions](../../scripts/region-conditions.js) make decisions. The mutations and authority rules remain in those workflows. Effect comparison is also a potential source of assumptions when extending a feature: read exactly which identity and change fields it compares before relying on it.
 
 ## 6. `startupActors`: discover once, then forget the snapshot
+
+On 2026-11-10, this independent helper and its private snapshot moved to [startup-actors.js](../../scripts/startup-actors.js). Its six consumers import directly from that module; it is no longer an export of `shared-activity-card.js`. The behavior explained here is unchanged. See the [review and caller checklist](../improvement-notes/IMP-002-helper-review-and-startup-checks.md).
 
 Startup features can each need the world actors plus synthetic actors on scene tokens. This helper gathers both, deduplicates by Actor UUID using a `Map`, and returns an array frozen with `Object.freeze`.
 

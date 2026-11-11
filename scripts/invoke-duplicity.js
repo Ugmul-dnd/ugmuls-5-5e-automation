@@ -1,4 +1,4 @@
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation';let bridge=false;
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,enabled=()=>game.settings.get(ID,'invokeDuplicityAutomation')===true;
 const resolve=r=>{try{return typeof r==='string'?globalThis.fromUuidSync?.(r,{strict:false}):r;}catch{return null;}};
@@ -10,7 +10,7 @@ export function duplicitySource(illusion){
  if(summon?.activity!=='dnd5eactivity000'||key(item)!=='invoke-duplicity'||item.system?.source?.rules==='2014'||!duplicityFeature(actor,'invoke-duplicity')||incapacitated(actor))return null;
  return actor;
 }
-function near(a,b){const metric=a.parent?.grid?.units;const five=['m','meter','meters','metre','metres'].includes(String(metric).toLowerCase())?1.5:5;return blessingDistance(a,b)<=five;}
+function near(a,b){const metric=a.parent?.grid?.units;const five=['m','meter','meters','metre','metres'].includes(String(metric).toLowerCase())?1.5:5;return tokenDistance(a,b)<=five;}
 export function duplicityAdvantage(attacker,target){
  if(!enabled())return false;attacker=attacker?.document??attacker;target=target?.document??target;
  if(!attacker?.actor||!target?.actor||!attacker.parent||attacker.parent.id!==target.parent?.id)return false;

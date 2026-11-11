@@ -1,4 +1,5 @@
-import {createEventQueue,startupActors,describeTarget} from './shared-activity-card.js';
+import {startupActors} from "./startup-actors.js";
+import {createEventQueue,describeTarget} from "./shared-activity-card.js";
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue();
 const values=v=>Array.from(v?.values?.()??v??[]),enabled=()=>game.settings.get(ID,'hillsTumbleAutomation')===true;
 const authority=()=>game.user.isGM&&game.users.activeGM?.id===game.user.id;

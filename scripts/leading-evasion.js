@@ -1,4 +1,4 @@
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation',values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 const enabled=()=>game.settings.get(ID,'leadingEvasionAutomation')===true,unable=a=>['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(s=>a?.statuses?.has(s));
 const resolve=r=>{try{return globalThis.fromUuidSync?.(r,{strict:false});}catch{return null;}};
@@ -10,7 +10,7 @@ export function leadingSaveLabel(activity,usage,target){
  const own=leadingFeature(target.actor);if(own&&!unable(target.actor))return {name:'Leading Evasion',inactive:false,source:target};
  for(const ref of targets){const source=resolve(ref.token);if(!source?.actor||source.uuid===target.uuid||!leadingFeature(source.actor)||unable(source.actor)||source.parent?.id!==target.parent?.id||ability(activity,usage,source)!=='dex')continue;
   const limit=/^(m|meters?|metres?)$/i.test(String(source.parent?.grid?.units))?1.524:5;
-  if(blessingDistance(source,target)<=limit)return {name:'Leading Evasion',inactive:false,source};
+  if(tokenDistance(source,target)<=limit)return {name:'Leading Evasion',inactive:false,source};
  }
  return own?{name:'Leading Evasion',inactive:true,source:target}:null;
 }

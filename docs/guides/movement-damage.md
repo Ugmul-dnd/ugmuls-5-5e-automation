@@ -61,7 +61,7 @@ const result = token.measureMovementPath([
 
 `continue` skips the current segment. The object spread copies native position data, retaining the action associated with the segment. Nonfinite or negative measured distance is rejected.
 
-The helper adds `result.distance`, not terrain/speed cost. Difficult terrain consuming more movement does not by itself double the traveled-distance amount used here. This is path length, not simply the straight-line distance between the drag's endpoints or a call to `blessingDistance`.
+The helper adds `result.distance`, not terrain/speed cost. Difficult terrain consuming more movement does not by itself double the traveled-distance amount used here. This is path length, not simply the straight-line distance between the drag's endpoints or a call to `tokenDistance` in [shared-distance.js](../../scripts/shared-distance.js).
 
 Teleport segments are skipped by this measurement. The later counting path also considers whether entry included a non-teleport waypoint. Mixed walking/teleport paths should be tested before making broader claims about every combination of native movement actions.
 

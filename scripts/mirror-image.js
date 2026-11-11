@@ -1,5 +1,5 @@
 import {createEventQueue,isRollAdjustmentLocked,linkedHpCards,isHealingCard} from './shared-activity-card.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation',DUPLICATES=new Set(['VUqQIaiZoIzxUdf1','XcTQl9DhT9lC3bxI','uMsGEsbEZ2hckOKW']),enqueue=createEventQueue(),fresh=new WeakSet(),captures=new WeakMap(),snapshots=new WeakMap(),byActor=new Map(),pending=new Map();
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],live=e=>!!e&&!e.disabled&&!e.isSuppressed&&e.active!==false&&!e.duration?.expired&&!e.system?.expired;
 const enabled=()=>game.settings.get(ID,'mirrorImageAutomation')===true,authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),owns=(a,u)=>!!u?.active&&(u.isGM||a?.testUserPermission?.(u,'OWNER'));
@@ -11,7 +11,7 @@ export function mirrorDuplicates(actor){const seen=new Set();return values(actor
  if(!native||seen.has(native)||!values(e.system?.changes??e.changes).some(c=>c.key==='flags.dnd-players-handbook.mirrorImages'&&Number(c.value)===1))return false;seen.add(native);return true;
  }).slice(0,3);}
 export function mirrorBypassed(attacker,target){
- if(attacker.actor?.statuses?.has('blinded'))return true;const senses=attacker.actor?.system?.attributes?.senses??{};if(!['blindsight','truesight'].some(k=>Number(senses[k])>0))return false;const distance=blessingDistance(attacker,target),metric=/^(m|meters?|metres?)$/i.test(String(attacker.parent?.grid?.units)),senseMetric=/^(m|meters?|metres?)$/i.test(String(senses.units??'ft'));
+ if(attacker.actor?.statuses?.has('blinded'))return true;const senses=attacker.actor?.system?.attributes?.senses??{};if(!['blindsight','truesight'].some(k=>Number(senses[k])>0))return false;const distance=tokenDistance(attacker,target),metric=/^(m|meters?|metres?)$/i.test(String(attacker.parent?.grid?.units)),senseMetric=/^(m|meters?|metres?)$/i.test(String(senses.units??'ft'));
  const factor=metric===senseMetric?1:metric?0.3048:1/0.3048;return ['blindsight','truesight'].some(k=>Number(senses[k])>0&&distance<=Number(senses[k])*factor);
 }
 function attackOf(card){if(card?.type==='attack')return card;if(isHealingCard(card))return null;const explicit=flag(card,'damageAttackId');if(explicit)return game.messages.get(explicit);const origin=card?.type==='usage'?card:resolve(card?.system?.origin);if(origin?.type==='attack')return origin;const attacks=values(origin?.getAssociatedRolls?.('attack'));return attacks.length===1?attacks[0]:attacks.find(a=>linkedHpCards(a).some(h=>h.id===card?.id))??null;}

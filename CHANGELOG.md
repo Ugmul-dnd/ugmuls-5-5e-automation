@@ -2,6 +2,18 @@
 
 ## Unreleased — v1.0.1
 
+- Show a temporary pulsing range ring while choosing Inspired Eclipse teleport destinations, including chat, feature Teleport, and recipient paths. Use the recorded range and scene units, clear the guide on placement exit, and retain native destination/resource validation.
+
+- Offer Blessing of Moonlight healing when a save from the same recorded casting is corrected from success to failure. Preserve the captured caster/buff and existing healing reservations or completed uses; repeated corrections do not grant another heal for an already used save.
+
+- Move the short-lived startup Actor discovery helper into `startup-actors.js` and update its six consumers, preserving shared-cache behavior, synthetic Actor discovery, and feature setup.
+
+- Remove outdated fixed-version labels from main automation and Spell Manager diagnostics; report the installed module version from Foundry's module metadata at Ready.
+
+- Extract token-footprint distance measurement from Dark One's Blessing into `shared-distance.js` and migrate all twenty consumers to `tokenDistance`, preserving measurement, feature range rules, and snapshot timing.
+
+- Move Stinking Cloud's applied-effect preparation and turn-end cleanup into a dedicated spell script. Keep its Region recipe, enablement, native condition, and expiry timing unchanged.
+
 - Shorten the Fount of Moonlight card button to “Blinding Reaction,” keeping the spell name and explanation in its tooltip so the control fits the chat log.
 
 - Fix Fount of Moonlight prompts on completed pending damage cards: capture eligibility from the incoming roll before the placeholder flag clears, without rescanning or repopulating later.

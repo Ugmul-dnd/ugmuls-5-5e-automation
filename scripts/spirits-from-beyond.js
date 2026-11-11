@@ -1,5 +1,5 @@
 import {createEventQueue,describeTarget} from './shared-activity-card.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {installTransferPlacement} from './life-transfer.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),waiting=new Map(),dialogs=new Set(),wrapped=new WeakSet(),processing=new Set(),opened=new Set();
 const values=v=>v?.values?Array.from(v.values()):Array.isArray(v)?v:Object.values(v??{}),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
@@ -49,7 +49,7 @@ async function grant(card,c,number){
 }
 export function unleashTarget(actor,sourceRef,targetRef,user=game.user){
  const source=resolve(sourceRef),target=resolve(targetRef),limit=/^(m|meters?|metres?)$/i.test(source?.parent?.grid?.units??'ft')?9.144:30;
- if(source?.actor?.uuid!==actor?.uuid||!target?.actor||source.parent?.uuid!==target.parent?.uuid||user.viewedScene&&source.parent.id!==user.viewedScene||!user.isGM&&target.hidden||target.object?.isVisible===false||actor.statuses?.has('blinded')||blessingDistance(source,target)>limit+1e-7||source.uuid!==target.uuid&&source.object?.checkCollision?.(target.object?.center,{type:'sight',mode:'any'}))throw Error('Choose one visible creature within 30 feet of the Bard.');
+ if(source?.actor?.uuid!==actor?.uuid||!target?.actor||source.parent?.uuid!==target.parent?.uuid||user.viewedScene&&source.parent.id!==user.viewedScene||!user.isGM&&target.hidden||target.object?.isVisible===false||actor.statuses?.has('blinded')||tokenDistance(source,target)>limit+1e-7||source.uuid!==target.uuid&&source.object?.checkCollision?.(target.object?.center,{type:'sight',mode:'any'}))throw Error('Choose one visible creature within 30 feet of the Bard.');
  return target;
 }
 function reservation(payload,user,{rollback=false}={}){

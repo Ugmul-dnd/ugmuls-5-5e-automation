@@ -49,6 +49,7 @@
   },
   "esmodules": [
     "scripts/region-library.js",
+    "scripts/stinking-cloud.js",
     "scripts/aura-of-life.js",
     "scripts/sleet-storm.js",
     "scripts/regal-presence.js",

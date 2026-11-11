@@ -2,7 +2,7 @@ import {createEventQueue,isRollAdjustmentLocked} from './shared-activity-card.js
 import {inspiredRoll} from './bardic-inspiration.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {flashFriendly} from './flash-of-genius.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {seekingSnapshot} from './seeking-spell.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),captured=new WeakSet();
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
@@ -23,7 +23,7 @@ function candidate(card,source,{reserved=false}={}){
  const resource=values(actor?.items).find(i=>key(i)==='channel-divinity'&&i.system?.source?.rules!=='2014');
  if(!c||!actor||!feature||!resource||!reserved&&remaining(resource)<1||!activity||unable(actor)||!self&&(!reserved&&reactionUsed(actor)||!flashFriendly(source,c.attacker))||source.parent?.id!==c.target.parent?.id)return null;
  const limit=/^(m|meters?|metres?)$/i.test(String(source.parent.grid?.units))?9.144:30;
- if(blessingDistance(source,c.target)>limit)return null;
+ if(tokenDistance(source,c.target)>limit)return null;
  return {...c,actor,feature,resource,activity,source,self};
 }
 export function guidedSnapshot(card){

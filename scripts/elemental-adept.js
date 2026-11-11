@@ -1,4 +1,5 @@
-import {createEventQueue,isHealingCard,startupActors} from './shared-activity-card.js';
+import {startupActors} from "./startup-actors.js";
+import {createEventQueue,isHealingCard} from "./shared-activity-card.js";
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),installed=new WeakSet();
 export const ADEPT_TYPES=['acid','cold','fire','lightning','thunder'];
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];

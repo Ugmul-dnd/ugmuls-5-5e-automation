@@ -1,7 +1,7 @@
 // ============================================================
 // Ugmuls 5.5e Automation
 // Spell Manager
-// v0.7.0
+// Installed module version is reported by the main automation ready message.
 //
 // Supports:
 // - Multiple activity triggers
@@ -2680,6 +2680,6 @@ Hooks.once("init", () => {
 
 
     console.log(
-        "Ugmuls 5.5e Automation | v0.7.0 Spell Manager registered"
+        "Ugmuls 5.5e Automation | Spell Manager registered"
     );
 });

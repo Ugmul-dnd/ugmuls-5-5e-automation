@@ -1,7 +1,7 @@
 import {createEventQueue,describeTarget,isHealingCard} from './shared-activity-card.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {druidOwner} from './druid-damage.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue();
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],resolve=r=>{try{return typeof r==='string'?fromUuidSync(r,{strict:false}):r;}catch{return null;}},doc=t=>t?.document??t;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),enabled=()=>game.settings.get(ID,'fountMoonlightAutomation')===true;
@@ -20,7 +20,7 @@ export function fountSnapshot(card,{rolls=card?.rolls,completed=false,system=car
   const owner=druidOwner(actor),item=values(actor.items).find(spell)??values(owner?.items).find(spell),activity=values(item?.system?.activities).find(a=>a.type==='save'&&String(a.activation?.type).startsWith('reaction'));
   const buff=values(actor.appliedEffects??actor.effects).some(e=>live(e)&&(['Fount of Moonlight','Wreathed in Light'].includes(e.name?.trim())||resolve(e.origin)?.uuid===item?.uuid||resolve(e.system?.origin?.item)?.uuid===item?.uuid));
   const limit=/^(m|meters?|metres?)$/i.test(token.parent.grid.units??'ft')?60*0.3048:60;
-  if(item&&activity&&buff&&blessingDistance(token,attacker)<=limit)entries.push({actor:actor.uuid,token:token.uuid,item:item.uuid,sourceActor:(item.actor??actor).uuid,activity:activity.id??activity._id,attacker:attacker.uuid});
+  if(item&&activity&&buff&&tokenDistance(token,attacker)<=limit)entries.push({actor:actor.uuid,token:token.uuid,item:item.uuid,sourceActor:(item.actor??actor).uuid,activity:activity.id??activity._id,attacker:attacker.uuid});
  }
  return {entries};
 }

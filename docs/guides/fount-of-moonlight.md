@@ -52,7 +52,7 @@ An empty snapshot is an important decision: nobody qualified for this roll. Late
 
 These are **object properties**, written as `name: value`. We save references rather than copying entire live documents into the flag. The `actor` is the defender; `sourceActor` identifies the actor owning the source spell. They can differ in Wild Shape.
 
-The spell lookup checks the damaged form first and falls back to `druidOwner(actor)`. The shared distance helper comes from [dark-ones-blessing.js](../../scripts/dark-ones-blessing.js); its filename reflects another feature, but its exported `blessingDistance` function is reused here.
+The spell lookup checks the damaged form first and falls back to `druidOwner(actor)`. Range measurement uses `tokenDistance` from [shared-distance.js](../../scripts/shared-distance.js). On 2026-11-10, that calculation was extracted unchanged from Dark One's Blessing; Fount's range and snapshot timing remain in this spell. See the [caller verification sheet](../improvement-notes/IMP-001-distance-verification.md).
 
 ## 3. Why the pending damage fix mattered
 

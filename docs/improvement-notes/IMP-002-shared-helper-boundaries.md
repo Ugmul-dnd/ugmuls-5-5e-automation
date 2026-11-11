@@ -4,12 +4,14 @@
 
 ## Summary and evidence
 
-- **Status:** Proposed; not implemented.
+- **Status:** Narrow startup-discovery extraction implemented; other helper moves remain proposed/deferred.
 - **Type:** Organization and discoverability opportunity, not a confirmed defect.
 - **Recorded/source reviewed:** 2026-11-09, `v1.0.1-dev` working tree.
-- **Authorization:** Recording findings during documentation is authorized. Runtime extraction is not part of this task.
+- **Authorization:** User authorized narrow IMP-002 cleanup on 2026-11-10. This pass extracts startup discovery only; it does not authorize a broad engine split.
 
 [shared-activity-card.js](../../scripts/shared-activity-card.js) contains several distinct families of helpers. Some callers need card relationships, while others import it for an event queue, actor discovery, effect matching, or Region targeting. A later review could make those boundaries clearer while preserving the existing shared workflows.
+
+**Current implementation:** Startup discovery now lives in [startup-actors.js](../../scripts/startup-actors.js). The [narrow review and six-consumer check sheet](IMP-002-helper-review-and-startup-checks.md) records what moved, what remained, and the exact connections to verify. The table below records the original responsibility inventory; it is not a statement that every family was extracted.
 
 ## Connections to map before proposing an extraction
 
@@ -37,7 +39,7 @@ Do not combine this organization task with changes to roll linkage, the timestam
 
 ## Future verification plan
 
-No runtime change has been made or tested as a refactor.
+The original review did not change runtime behavior. The bounded extraction and actual verification results are recorded below; the remaining broad-review scenarios are future work.
 
 - [ ] Inventory all importers and any indirect/global entry points before choosing a split.
 - [ ] Read the relevant local fixtures, then run targeted checks for locks, target sync, startup discovery, Region sharing, Shield, Bardic Inspiration, and Undo.
@@ -47,3 +49,11 @@ No runtime change has been made or tested as a refactor.
 - [ ] In Foundry, check per-attack locking, partial/complete Undo, effect-only saves, independent rider saves, shared-card recipient additions, and GM/player operation. Use the scenarios in the linked guide and record actual results.
 
 Tests/tools remain Git-ignored; the plan is not a claim that a fresh checkout contains them. Actual implementation approval, commit, commands/results, and in-game observations should be recorded here when that work is undertaken.
+
+## Narrow implementation record — 2026-11-10
+
+- Moved the unchanged `actorDiscovery` state and `startupActors` function to `startup-actors.js`; migrated all six runtime consumers directly. No hooks or manifest entry were added, and no old-path compatibility re-export remains.
+- Retained card relationships/index invalidation, live locks, effect/source policy, recipient synchronization, Region helpers, and task queues in the shared-card file. The queue has 139 direct importers and remains a separately scoped candidate rather than broadening this pass.
+- Updated local fixture loading without dropping existing assertions. Eight selected startup/caller/target-sync/lock files passed before and after the move. Full runner with checks passed: 366 files, zero failures; 316 runtime scripts syntax checked plus manifest/import validation.
+- No new in-game verification or performance gain is claimed. Code is implemented; six feature connections and focused checks are recorded in the linked sheet.
+- Working-tree changes only; no commit, package, or publication from this task.

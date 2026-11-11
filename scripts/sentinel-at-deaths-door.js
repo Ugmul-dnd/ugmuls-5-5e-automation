@@ -1,6 +1,6 @@
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard,linkedHpCards} from './shared-activity-card.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {fieldFriendly} from './protective-field.js';
 import {subtractCuttingWords} from './cutting-words.js';
 import {omenRollSnapshot} from './cosmic-omen.js';
@@ -18,7 +18,7 @@ export function sentinelRange(source,target){
  if(source.actor.statuses?.has('blinded')||target.hidden||target.object?.isVisible===false||!source.object?.center||!target.object?.center)return false;
  const a=values(source.levels),b=values(target.levels);if(a.length&&b.length&&!a.some(l=>b.includes(l)))return false;
  const limit=/^(m|meters?|metres?)$/i.test(source.parent?.grid?.units??'ft')?18.288:60;
- return blessingDistance(source,target)<=limit+1e-7&&!source.object.checkCollision?.(target.object.center,{type:'sight',mode:'any'});
+ return tokenDistance(source,target)<=limit+1e-7&&!source.object.checkCollision?.(target.object.center,{type:'sight',mode:'any'});
 }
 export function sentinelSnapshot(card){
  const empty={turn:turn(),entries:[]};if(!enabled()||card?.type!=='damage'||isHealingCard(card)||flag(card,'masteryGraze')||card.system?.targets?.length!==1)return empty;

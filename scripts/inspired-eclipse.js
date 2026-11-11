@@ -1,4 +1,5 @@
-import {createEventQueue,startupActors} from './shared-activity-card.js';
+import {startupActors} from "./startup-actors.js";
+import {createEventQueue} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {inspirationData} from './bardic-inspiration.js';
 const ID='ugmuls-5-5e-automation',TELEPORT='rsaEclipsePort01',MOVE='rsaInspiredEclipse',enqueue=createEventQueue(),waiting=new Map(),placing=new Set(),wrapped=new WeakSet(),attacks=new WeakMap();
@@ -110,12 +111,35 @@ export function eclipseOperation(operation,payload,user=game.user){return enqueu
 });}
 async function operate(operation,payload){const gm=game.users.activeGM;if(!gm||gm.id===game.user.id)return eclipseOperation(operation,payload);const request=foundry.utils.randomID();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{waiting.delete(request);reject(Error('The GM did not answer Inspired Eclipse.'));},20000);waiting.set(request,{resolve,reject,timer});game.socket.emit('module.'+ID,{action:'eclipseOperation',operation,payload,request,user:game.user.id,gm:gm.id});});}
 function useUpdate(c,value){return c.recipient?{['flags.'+ID+'.eclipseRecipientUses']:{...flag(c.card,'eclipseRecipientUses'),[c.actor.id??c.actor.uuid]:value}}:{['flags.'+ID+'.eclipseUsed']:value};}
+export function showEclipseRange(token,range){
+ let ring,ticker,pulse;
+ const clear=()=>{if(pulse){ticker?.remove(pulse);pulse=null;}if(ring&&!ring.destroyed){ring.parent?.removeChild(ring);ring.destroy();}};
+ try{
+  const view=globalThis.canvas,Graphics=globalThis.PIXI?.Graphics,grid=token?.parent?.grid;
+  if(!Graphics||!view?.controls?.addChild||view.scene?.id!==token?.parent?.id)return clear;
+  const metric=/^(m|meters?|metres?)$/i.test(grid?.units??'ft'),feet=range?.units==='m'?Number(range.value)/0.3048:Number(range?.value);
+  const distance=metric?feet*0.3048:feet,radius=distance*Number(grid?.size)/Number(grid?.distance);
+  if(!['ft','m'].includes(range?.units)||!Number.isFinite(radius)||radius<=0)return clear;
+  const center=token.getCenterPoint?.()??{x:token.x+token.width*grid.size/2,y:token.y+token.height*grid.size/2};
+  // Local, non-interactive guidance only: no Region/template documents and no
+  // animation-module dependency. Native destination validation remains exact.
+  ring=new Graphics();ring.eventMode='none';ring.lineStyle(3,0xb7cfff,0.9).beginFill(0x8caaff,0.04).drawCircle(center.x,center.y,radius).endFill();ring.alpha=0.65;
+  view.controls.addChild(ring);ticker=view.app?.ticker;
+  if(ticker?.add&&ticker.remove&&!globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+   let elapsed=0;pulse=()=>{if(ring.destroyed||view.scene?.id!==token.parent?.id){clear();return;}elapsed+=ticker.deltaMS??16.67;ring.alpha=0.5+0.2*Math.sin(elapsed/350);};ticker.add(pulse);
+  }
+ }catch(error){clear();console.warn('Inspired Eclipse range preview',error);}
+ return clear;
+}
 export async function placeEclipseTeleport(card,recipient){
  const c=eclipseContext(card,game.user,{teleport:true,recipient});if(!c)throw Error('Activate Inspired Eclipse before teleporting.');if(placing.has(c.actor.uuid))return;placing.add(c.actor.uuid);
+ let clearRange=()=>{};
  try{const from={x:c.token.x,y:c.token.y,elevation:c.token.elevation??0},data=c.token.toObject();delete data._id;ui.notifications.info('Inspired Eclipse: click a destination within '+c.s.range.value+' '+c.s.range.units+'. Esc cancels.');
+  clearRange=showEclipseRange(c.token,c.s.range);
   const placed=await canvas.tokens.placeTokens([data],{create:false,allowRotation:false,preConfirm:({document})=>{try{eclipseDestination(c.token,document,c.s.range);return true;}catch(error){ui.notifications.warn(error.message);return false;}}});
+  clearRange();
   if(!placed?.length)return;return await operate('teleport',{card:card.id,recipient,from,destination:{x:placed[0].x,y:placed[0].y,elevation:placed[0].elevation}});
- }finally{placing.delete(c.actor.uuid);}
+ }finally{clearRange();placing.delete(c.actor.uuid);}
 }
 export async function activateEclipse(card,recipient){await operate('activate',{card:card.id,recipient});return placeEclipseTeleport(card,recipient);}
 export function renderEclipse(message,html){

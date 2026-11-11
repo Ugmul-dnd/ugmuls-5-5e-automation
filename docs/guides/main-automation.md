@@ -44,7 +44,7 @@ The `init` hook registers `promptForSaveOnRegionTriggers` and the hidden `spellT
 
 The [Region library guide](region-library.md) follows those defaults, overrides, migration, and resolution rules in detail.
 
-The header and several console messages still say **v0.8.4**. They are historical text, not reliable installed-version indicators. Check [module.json](../../module.json) for the manifest version and the working branch for development context. No version strings were changed during this documentation pass.
+As of the 2026-11-10 diagnostic cleanup, fixed **v0.8.4** labels have been removed from the main header/startup messages. The Ready message reads the installed version from `game.modules.get(MODULE_ID).version`, with an `unknown` fallback. Spell Manager's old **v0.7.0** startup label was also removed. Check [module.json](../../module.json) for the manifest version and the working branch/changelog for development context: the installed manifest version does not identify every uncommitted development edit. The cleanup changed diagnostics only, not the engine structure.
 
 ## 2. The state this file owns
 

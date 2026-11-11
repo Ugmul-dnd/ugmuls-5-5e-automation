@@ -1,7 +1,7 @@
 import {createEventQueue,isRollAdjustmentLocked} from './shared-activity-card.js';
 import {failureState} from './bardic-inspiration.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
-import {blessingDistance} from './dark-ones-blessing.js';
+import {tokenDistance} from './shared-distance.js';
 import {flashFriendly} from './flash-of-genius.js';
 import {finalD20Results,d20ResultValue} from './d20-results.js';
 import {animateNewSaveDice} from './save-roll-controls.js';
@@ -28,7 +28,7 @@ function entry(card,source,{reserved=false}={}){
  const target=targetOf(card),actor=source?.actor,feature=countercharmFeature(actor),activity=values(feature?.system?.activities).find(a=>(a.id??a._id)==='dnd5eactivity000');
  if(!target?.actor||!actor||!feature||!activity||unable(actor)||!reserved&&reactionUsed(actor)||source.parent?.id!==target.parent?.id||!flashFriendly(source,target))return null;
  const limit=/^(m|meters?|metres?)$/i.test(String(source.parent.grid?.units))?9.144:30;
- if(source.actor.uuid!==target.actor.uuid&&blessingDistance(source,target)>limit)return null;
+ if(source.actor.uuid!==target.actor.uuid&&tokenDistance(source,target)>limit)return null;
  return {actor,feature,activity,source,target};
 }
 export function countercharmSnapshot(card){
