@@ -51,4 +51,4 @@ When changing a documented workflow, review its guide and nearby comments in the
 
 ## Where these files go
 
-`docs/guides/` belongs in the GitHub repository. The current local release builder packages `module.json`, `LICENSE`, runtime JavaScript, and styles; it excludes these guides. Comments inside runtime scripts travel with those scripts.
+`docs/guides/` belongs in the GitHub repository. The current local release builder packages `module.json`, `LICENSE`, the current release notes, runtime JavaScript, and styles; it excludes these guides. Comments inside runtime scripts travel with those scripts.

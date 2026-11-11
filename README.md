@@ -12,9 +12,9 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 1.0.0
+## Version 1.0.1
 
-The official v1.0.0 release brings searchable Module Options, aligned Region Effect Management and Automated Effects editors, automatic legendary-action reminders, expanded feat assistance, and clearer character-builder equipment choices. Native activities, recorded targets, resource consumption, roll corrections, and Apply/Undo remain central to the module. See [1.0.0 release notes](RELEASE-NOTES-1.0.0.md) for highlights, compatibility, testing, and updating instructions.
+Version 1.0.1 adds Fount of Moonlight blinding Reaction prompts on incoming damage cards, corrects Blessing of Moonlight offers after save corrections, adds an Inspired Eclipse teleport range guide, and completes legendary initiative sorting compatibility with Monk's Combat Details. Shared distance and startup helpers now have dedicated scripts, alongside expanded developer guides. See [1.0.1 release notes](RELEASE-NOTES-1.0.1.md) for details, compatibility, verification, and updating instructions.
 
 ## Main features
 

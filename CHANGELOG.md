@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased — v1.0.1
+## v1.0.1 — Maintenance Release (2026-11-11)
 
 - Show a temporary pulsing range ring while choosing Inspired Eclipse teleport destinations, including chat, feature Teleport, and recipient paths. Use the recorded range and scene units, clear the guide on placement exit, and retain native destination/resource validation.
 
