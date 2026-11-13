@@ -138,7 +138,7 @@ export function renderCleave(card,html){
  const attacks=card.type==="attack"?[card]:card.type==="usage"?card.getAssociatedRolls?.("attack")??[]:[];
  for(const attack of attacks){
   track(attack);if(!cleaveAvailable(attack))continue;
-  const button=document.createElement('button');button.type='button';button.dataset.rsaCleave=attack.id;button.textContent='Cleave';
+  const button=document.createElement('button');button.type='button';button.dataset.rsaCleave=attack.id;button.textContent='Cleave';button.dataset.rsaReactionIcon=attack.getAssociatedItem?.()?.img??'icons/svg/d20.svg';
   const actor=actorFor(attack),reservation=actor.getFlag(ID,"cleaveReservation");button.disabled=busy.has(actor.uuid)||reservation?.turn===turn()&&game.users.get(reservation.userId)?.active;
   button.dataset.tooltip='Select a different creature, then make your Cleave attack. Range is checked by the table.';
   button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await useCleave(attack);}catch(error){report(error);}finally{refresh(attack);}});

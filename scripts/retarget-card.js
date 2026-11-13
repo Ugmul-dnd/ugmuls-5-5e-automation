@@ -1,4 +1,4 @@
-import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCard } from "./shared-activity-card.js";
+import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCard, isRollAdjustmentLocked } from "./shared-activity-card.js";
 const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
@@ -23,6 +23,7 @@ export function supportsRetarget(message) {
 
 const RETARGET_ID="ugmuls-5-5e-automation";
 export function canRetargetCard(message,user=game.user){
+ if(message?.type==='attack'&&isRollAdjustmentLocked(message))return false;
  if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.canRetarget(message,user))return true;
  if(user?.isGM||message?.isOwner&&user?.id===game.user.id)return true;
  if(message?.isContentVisible===false||message?.type!=="usage"||!message.getFlag?.(RETARGET_ID,"epitomeStrideDamage"))return false;

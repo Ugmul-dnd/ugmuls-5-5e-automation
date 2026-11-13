@@ -2,12 +2,14 @@ import {applyConditionWithUndo} from "./damage-undo.js";
 import {createEventQueue,describeTarget,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {seekingSnapshot} from "./seeking-spell.js";
 const ID="ugmuls-5-5e-automation",selected=new WeakMap(),dieChoices=new WeakMap(),pending=new WeakMap(),reservations=new Map(),enqueue=createEventQueue(),applying=new Set();
-const names={precision:"Precision Attack",trip:"Trip Attack",distracting:"Distracting Strike",menacing:"Menacing Attack",goading:"Goading Attack",maneuvering:"Maneuvering Attack",pushing:"Pushing Attack"};
+const names={precision:"Precision Attack",trip:"Trip Attack",disarming:"Disarming Attack",distracting:"Distracting Strike",menacing:"Menacing Attack",goading:"Goading Attack",maneuvering:"Maneuvering Attack",pushing:"Pushing Attack"};
+const damageManeuvers=['trip','disarming','distracting','menacing','goading','maneuvering','pushing'];
 const enabled=key=>game.settings.get(ID,`${key}AttackAutomation`)===true;
 const actorFor=card=>card?.getAssociatedActor?.()??card?.getAssociatedActivity?.()?.actor;
 const originOf=card=>typeof card?.system?.origin==="string"?game.messages.get(card.system.origin):card?.system?.origin;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
-export function maneuverFeature(actor,key){return Array.from(actor?.items??[]).find(item=>item.type==="feat"&&((item.identifier??item.system?.identifier)===(key==="distracting"?"distracting-strike":key+"-attack")||item.name?.trim().toLowerCase()===names[key]?.toLowerCase()));}
+export function maneuverFeature(actor,key){return Array.from(actor?.items??[]).find(item=>item.type==="feat"&&((item.identifier??item.system?.identifier)===(key==="distracting"?"distracting-strike":key+"-attack")||item.name?.trim().toLowerCase()===names[key]?.toLowerCase()||key==='disarming'&&((item.identifier??item.system?.identifier)==='disarming-strike'||/^disarming strike$/i.test(item.name?.trim()??''))));}
+const maneuverName=(actor,key)=>key==='disarming'?maneuverFeature(actor,key)?.name??names[key]:names[key];
 export function superiorityResource(actor){
     const items=Array.from(actor?.items??[]);
     return items.find(item=>(item.identifier??item.system?.identifier)==="combat-superiority"||/^combat superiority$/i.test(item.name??""))??null;
@@ -64,27 +66,43 @@ function hitEligible(app,key){
 }
 export function addManeuverChoice(app){
     if(app.element.querySelector('[data-rsa-maneuver]'))return;
-    const choices=["trip","distracting","menacing","goading","maneuvering","pushing"].filter(key=>hitEligible(app,key));if(!choices.length)return;
+    const choices=damageManeuvers.filter(key=>hitEligible(app,key));if(!choices.length)return;
     const {actor,attack}=context(app),used=!!attack?.getFlag(ID,"battleManeuver")||!!cardFor(app)?.getFlag(ID,"battleManeuver");
     const disabled=used||!usable(actor,attack);if(!selected.has(app))selected.set(app,"no");
     const group=globalThis.Ugmuls55eAutomationDamage.addDamageChoice(app,{key:"maneuver",label:"Maneuver",used,disabled});if(!group)return;group.dataset.rsaManeuver="";
     const select=document.createElement("select");select.disabled=disabled;select.setAttribute("aria-label","Battle Master Maneuver");
-    for(const [value,label]of [["no",used?"No - Already Used":"No"],...choices.map(key=>[key,names[key]])]){const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option);}
+    for(const [value,label]of [["no",used?"No - Already Used":"No"],...choices.map(key=>[key,maneuverName(actor,key)])]){const option=document.createElement("option");option.value=value;option.textContent=label;select.append(option);}
     select.value=disabled?"no":selected.get(app);select.addEventListener("change",event=>{event.stopPropagation();selected.set(app,select.value);app.rebuild();});group.querySelector("select").replaceWith(select);
     addRelentlessChoice(app,actor,attack,used);
     group.querySelector("label").dataset.tooltip="Spend 1 available Superiority Die. Relentless can replace it with a free d8 once per combat turn. Only one maneuver can be used per attack. Trip adds damage against any size, but only Large or smaller creatures make its save.";
 }
 export function finalizeManeuver(app,rolls,{preview=false}={}){
     const key=selected.get(app),entry=pending.get(app);if(entry)return rolls.some(roll=>roll.options?.rsaManeuver)?rolls:[...rolls,entry.roll];
-    if(!["trip","distracting","menacing","goading","maneuvering","pushing"].includes(key)||!hitEligible(app,key)||rolls.some(roll=>roll.options?.rsaManeuver))return rolls;
+    if(!damageManeuvers.includes(key)||!hitEligible(app,key)||rolls.some(roll=>roll.options?.rsaManeuver))return rolls;
     const {actor,attack,target}=context(app),mode=selectedDie(app,actor);if(!usable(actor,attack)||!paymentAvailable(actor,mode)){if(preview)return rolls;throw Error("A Superiority Die or this attack's maneuver is no longer available.");}
     const base=rolls[0]?.options??{},critical={...base.critical,bonusDice:0,bonusDamage:""};
-    const extra=new CONFIG.Dice.DamageRoll(`${mode==="relentless"?"1d8":superiorityFormula(actor,key)}[${names[key]}]`,actor.getRollData?.()??{},{type:base.type,types:base.type?[base.type]:[],flavor:names[key],isCritical:base.isCritical===true,critical,rsaManeuver:key,rsaRelentless:mode==="relentless"});
+    const label=maneuverName(actor,key);
+    const extra=new CONFIG.Dice.DamageRoll(`${mode==="relentless"?"1d8":superiorityFormula(actor,key)}[${label}]`,actor.getRollData?.()??{},{type:base.type,types:base.type?[base.type]:[],flavor:label,isCritical:base.isCritical===true,critical,rsaManeuver:key,rsaRelentless:mode==="relentless"});
     if(!preview){const entry={actor,attack,target,key,mode,turn:maneuverTurn(),roll:extra};pending.set(app,entry);reservations.set(attack.id,entry);}return [...rolls,extra];
 }
 export function tripApplies(target){return !["huge","grg","gargantuan"].includes(target?.actor?.system?.traits?.size);}
 export function maneuverDC(actor,key="trip"){const save=Array.from(maneuverFeature(actor,key)?.system?.activities??[]).find(activity=>activity.type==="save");return Number.isFinite(save?.save?.dc?.value)?save.save.dc.value:8+Number(actor.system?.attributes?.prof??0)+Math.max(Number(actor.system?.abilities?.str?.mod??0),Number(actor.system?.abilities?.dex?.mod??0));}
+export function disarmingItemData(actor,img){
+    const feature=maneuverFeature(actor,'disarming'),native=Array.from(feature?.system?.activities??[]).find(activity=>activity.type==='save');
+    const data=feature?.toObject?.()??{name:maneuverName(actor,'disarming'),type:'feat',img,system:{},effects:[]};
+    const activity=foundry.utils.deepClone(native?.toObject?.()??native??{}),id=foundry.utils.randomID();
+    const dc=Number.isFinite(native?.save?.dc?.value)?{calculation:'',formula:String(native.save.dc.value)}:activity.save?.dc??{calculation:'',formula:String(maneuverDC(actor,'disarming'))};
+    data._id=foundry.utils.randomID();data.img??=img;data.system??={};data.system.identifier='rsa-disarming-attack';
+    data.system.activities={[id]:{...activity,_id:id,type:'save',name:activity.name??'Strength Save',activation:{type:'special',override:true},
+        consumption:{targets:[],spellSlot:false,scaling:{allowed:false}},target:{override:true,prompt:false,template:{type:''},affects:{type:'creature',count:'1',choice:false}},
+        range:{override:true,units:'any'},damage:{parts:[],onSave:'none'},save:{...activity.save,ability:activity.save?.ability??['str'],dc},effects:activity.effects??[]}};
+    // Only the source save is used here. Its die is already in weapon damage;
+    // never execute the feature's separate damage/consumption activity again.
+    if(data.flags?.dnd5e?.riders)data.flags.dnd5e.riders={activity:[],effect:[],item:[]};
+    return data;
+}
 export function tripItemData(actor,target,img,key="trip"){
+    if(key==='disarming')return disarmingItemData(actor,img);
     const menacing=key==="menacing"||key==="goading",condition=menacing?"frightened":"prone",name=names[key],id=foundry.utils.randomID(),effectId=foundry.utils.randomID(),status=foundry.utils.deepClone(CONFIG.statusEffects?.[condition]??{});delete status.id;delete status._id;
     const data={_id:foundry.utils.randomID(),name,type:"feat",img,system:{identifier:`rsa-${key}-attack`,activities:{[id]:{_id:id,type:"save",name:`${name} — ${menacing?"Wisdom":"Strength"} Save`,activation:{type:"special",override:true},duration:{units:"perm",override:true},target:{affects:{type:"creature",count:"1",choice:false}},damage:{parts:[],onSave:"none"},save:{ability:[menacing?"wis":"str"],dc:{calculation:"",formula:String(maneuverDC(actor,key))}},effects:[{_id:effectId,onSave:false}]}}},effects:[{...status,_id:effectId,name:menacing?"Frightened":"Prone",statuses:[condition],disabled:false,transfer:false,flags:{...status.flags,dnd5e:{...status.flags?.dnd5e,isTemporary:true}}}]};
     if(key==="pushing"||key==="goading"){data.effects=[];data.system.activities[id].effects=[];}return data;
@@ -101,7 +119,7 @@ export async function commitManeuver(app,options){
         if(entry.attack.getFlag(ID,"battleManeuver"))throw Error("This maneuver or Superiority Die is no longer available.");
         refund=await spendManeuver(entry.actor,entry.mode,entry.turn,entry);
         const damage=cardFor(app),record={key:entry.key,relentless:entry.mode==="relentless",targetToken:entry.target.uuid,casterActor:entry.actor.uuid};
-        const saveId=(["menacing","goading"].includes(entry.key)||["trip","pushing"].includes(entry.key)&&tripApplies(entry.target))?await createTrip(entry,damage):null;
+        const saveId=(["menacing","goading","disarming"].includes(entry.key)||["trip","pushing"].includes(entry.key)&&tripApplies(entry.target))?await createTrip(entry,damage):null;
         const flags={battleManeuver:record,...(saveId?{maneuverSave:saveId}:{})};
         await entry.attack.update({flags:{[ID]:{battleManeuver:record}}});
         app.message.data.flags??={};app.message.data.flags[ID]={...app.message.data.flags[ID],...flags};
@@ -112,7 +130,7 @@ export async function commitManeuver(app,options){
 export function maneuverSaveReady(damage){const id=damage?.getFlag?.(ID,"maneuverSave");if(!id)return true;const save=game.messages.get(id),target=save?.getFlag?.(ID,"maneuverStrike")?.targetToken;return !!target&&["success","failure"].includes(save.system.outcomes?.get(target));}
 export async function applyTripOutcome(usage,{manual=false}={}){
     const link=usage?.getFlag?.(ID,"maneuverStrike");
-    if(!authority()||!link||link.key==="pushing"||applying.has(usage.id)||usage.getFlag(ID,"outcomeEffectsApplied")||usage.system.outcomes?.get(link.targetToken)!=="failure")return;
+    if(!authority()||!link||["pushing","disarming"].includes(link.key)||applying.has(usage.id)||usage.getFlag(ID,"outcomeEffectsApplied")||usage.system.outcomes?.get(link.targetToken)!=="failure")return;
     if(!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
     const damage=game.messages.get(link.damageId);
     if(!manual&&damage&&(damage.getFlag(ID,"pendingDamage")||game.settings.get(ID,"autoApplyCardDamage")===true&&!damage.getFlag(ID,"hpApplicationRecorded")&&!(damage.getFlag(ID,"automaticDamageTargets")??[]).includes(link.targetToken)))return;
@@ -121,6 +139,13 @@ export async function applyTripOutcome(usage,{manual=false}={}){
     finally{applying.delete(usage.id);}
 }
 export function renderTrip(message,html){
+    if(message.getFlag?.(ID,'maneuverStrike')?.key==='disarming'){
+        const root=html?.[0]??html;if(!root?.querySelector||message.isContentVisible===false)return;
+        let note=root.querySelector('.rsa-disarming-outcome');if(!note){note=document.createElement('p');note.className='rsa-disarming-outcome';(root.querySelector('.chat-card')??root).append(note);}
+        const outcome=message.system.outcomes?.get(message.getFlag(ID,'maneuverStrike').targetToken);
+        note.textContent=outcome==='failure'?'Disarming Attack: target drops one held object of your choice in its space. Resolve the dropped object manually.':outcome==='success'?'Disarming Attack: save succeeded; the target keeps its held objects.':'Disarming Attack: resolve the attached save. On failure, the target drops one held object of your choice in its space.';
+        return;
+    }
     if(!message.getFlag?.(ID,"maneuverStrike")||message.getFlag(ID,"maneuverStrike").key==="pushing")return;const root=html?.[0]??html;if(!root?.querySelectorAll)return;
     root.querySelectorAll('effect-application').forEach(tray=>tray.hidden=true);
     const old=root.querySelector('[data-rsa-trip-apply]');if(!game.user.isGM||message.getFlag(ID,"outcomeEffectsApplied")){old?.remove();return;}if(old)return;

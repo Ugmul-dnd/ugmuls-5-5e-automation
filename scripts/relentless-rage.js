@@ -121,7 +121,7 @@ export function renderRelentless(message,html){
  for(const{card,node}of cards){node.querySelectorAll(':scope > .rsa-relentless-rage').forEach(n=>n.remove());if(card.type!=="usage"||card.isContentVisible===false)continue;
   const link=card.getFlag?.(ID,"relentlessRage"),actor=resolve(link?.actor),s=state(actor);if(!actor||s?.id!==link.session||s.phase!=="awaiting"||!actor.isOwner)continue;
   const div=document.createElement('div');div.className='rsa-attack-actions rsa-relentless-rage';
-  for(const[action,label]of [['roll','Roll Relentless Rage'],['decline','Decline — End Rage']]){const button=document.createElement('button');button.type='button';button.textContent=label;button.addEventListener('click',()=>{button.disabled=true;const packet={action:'relentlessRageRequest',actor:actor.uuid,session:s.id,user:game.user.id,choice:action,gm:game.users.activeGM?.id};if(authority())requestRelentless(packet).catch(report);else game.socket.emit('module.'+ID,packet);});div.append(button);}node.append(div);
+  for(const[action,label]of [['roll','Roll Relentless Rage'],['decline','Decline — End Rage']]){const button=document.createElement('button');button.type='button';button.textContent=label;if(action==='roll')button.dataset.rsaRelentlessRageRoll='';button.addEventListener('click',()=>{button.disabled=true;const packet={action:'relentlessRageRequest',actor:actor.uuid,session:s.id,user:game.user.id,choice:action,gm:game.users.activeGM?.id};if(authority())requestRelentless(packet).catch(report);else game.socket.emit('module.'+ID,packet);});div.append(button);}node.append(div);
  }
 }
 async function requestRelentless(packet){

@@ -97,10 +97,34 @@ function report(error){console.error('Starry Form',error);ui.notifications.error
 Hooks.once('init',()=>game.settings.register(ID,'starryFormAutomation',{name:'Stars Druid: Starry Form',hint:'Select a constellation on activation, track native Dragon/Full of Stars benefits, offer Archer actions, automate slot-funded Chalice healing once per turn, and allow Twinkling changes at turn start.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
  globalThis.Ugmuls55eAutomationStars={isItem:starryItem,open:openStarry};installStarryUse(CONFIG.DND5E.activityTypes?.utility?.documentClass);for(const type of ['attack','heal'])installStarsToken(CONFIG.DND5E.activityTypes?.[type]?.documentClass);
- for(const event of ['createItem','updateItem','deleteItem'])Hooks.on(event,item=>{if(enabled()&&authority()&&['starry-form','full-of-stars','twinkling-constellations','druid'].includes(key(item))&&starryEffect(item.actor))enqueue(()=>syncStarryBenefits(item)).catch(report);});
+ for(const event of ['createItem','updateItem','deleteItem'])Hooks.on(event,item=>{
+  if(!enabled()||!['starry-form','full-of-stars','twinkling-constellations','druid'].includes(key(item)))return;
+  const effect=starryEffect(item.actor);if(!effect)return;
+  if(owns(item.actor,game.user))refreshStarry(effect);
+  if(authority())enqueue(()=>syncStarryBenefits(item)).catch(report);
+ });
  Hooks.on('dnd5e.renderChatMessage',renderStarry);Hooks.on('dnd5e.renderChatMessage',renderChalice);Hooks.on('dnd5e.preUseActivity',(a,u,d,m)=>{if(!enabled())return;const actor=a.actor??a.item?.actor,effect=starryEffect(actor),state=flag(effect,'starryForm');if(state&&['action','bonus','reaction','special'].includes(a.activation?.type)){m.data??={};m.data.flags??={};m.data.flags[ID]={...m.data.flags[ID],starryActionTurn:turn()};}if(a.item?.type==='spell'&&state?.form==='chalice'){m.data??={};m.data.flags??={};m.data.flags[ID]={...m.data.flags[ID],starryChaliceCast:{instance:state.instance,turn:turn()}};}});
- Hooks.on('updateCombat',(combat,changes)=>{if(!enabled()||!authority()||!combat.started||!['turn','round','started'].some(k=>k in changes))return;const effect=starryEffect(combat.combatant?.actor);if(!effect)return;if(flag(effect,'starryForm').form==='archer')postStarryCard(effect,'archer',false).catch(report);if(feature(actorOf(effect),'twinkling-constellations'))postStarryCard(effect,'switch').catch(report);});
- const changed=effect=>{if(!enabled()||!authority()||!flag(effect,'starryForm'))return;refreshStarry(effect);const actor=actorOf(effect);if(live(effect)&&incap(actor))enqueue(()=>effect.update({disabled:true})).catch(report);};for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect'])Hooks.on(event,effect=>{if(!enabled()||!authority())return;const actor=actorOf(effect),root=flag(effect,'starryForm')?effect:starryEffect(actor);if(root&&(flag(effect,'starryForm')||flag(effect,'bonusActionUsed')||effect.name==='Bonus Action - used'||incap(actor)))changed(root);});Hooks.on('updateActor',actor=>{const effect=starryEffect(actor);if(effect)changed(effect);});
+ Hooks.on('updateCombat',(combat,changes)=>{
+  if(!enabled()||!['turn','round','started'].some(k=>k in changes))return;
+  // Each owner refreshes its own existing prompt IDs, including the outgoing
+  // turn. A prompt can arrive before the player's Bonus Action reset does.
+  const actors=new Set(values(combat.combatants).map(c=>c.actor));
+  for(const actor of actors)if(owns(actor,game.user)){const effect=starryEffect(actor);if(effect)refreshStarry(effect);}
+  if(!authority()||!combat.started)return;
+  const effect=starryEffect(combat.combatant?.actor);if(!effect)return;if(flag(effect,'starryForm').form==='archer')postStarryCard(effect,'archer',false).catch(report);if(feature(actorOf(effect),'twinkling-constellations'))postStarryCard(effect,'switch').catch(report);
+ });
+ const changed=effect=>{
+  const actor=actorOf(effect);if(!enabled()||!flag(effect,'starryForm')||!owns(actor,game.user))return;
+  // Presentation runs on owning clients; only the active GM mutates effects.
+  refreshStarry(effect);
+  if(authority()&&live(effect)&&incap(actor))enqueue(()=>effect.update({disabled:true})).catch(report);
+ };
+ for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect'])Hooks.on(event,effect=>{
+  if(!enabled())return;const actor=actorOf(effect);if(!owns(actor,game.user))return;
+  const root=flag(effect,'starryForm')?effect:starryEffect(actor);
+  if(root&&(flag(effect,'starryForm')||flag(effect,'bonusActionUsed')||effect.name==='Bonus Action - used'||incap(actor)))changed(root);
+ });
+ Hooks.on('updateActor',actor=>{if(!owns(actor,game.user))return;const effect=starryEffect(actor);if(effect)changed(effect);});
  for(const event of ['createChatMessage','updateChatMessage'])Hooks.on(event,(card,changes={})=>{if(!enabled()||!authority())return;if(['damage','healing'].includes(card.type))offerChalice(card).catch(report);if(card.type==='usage'&&flag(card,'starryActionTurn')===turn()&&(event==='createChatMessage'||changes.flags?.[ID]?.pendingCast===false||changes['flags.'+ID+'.pendingCast']===false)&&!flag(card,'pendingCast')&&['action','bonus','reaction','special'].includes(card.getAssociatedActivity?.()?.activation?.type)){const actor=card.getAssociatedActor?.(),effect=starryEffect(actor),state=flag(effect,'starryForm');if(turn()&&state&&state.windowClosed!==turn()&&game.combat.combatant?.actor?.uuid===actor.uuid)enqueue(()=>{const current=flag(effect,'starryForm');if(live(effect)&&current.windowClosed!==turn())return effect.setFlag(ID,'starryForm',{...current,windowClosed:turn()});}).catch(report);}});
  const recover=()=>{if(!enabled()||!authority()||!game.combat?.started)return;const effect=starryEffect(game.combat.combatant?.actor),state=flag(effect,'starryForm');if(!state||state.startedTurn===turn())return;if(state.form==='archer')postStarryCard(effect,'archer').catch(report);if(feature(actorOf(effect),'twinkling-constellations'))postStarryCard(effect,'switch').catch(report);};Hooks.on('canvasReady',recover);recover();
  game.socket.on('module.'+ID,packet=>{if(packet?.action==='starryReply'&&packet.user===game.user.id){const pending=waiting.get(packet.request);if(!pending)return;waiting.delete(packet.request);clearTimeout(pending.timer);packet.error?pending.reject(Error(packet.error)):pending.resolve(packet.result);return;}if(packet?.action!=='starryOperation'||!authority()||packet.gm!==game.user.id||!['activate','switch','archer','keep','rollback','chalice'].includes(packet.operation))return;const user=game.users.get(packet.user);if(!user?.active)return;enqueue(()=>starsOperation(packet.operation,packet.payload,user)).then(result=>game.socket.emit('module.'+ID,{action:'starryReply',request:packet.request,user:user.id,result}),error=>game.socket.emit('module.'+ID,{action:'starryReply',request:packet.request,user:user.id,error:error.message}));});

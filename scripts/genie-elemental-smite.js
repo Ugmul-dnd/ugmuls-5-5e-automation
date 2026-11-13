@@ -1,6 +1,12 @@
 const ID="ugmuls-5-5e-automation",busy=new Set(),applying=new Set(),leases=new Map(),requests=new Map();
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier;
 export const GENIE_OPTIONS=Object.freeze({dao:{name:"Dao’s Crush",id:"csOPXyBgbuK3D3wh"},djinni:{name:"Djinni’s Escape",id:"DmXwETSKLiE7cMwb"},efreeti:{name:"Efreeti’s Fury",id:"6WxqQ31Gb4q53zhZ"},marid:{name:"Marid’s Surge",id:"fxMpNYe6o3Uro14z"}});
+const GENIE_HINTS=Object.freeze({
+ dao:'Spend one Channel Divinity use to Grapple and Restrain the smitten target. It can use an action to attempt escape.',
+ djinni:'Spend one Channel Divinity use to apply Djinni’s Escape’s native protective effect to yourself until the end of your next turn. Teleport movement is manual.',
+ efreeti:'Spend one Channel Divinity use to deal Efreeti’s Fury’s native damage to the smitten target and a chosen additional enemy within 30 feet of you.',
+ marid:'Spend one Channel Divinity use to resolve Marid’s Surge’s native save against the smitten target and chosen nearby creatures. Forced movement is manual.'
+});
 const enabled=()=>game.settings.get(ID,"genieElementalSmiteAutomation")===true;
 const remaining=i=>Number(i?.system?.uses?.value??Number(i?.system?.uses?.max)-Number(i?.system?.uses?.spent??0))||0;
 const describe=t=>({token:t.uuid,actor:t.actor.uuid,name:t.name,img:t.texture?.src});
@@ -156,7 +162,7 @@ export function renderElementalSmite(message,html){
  for(const entry of entries){entry.root.querySelectorAll(':scope > .rsa-genie-smite-actions').forEach(node=>node.remove());
   if(entry.card.isContentVisible===false)continue;const context=genieSmiteContext(entry.card);if(!context||!context.actor.isOwner||context.used||!context.available)continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-genie-smite-actions";
-  for(const [option,spec]of Object.entries(GENIE_OPTIONS)){if(!context.feature.system.activities.get(spec.id))continue;const button=document.createElement("button");button.type="button";button.textContent="Elemental Smite — "+spec.name;button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();for(const b of controls.children)b.disabled=true;try{await useElementalSmite(entry.card,option);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(entry.card);}});controls.append(button);}
+  for(const [option,spec]of Object.entries(GENIE_OPTIONS)){if(!context.feature.system.activities.get(spec.id))continue;const button=document.createElement("button");button.type="button";button.textContent="Elemental Smite — "+spec.name;button.dataset.rsaReactionIcon=context.feature.system.activities.get(spec.id).img??context.feature.img??"icons/svg/d20.svg";button.dataset.rsaReactionDescription=GENIE_HINTS[option];button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();for(const b of controls.children)b.disabled=true;try{await useElementalSmite(entry.card,option);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(entry.card);}});controls.append(button);}
   entry.root.append(controls);
  }
 }

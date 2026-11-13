@@ -163,7 +163,9 @@
     "scripts/cleric-potent-vitality.js",
     "scripts/warding-flare.js",
     "scripts/corona-of-light.js",
-    "scripts/weird-conditions.js"
+    "scripts/weird-conditions.js",
+    "scripts/unified-attack-card.js",
+    "scripts/reaction-button-presentation.js"
   ],
   "styles": [
     "styles/save-roll-controls.css",

@@ -76,7 +76,8 @@ export function installPendingCast(Type){
  const original=prototype.use;
  prototype.use=async function(usage={},dialog={},message={}){
   const data=message.data??{};
-  if(!this.item?.isOwner||!this.item?.isEmbedded||!["spell","feat"].includes(this.item.type)||!["attack","save","damage","heal","check","utility"].includes(this.type)||message.create===false||data.flags?.[ID]?.regionTriggered||data.flags?.[ID]?.riderTriggered)return original.call(this,usage,dialog,message);
+  const weaponAttack=this.item?.type==='weapon'&&this.type==='attack'&&game.settings.get(ID,'simplifyAttackCards')===true;
+  if(!this.item?.isOwner||!this.item?.isEmbedded||!weaponAttack&&!["spell","feat"].includes(this.item.type)||!["attack","save","damage","heal","check","utility"].includes(this.type)||message.create===false||data.flags?.[ID]?.regionTriggered||data.flags?.[ID]?.riderTriggered)return original.call(this,usage,dialog,message);
   const state={id:foundry.utils.randomID(),tasks:[],activity:this,committed:false};sessions.set(state.id,state);
   const config={...message,data:{...data,flags:foundry.utils.mergeObject(data.flags??{},{[ID]:{castSession:state.id}},{inplace:false})}};
   try{

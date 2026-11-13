@@ -1,5 +1,44 @@
 # Changelog
 
+## Unreleased — unified attack card development
+
+- Label unified Eldritch Blast beams and Scorching Ray sections with the spell name and “Attack N of total,” including the first attack before later rolls arrive. Reuse the existing level/upcast attack-count calculation.
+
+- Fix Lifedrinker healing submission rejecting with “no longer available for this turn” after spending its Hit Die when a follow-up dialog is configured again by pending-damage setup. Reuse the existing dialog wrapper, including subclasses, so resource commits run once. Preserve cancellation and once-per-turn validation for later attempts.
+
+- Extend compact unified cards to spell attacks, including each Eldritch Blast beam and Scorching Ray. Keep each recorded attack/target/damage pair and its reaction, Apply and Undo controls together within the cast. Damage prompts use that beam's critical result and the native scaled cast activity without spending another slot. Isolate spell on-hit effect histories per attack, preserve concentration/scaling and newer applications, and restore native child presentation when a cast cannot be safely grouped.
+
+- Use the main Hand of Harm feature artwork for its follow-up button, preferring it over the damage activity icon.
+
+- Fix Stars Druid BA Archer prompts staying disabled on owning player clients after a new-turn Bonus Action reset. Refresh only the owner’s referenced Starry prompts through the existing coalesced queue on resource/effect, turn and feature changes; keep posting, reservations and effect mutations on the active GM. Preserve the initial free shot, current-turn/Bonus Action checks and nonowner restrictions.
+
+- Add Disarming Attack/Disarming Strike to the Battle Master damage maneuver chooser when loaded on the character. Include the current native Superiority Die in the initial damage roll, preserve critical handling and Relentless, spend through the shared maneuver reservation, and link the source feature’s Strength save to the damage card. Show save outcomes without inventing Prone/Frightened effects; dropping the chosen held object remains manual.
+
+- Defer Sap on supported unified attacks until actual damage Apply, remove its separate mastery toggle, and couple source-specific removal/restoration to Undo Apply/reapplication. Recheck the confirmed hit at application so a defensive reaction can prevent Sap. Keep Sap’s hit-based eligibility when damage is zero and record its actual recipient for reliable zero-HP-change Undo. Preserve newer Sap applications, next-attack consumption, Slow behavior and independent Vex benefits.
+
+- Extend icon-and-tooltip presentation to follow-up abilities outside the reaction governor: Superior Hunter’s Prey, Psionic Strike, Hand of Harm, Rend Mind, Lifedrinker healing, Alchemical Eruption, all four Elemental Smite choices, Sudden Strike, Cleave, Ram, Chilling Retribution, Fount of Moonlight, Relentless Rage activation, and Strength of the Grave activation. Use native feature/activity artwork where available; preserve Decline, Retry Recovery and Apply/Undo labels. Superior Hunter’s Prey explains reuse of already-rolled Hunter’s Mark damage without adding dice or changing its applied-damage requirement.
+
+- Present reaction/adjustment buttons as 30 px icon buttons with 22 px artwork and accessible hover descriptions. Preserve native/source feature icons, button handlers and disabled states; keep Apply, Undo Apply, Retarget and roll-mode controls labeled. Cosmic Omen describes the native Weal/Woe adjustment instead of an Undo/GM instruction.
+- Synchronize the attack roll’s hit/miss marks with its visible native target pill after reactions and corrections, preserving original dice and viewer permissions.
+- Collapse unified damage details once per application cycle; preserve subsequent user expansion/collapse across delayed refreshes so the first inspection click stays open. Undo reopens application controls and the next Apply begins collapsed.
+
+- Hide disabled reaction buttons on committed unified attack/damage results, including Cosmic Omen and Warding Flare. Preserve used-reaction history, available post-application reactions, Undo/recovery controls, and normal eligibility rendering after Undo Apply.
+
+- Give supported single-attack/single-damage unified cards one damage Apply entry and one Undo Apply control for HP and configured on-hit effects. Keep native application details expandable, preserve separate histories internally, wait for in-flight effects before Undo, and retain recovery for partial failures without replaying HP. Effect options requiring a GM decision retain their native choice controls.
+- Require a current recorded hit for Warding Flare presentation and authoritative use. Corrections to a miss remove eligibility without rebuilding the original range/feature snapshot; used-reaction history remains visible.
+
+- Place the Normal/Critical damage adjustment menu immediately below its roll row in grouped cards, above the native damage application tray.
+
+- Couple this attack's Slow mastery to damage Undo/reapplication and remove the separate Slow toggle from unified cards. Undo removes only the matching source's Slow for successfully restored HP recipients; positive damage reapplication can restore Slow without replacing a newer card's non-stacking effect or repeating other mastery benefits.
+
+- Merge usage properties into the visible attack's native tag row before hiding the usage face. Retain range, action, proficiency, mastery and attack properties; deduplicate tags and omit redundant Weapon/Martial/Ranged labels.
+
+- Restore full native boxed roll results and the right-side d20 face inside unified cards, overriding the stock summary-only simplification. Run final layout on the D&D5e render hook after native content and feature controls exist, so the duplicate header is hidden and controls reach the common footer.
+
+- Begin the IMP-019 attack/damage presentation on `dev-card-replacement`: single-target weapon attacks share one visible usage card, using native attack/damage content and original message identities. Preserve stock target hit/miss colors, roll adjustment menus, expandable damage application, and separate Undo controls; collect reactions and adjustments at the bottom and place Retarget beside the target while corrections remain unlocked.
+- Extend the existing pending-use/cancellation workflow to weapon attacks when Reduce Attack Card Clutter is enabled. Keep unsupported multi-attack, multi-target, save, healing, and non-weapon workflows on their existing presentation. Missed attacks retain the existing damage-on-miss exceptions and never conceal a committed transaction requiring Undo.
+- Local automated checks passed; visual layout, native application expansion, and GM/player playthroughs still require Foundry verification. No release package or publication.
+
 ## v1.0.1 — Maintenance Release (2026-11-11)
 
 - Show a temporary pulsing range ring while choosing Inspired Eclipse teleport destinations, including chat, feature Teleport, and recipient paths. Use the recorded range and scene units, clear the guide on placement exit, and retain native destination/resource validation.

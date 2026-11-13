@@ -40,7 +40,7 @@ export function renderRend(message,html){
  for(const {card,node}of entries){node.querySelectorAll(':scope > .rsa-rend-mind').forEach(n=>n.remove());if(card.isContentVisible===false)continue;const c=rendContext(card);if(!c)continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-rend-mind";
   if(c.used)controls.textContent="Rend Mind used for this hit.";
-  else if(c.activity){const button=document.createElement("button");button.type="button";button.textContent="Rend Mind — "+(c.free?"Free use":"3 Psionic Energy Dice");button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();button.disabled=true;const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"rendMind",messageId:card.id,userId:game.user.id,gmId:gm.id});else useRend(card).catch(report).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));});controls.append(button);}
+  else if(c.activity){const button=document.createElement("button");button.type="button";button.textContent="Rend Mind — "+(c.free?"Free use":"3 Psionic Energy Dice");button.dataset.rsaReactionIcon=c.activity.img??c.feature.img??"icons/svg/d20.svg";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();button.disabled=true;const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"rendMind",messageId:card.id,userId:game.user.id,gmId:gm.id});else useRend(card).catch(report).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));});controls.append(button);}
   if(controls.childNodes.length)node.append(controls);
  }
 }

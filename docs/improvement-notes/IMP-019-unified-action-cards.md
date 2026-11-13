@@ -2,11 +2,27 @@
 
 [Findings register](README.md) · [Priorities](priorities.md) · [Presentation guide](../guides/presentation-and-animation.md)
 
-- **Status:** Deferred concept; not implemented or scheduled.
+- **Status:** Weapon and spell attack/damage implementation on `dev-card-replacement`; spell extension in-game verification pending.
 - **Type:** Future presentation and workflow-management architecture, not a defect report.
 - **Recorded:** 2026-11-10, `v1.0.1-dev`.
-- **Authorization:** Summarize the user's concept for future coding only. No prototype or runtime changes authorized by this note.
-- **Timing:** The user explicitly does not intend to start this in the coming week or so. Revisit when requested; no automatic start date or reminder is implied.
+- **Authorization:** The original note recorded a deferred concept. On 2026-11-12 the user authorized implementing attack/damage first, after reviewing the compact layout.
+- **Current scope:** Native single-target weapon and spell attack/damage content in one usage home, with a section per spell beam/ray; stock target colors, thin section borders, pending/cancel behavior, target-adjacent Retarget before application, original roll menus before application/after complete Undo, compact expandable native application, and reactions/Undo at the bottom. No push or publication requested.
+
+## Initial implementation — 2026-11-12
+
+`scripts/unified-attack-card.js` wraps native usage rendering for the narrow supported scope and embeds full native child content before system enrichment. Existing feature render hooks still process `.card-summary[data-message-id]` children. Final layout moves existing control elements into a common footer with their original message identities; it does not create replacement dice or mutation workflows. `simplifyAttackCards` remains the existing presentation switch.
+
+Unsupported workflows retain the prior presentation. Existing damage-on-miss mechanics (such as Graze) and applied transactions needing Undo remain visible rather than being discarded. Retarget is also revalidated through the live shared adjustment lock.
+
+Spell extension: multiple single-target attacks under one cast retain separate native attack/damage sections and footers. Multi-attack damage requires an explicit `damageAttackId` and matching recorded target; ambiguous associations fall back to native presentation. Each beam's native damage dialog uses its own target and critical result, with the scaled cast activity and no additional item use. Eldritch Blast level scaling and Scorching Ray upcast counts retain the existing remaining-attacks workflow. Configured spell on-hit effects retain native concentration and scaling preparation but use the individual attack as their application/Undo identity, so undoing one ray leaves other rays and shared cast resources intact. Live spell checks remain pending.
+
+Follow-up: supported single-attack/single-damage cards now couple HP Apply and configured on-hit effects, with one **Undo Apply** control. Existing histories remain separate internally for rollback and newer-effect protection. An applied card cannot replay HP; failed effects can expose **Retry Apply** without repeating damage, and explicit effect choices retain native controls. Combined Undo waits outside the HP-history queue for effect settlement to avoid deadlocks and deduplicates concurrent clicks. Warding Flare now requires a live hit for presentation and authoritative use. These changes still require in-game verification.
+
+Icon coverage review: user-confirmed Warding Flare, Cosmic Omen and Shield icon checks are separate from automated verification. Follow-up controls outside the pre-application reaction governor now also use the shared presentation table: Superior Hunter’s Prey, Psionic Strike, Hand of Harm, Rend Mind, Lifedrinker healing, Alchemical Eruption, Elemental Smite choices, Sudden Strike, Cleave, Ram, Chilling Retribution, Fount of Moonlight and damage-triggered recovery activations. This is a presentation registration, not a new reaction hold. Decline/retry buttons, Apply/Undo controls, effect-selection workflows and informational notes retain their labels. Broader follow-up icon coverage still needs in-game checks.
+
+Mastery follow-up: Sap now waits for actual Apply on supported unified attacks, as requested, instead of applying when the hit is first published. It shares Undo Apply/reapplication with source-specific cleanup and no separate toggle. Current hit state is revalidated at application; zero damage does not invalidate Sap on a confirmed hit. A per-damage Sap-recipient receipt permits Undo even when no HP changed. Slow retains its positive-damage requirement, and Vex/Topple/Graze retain their distinct workflows. Unsupported native layouts keep their previous Sap path.
+
+Verification after the spell extension: 30 targeted local test files passed, followed by all 375 discovered files with syntax checks for 318 runtime scripts, manifest validation, and relative-import checks. Spell regressions cover five explicitly linked rays, equal totals/reversed timestamps, multiple recorded targets, privacy/animation presentation, grouping fallback, per-ray effect identity/concentration/scaling, independent locks and HP Undo, newer-effect protection, native scaled damage dialogs, cancellation and player ownership. Existing multi-shot tests retain level/upcast counts and consumption checks. Local tests remain Git-ignored. The user's earlier weapon/icon checks are separate from these automated results; the spell layout and multi-beam workflow still need a Foundry playthrough. No performance result is claimed.
 
 ## User's intended outcome
 
@@ -128,7 +144,6 @@ Planned checks, all unperformed for this concept:
 
 ## Record
 
-- **Implementation/prototype:** None.
-- **New tests, benchmarks, or in-game verification:** None.
-- **Scheduling:** Deferred; revisit only when requested.
-- **Next step when resumed:** Agree the first action scenario and sketch its states/controls against existing native message relationships before selecting a coding approach.
+- **Implementation/prototype:** Initial single-target weapon attack/damage presentation; see implementation record above.
+- **New tests:** Local scope/privacy/native rendering/animation regressions; existing workflow suite passed. No benchmark or in-game verification.
+- **Next step:** Foundry visual and GM/player verification before expanding scope or pushing.

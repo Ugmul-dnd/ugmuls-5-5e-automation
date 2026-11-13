@@ -227,7 +227,7 @@ export function renderWildRam(message,html){
  const entries=[{card:message,node:root},...Array.from(root.querySelectorAll('.card-summary[data-message-id]'),node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
  for(const{card,node}of entries){node.querySelectorAll(':scope > .rsa-wild-ram').forEach(n=>n.remove());if(card.isContentVisible===false)continue;const c=ramContext(card);if(!c)continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-wild-ram";
-  for(const target of c.targets){const button=document.createElement("button");button.type="button";button.textContent=c.targets.length>1?"Ram — "+target.name:"Ram — Prone";button.addEventListener("click",async()=>{button.disabled=true;try{await useWildRam(card,target.uuid);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}node.append(controls);
+  for(const target of c.targets){const button=document.createElement("button");button.type="button";button.textContent=c.targets.length>1?"Ram — "+target.name:"Ram — Prone";button.dataset.rsaReactionIcon=c.ram.img??c.item.img??"icons/svg/d20.svg";button.addEventListener("click",async()=>{button.disabled=true;try{await useWildRam(card,target.uuid);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}node.append(controls);
  }
 }
 Hooks.once("ready",()=>{Hooks.on("dnd5e.renderChatMessage",renderWildRam);});

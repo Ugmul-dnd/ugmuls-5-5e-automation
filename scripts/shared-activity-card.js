@@ -32,6 +32,7 @@ export function linkedHpCards(roll) {
 export function isRollAdjustmentLocked(roll) {
     const origin=cardOrigin(roll);
     const effectsApplied=card=>card?.getFlag?.("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||(card?.getFlag?.("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
+    if(roll?.type==='attack'&&(roll.getAssociatedActivity?.()?.item??roll.getAssociatedItem?.())?.type==='spell'&&effectsApplied(roll))return true;
     if(roll?.type==="save"&&(effectsApplied(roll)||effectsApplied(origin)))return true;
     // Rider saves resolve their own effects independently of weapon HP changes.
     if(roll?.type==="save"&&(origin?.getFlag?.("ugmuls-5-5e-automation","stunningStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","grappleStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave"))) {

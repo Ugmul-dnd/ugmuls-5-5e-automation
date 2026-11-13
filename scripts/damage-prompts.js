@@ -7,7 +7,7 @@ export function prepareDamageCompatibility(app){
  for(const state of states)if(state&&typeof state==="object"&&Object.isExtensible(state))state.options??={};
 }
 import {getRegionSpellTable} from "./region-library.js";
-import {describeTarget} from "./shared-activity-card.js";
+import {describeTarget,linkedHpCards} from "./shared-activity-card.js";
 import {selectSaveUser} from "./save-prompts.js";
 const MODULE_ID = "ugmuls-5-5e-automation";
 const opened = new Set();
@@ -53,6 +53,12 @@ export function configurePromptDialog(kind, dialog = {}) {
     let byBase = dialogClasses.get(kind);
     if (!byBase) dialogClasses.set(kind, byBase = new WeakMap());
     let PositionedDialog = byBase.get(base);
+    // Follow-up prompts and pending-damage setup both configure the dialog.
+    // Rewrapping our class (or an extension of it) runs close/commit twice,
+    // spending Lifedrinker's Hit Die before the second validation rejects it.
+    if (!PositionedDialog) for (let parent = base; parent; parent = Object.getPrototypeOf(parent)) {
+        if (byBase.get(parent) === parent) {PositionedDialog = base;byBase.set(base, base);break;}
+    }
     if (!PositionedDialog) {
         PositionedDialog = class extends base {
             get rolls() {
@@ -321,6 +327,7 @@ export function configurePromptDialog(kind, dialog = {}) {
             }
         };
         byBase.set(base, PositionedDialog);
+        byBase.set(PositionedDialog, PositionedDialog);
     }
     const saved = game.settings.get(MODULE_ID,"promptDialogPositions")?.[kind];
     const position = {top:null,left:null};
@@ -401,6 +408,22 @@ export function recommendAttackCritical(config,dialog,attack){
   config.options??={};seed(config.options);for(const roll of config.rolls??[])seed(roll.options);
  }
 }
+export async function rollSpellAttackDamage(activity,usage,attack,event=null){
+    const scaled=usage.getAssociatedActivity?.({scaled:true})??activity;
+    if(scaled?.type!=='attack'||scaled.item?.type!=='spell'||!attack||(!game.user.isGM&&!scaled.item.isOwner))throw Error('This spell attack is not yours to roll.');
+    // Native chat Damage chooses the last attack under a usage. Beams need
+    // their own recorded target/critical result, using the already-scaled cast
+    // activity without another item use or spell-slot consumption.
+    const isCritical=attack.rolls?.[0]?.isCritical===true&&scaled.damage?.critical?.allow!==false;
+    return scaled.rollDamage({event,ability:attack.system?.ability,attackMode:attack.system?.mode,isCritical},
+        configurePromptDialog('damage',{configure:true,options:{defaultButton:isCritical?'critical':'normal'}}),
+        {data:{system:{origin:usage.id,targets:attack.system.targets},flags:{[MODULE_ID]:{damageAttackId:attack.id}}}});
+}
+export function damageAlreadyRolled(message,attack){
+    const cards=attack?linkedHpCards(attack):message.getAssociatedRolls?.('damage')??[];
+    return cards.some(damage=>damage.rolls?.length&&!damage.getFlag?.(MODULE_ID,'masteryGrazeUndone')&&
+        !(attack&&damage.getFlag?.(MODULE_ID,'masteryGraze')&&!damage.getFlag(MODULE_ID,'hpApplicationRecorded')&&!damage.getFlag(MODULE_ID,'damageUndoHistory')?.length&&!damage.getFlag(MODULE_ID,'effectUndoHistory')?.length&&!(damage.getFlag(MODULE_ID,'automaticDamageTargets')??[]).length&&attack.system.evaluatedTargets?.some(t=>t.token===(damage.getFlag(MODULE_ID,'masteryGrazeTarget')??damage.system?.targets?.[0]?.token)&&t.isMiss===false)));
+}
 function failedEnvenomSave(message){
  const outcomes=(message.system.targets??[]).map(t=>message.system.outcomes?.get(t.token));
  return outcomes.length>0&&outcomes.every(outcome=>["success","failure"].includes(outcome))&&outcomes.includes("failure");
@@ -443,11 +466,11 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
         // attack animation played. Avoid opening a redundant dialog.
-        const existingDamage = message.getAssociatedRolls?.("damage") ?? [];
-        if (existingDamage.some(damage => damage.rolls?.length && !damage.getFlag?.(MODULE_ID,"masteryGrazeUndone")&&
-            !(attack&&damage.getFlag?.(MODULE_ID,"masteryGraze")&&!damage.getFlag(MODULE_ID,"hpApplicationRecorded")&&!damage.getFlag(MODULE_ID,"damageUndoHistory")?.length&&!damage.getFlag(MODULE_ID,"effectUndoHistory")?.length&&!(damage.getFlag(MODULE_ID,"automaticDamageTargets")??[]).length&&attack.system.evaluatedTargets?.some(t=>t.token===(damage.getFlag(MODULE_ID,"masteryGrazeTarget")??damage.system?.targets?.[0]?.token)&&t.isMiss===false))&&
-            (!attack || (damage.timestamp ?? Infinity) >= (attack.timestamp ?? 0)))) return;
+        if(damageAlreadyRolled(message,attack))return;
         opened.add(key);
+        if(attack&&activity.item?.type==='spell'){
+            await rollSpellAttackDamage(activity,message,attack);return;
+        }
         const {ability, ammunitionItem: ammunition, mode: attackMode} = attack?.system ?? {};
         const isCritical = attack?.rolls?.[0]?.isCritical === true;
         if(message.getFlag?.(MODULE_ID,"envenomPoison")&&globalThis.Ugmuls55eAutomationEnvenom?.rollEnvenomDamage){
@@ -498,7 +521,7 @@ Hooks.once("init", () => {
 });
 
 Hooks.once("ready", () => {
-    globalThis.Ugmuls55eAutomationDamage = {promptDamage,configurePromptDialog,waitForAttackAnimation,addDamageChoice};
+    globalThis.Ugmuls55eAutomationDamage = {promptDamage,configurePromptDialog,waitForAttackAnimation,addDamageChoice,rollSpellAttackDamage};
     // Region activity execution retains its original authority. Only the
     // damage dialog is routed to a connected owner of the casting actor.
     const promptRegionDamage=card=>{

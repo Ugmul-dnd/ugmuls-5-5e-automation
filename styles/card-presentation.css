@@ -28,6 +28,56 @@
 /* Native chat display rules can override the browser's hidden attribute. */
 .rsa-processed-attack { display: none !important; }
 
+/* Native attack/damage results share one visible usage home. Keep target-pill
+   hit/miss colors and roll/application popovers entirely under system styling. */
+.rsa-unified-attack > .chat-card[hidden],
+.rsa-unified-attack effect-application[data-rsa-unified-effects],
+.rsa-unified-attack .rsa-unified-applied damage-application .apply-button,
+.rsa-unified-attack .chat-card[data-rsa-unified-usage],
+.chat-message[data-rsa-unified-child] { display:none !important; }
+.rsa-unified-attack .card-summary { margin-block:4px; padding-block:2px; }
+.rsa-unified-attack .rsa-roll-damage > .chat-card > .card-header { display:none; }
+.rsa-unified-attack .rsa-roll-attack > .chat-card:not(.rsa-unified-primary-face) > .card-header { display:none; }
+.rsa-attack-instance + .rsa-attack-instance { border-top:1px solid var(--color-border-light-primary,#777); margin-top:6px; padding-top:4px; }
+.rsa-attack-label { font-size:11px; opacity:.75; margin-bottom:2px; }
+.rsa-unified-attack .card-summary .chat-card { margin-block:0; }
+.rsa-unified-attack .icon-row { margin-block:3px; }
+.rsa-unified-attack .icon-row > [data-rsa-retarget] { width:auto; flex:0 0 auto; font-size:11px; padding:2px 5px; }
+.rsa-unified-controls { border-top:1px solid var(--color-border-light-primary,#777); margin-top:5px; padding-top:4px; display:flex; flex-wrap:wrap; gap:4px; }
+.rsa-unified-control-group { display:contents; }
+.rsa-unified-controls .rsa-attack-actions { width:auto; margin:0; }
+.rsa-unified-controls button { width:auto; min-height:24px; font-size:11px; padding:3px 6px; }
+.rsa-unified-pending { font-size:12px; opacity:.8; text-align:center; margin:4px; }
+
+.dnd5e2 button.rsa-reaction-icon {
+    display:inline-flex; align-items:center; justify-content:center;
+    width:30px !important; min-width:30px; max-width:30px; height:30px;
+    min-height:30px; padding:2px !important; flex:0 0 30px !important;
+}
+.dnd5e2 button.rsa-reaction-icon > img,
+.dnd5e2 button.rsa-reaction-icon > svg,
+.dnd5e2 button.rsa-reaction-icon > dnd5e-icon {
+    width:22px; min-width:22px; max-width:22px; height:22px;
+    min-height:22px; max-height:22px; flex:0 0 22px; border:0; margin:0; object-fit:contain;
+}
+.dnd5e2 button.rsa-reaction-icon > i { font-size:22px; }
+
+/* Native summary CSS intentionally strips the roll face. These summaries
+   contain full native rolls, so restore the standalone face in this home only. */
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll {
+    --button-background-color:var(--dnd5e-chat-button-background);
+    --button-border-color:var(--dnd5e-chat-button-border);
+    --button-hover-border-color:var(--dnd5e-color-gold);
+    justify-content:center;
+    padding:3px 8px;
+}
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .d20die { display:block; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .result { flex:1; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .icons { position:absolute; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total { border:1px solid var(--dnd5e-color-gold); }
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total::before,
+:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total::after { content:""; }
+
 /* Keep actions out of the native property-pill list. */
 .rsa-attack-actions {
     display: flex;

@@ -8,7 +8,7 @@ export function rollCardVisible(message){
     return Array.from(nodes).some(node=>{
         if(node.isConnected===false||node.closest?.('.dsn-hide'))return false;
         for(let ancestor=node;ancestor;ancestor=ancestor.parentElement){
-            const ownHiding=ancestor.dataset?.rsaProcessedAttack||ancestor.dataset?.rsaProcessedFace;
+            const ownHiding=ancestor.dataset?.rsaProcessedAttack||ancestor.dataset?.rsaProcessedFace||ancestor.dataset?.rsaUnifiedChild;
             if(!ownHiding&&(ancestor.hidden||ancestor.style?.display==="none"||ancestor.style?.visibility==="hidden"||ancestor.style?.visibility==="collapse"))return false;
         }
         return true;
@@ -18,6 +18,25 @@ export function attackCardProgress(message) {
     if(message?.type!=="usage"||message.getAssociatedActivity?.()?.type!=="attack")return null;
     const attacks=Array.from(message.getAssociatedRolls?.("attack")??[]),damages=Array.from(message.getAssociatedRolls?.("damage")??[]);
     return {attack:attacks.some(rollCardVisible),damage:damages.some(rollCardVisible),attackRecorded:attacks.length>0,damageRecorded:damages.length>0};
+}
+
+export function synchronizeAttackResult(message,root){
+    if(message?.type!=='attack'||message.isContentVisible===false)return;
+    // The target pill already respects native visibility and current defenses.
+    // A roll's cached DC may predate Shield, reactions or target corrections.
+    const targets=Array.from(root.querySelectorAll('.targets target-pill'));
+    if(targets.length!==1)return;
+    const pill=targets[0],hit=pill.hasAttribute('data-hit'),miss=pill.hasAttribute('data-miss');
+    if(hit===miss)return;
+    const dice=root.querySelector('.dice-roll'),icons=dice?.querySelector('.icons');
+    if(!dice||!icons)return;
+    const critical=hit&&message.rolls?.[0]?.isCritical===true,fumble=miss&&message.rolls?.[0]?.isFumble===true;
+    dice.classList.toggle('success',hit);dice.classList.toggle('failure',miss);
+    dice.classList.toggle('critical',critical);dice.classList.toggle('fumble',fumble);
+    const marks=Array.from({length:critical||fumble?2:1},()=>{
+        const icon=document.createElement('i');icon.className='fa-solid '+(hit?'fa-check':'fa-xmark');icon.setAttribute('aria-hidden','true');return icon;
+    });
+    icons.replaceChildren(...marks);
 }
 
 const targetDisplayInitialized=new WeakSet();
@@ -53,11 +72,29 @@ export function styleActivityCard(message,html) {
     showPendingSaves(message,root);
     if (["attack","save","damage","healing"].includes(message.type)) root.classList.add(`rsa-roll-${message.type}`);
     if(message.type==="usage"&&message.getAssociatedActivity?.()?.type==="save")root.classList.add("rsa-roll-save","rsa-save-usage");
+    synchronizeAttackResult(message,root);
     for (const summary of root.querySelectorAll(".card-summary[data-message-id]")) {
         const roll=game.messages.get(summary.dataset.messageId);
         if (["attack","save","damage","healing"].includes(roll?.type)) summary.classList.add(`rsa-roll-${roll.type}`);
+        synchronizeAttackResult(roll,summary);
     }
     if (game.settings.get(MODULE_ID,"simplifyAttackCards") !== true) return;
+    if(root.querySelector('.rsa-unified-attack')){
+        // A recorded result can still be animating. Keep its preparation
+        // header visible, but never offer a duplicate roll during that handoff.
+        const face=root.querySelector('.rsa-unified-attack > .chat-card');
+        for(const type of ['attack','damage'])if(Array.from(message.getAssociatedRolls?.(type)??[]).length){
+            const action=type==='attack'?'rollAttack':'rollDamage';
+            for(const button of face?.querySelectorAll(`[data-action="${action}"], [data-forward-action="${action}"]`)??[]){
+                const entry=button.closest('li')??button;entry.hidden=true;entry.style.display='none';
+            }
+        }
+        for(const summary of root.querySelectorAll('.card-summary[data-message-id]')){
+            const child=game.messages.get(summary.dataset.messageId);
+            if(child?.type==='attack')addAttackDamageButton(child,summary);
+        }
+        return;
+    }
     // Restore only our own previous hiding before inspecting inline result visibility.
     if(root.dataset.rsaProcessedAttack){root.hidden=false;root.style.display="";delete root.dataset.rsaProcessedAttack;root.classList.remove("rsa-processed-attack");}
     const previousFace=root.querySelector(".chat-card");
@@ -121,6 +158,7 @@ export function metamagicDamageTags(message) {
     const maneuver=message.getFlag?.(MODULE_ID,"battleManeuver")??attack?.getFlag?.(MODULE_ID,"battleManeuver");
     if(maneuver?.relentless)tags.push({key:"relentless",label:"Relentless",hint:"Free d8 used; no Superiority Die was expended."});
     const maneuvers={goading:["Goading Attack","Wisdom save: on failure, disadvantage on attacks against creatures other than the Fighter until the end of the Fighter's next turn."],maneuvering:["Maneuvering Attack","Choose an ally who can see or hear you. They can use their Reaction to move up to half their Speed without provoking Opportunity Attacks from this attack's target."],pushing:["Pushing Attack","Large or smaller target: Strength save. On failure, the GM moves it up to 15 feet directly away. Movement is manual."]};
+    maneuvers.disarming=['Disarming Attack','Strength save: on failure, the target drops one held object of your choice in its space. Resolve the dropped object manually.'];
     if(maneuvers[maneuver?.key]){const [label,hint]=maneuvers[maneuver.key];tags.push({key:"maneuver-"+maneuver.key,label,hint});}
     return tags;
 }
@@ -214,6 +252,7 @@ export async function rollAttackCardDamage(attack,event) {
     const usage=typeof origin === "string" ? game.messages.get(origin) : origin;
     const activity=usage?.getAssociatedActivity?.();
     if (!usage || !activity || (!game.user.isGM && !usage.isOwner) || linkedAttackDamage(attack).length) return;
+    if(activity.item?.type==='spell'&&globalThis.Ugmuls55eAutomationDamage?.rollSpellAttackDamage)return globalThis.Ugmuls55eAutomationDamage.rollSpellAttackDamage(activity,usage,attack,event);
     const hook=Hooks.on("dnd5e.preRollDamageV2",(config,dialog,data)=>{
         if (config.subject?.uuid !== activity.uuid) return;
         data.data ??= {};data.data.system ??= {};data.data.flags ??= {};
@@ -229,6 +268,8 @@ export async function rollAttackCardDamage(attack,event) {
 }
 
 function addAttackDamageButton(attack,root) {
+    const targets=attack.system?.evaluatedTargets??[];
+    if(targets.length&&targets.every(target=>target.isMiss===true))return;
     if ((!game.user.isGM && !attack.isOwner) || !attack.isContentVisible || linkedAttackDamage(attack).length ||
         root.querySelector("[data-rsa-attack-damage]")) return;
     const activity=attack.getAssociatedActivity?.();

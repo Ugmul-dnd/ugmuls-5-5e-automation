@@ -134,9 +134,9 @@ export async function syncSap(attack) {
             const actor=mastery==="vex"?attack.getAssociatedActor():token.actor;
             const effects=effectsFor(actor,mastery).filter(effect=>flag(effect,"masterySource")===source);
             if(effects.length)await actor.deleteEmbeddedDocuments("ActiveEffect",effects.map(effect=>effect.id));
-        } else if(mastery==="sap"&&!handled.has(token.uuid)) {await masteryEffect(attack,token,"sap");handled.add(token.uuid);}
+        } else if(mastery==="sap"&&!handled.has(token.uuid)&&!globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack)) {await masteryEffect(attack,token,"sap");handled.add(token.uuid);}
     }
-    if(mastery==="sap")await attack.setFlag(MODULE_ID,"sapHandled",[...handled]);
+    if(mastery==="sap"&&JSON.stringify([...handled])!==JSON.stringify(attack.getFlag(MODULE_ID,'sapHandled')??[]))await attack.setFlag(MODULE_ID,"sapHandled",[...handled]);
     }
 }
 export async function syncGraze(attack) {
@@ -166,24 +166,82 @@ function attackForDamage(damage) {
     return [...(usage?.getAssociatedRolls?.("attack")??[])].filter(attack=>attack.timestamp<=damage.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
 }
 export async function recordDamage(actor,amount,options) {
-    if(!enabled()||!(amount>0))return;
+    if(!enabled()||!Number.isFinite(amount)||amount<0)return;
     const damage=options.origin??options.originatingMessage;
     const attack=attackForDamage(damage);const mastery=masteryForAttack(attack);
     const extra=globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack);
-    const masteries=[...new Set([mastery,extra].filter(m=>["vex","slow"].includes(m)))];
+    const sap=globalThis.Ugmuls55eAutomationUnifiedAttack?.supports(damage)&&[mastery,extra].includes('sap');
+    const masteries=[...new Set([mastery,extra].filter(m=>amount>0&&["vex","slow"].includes(m)||m==='sap'&&sap))];
     if(!masteries.length)return;
-    const target=(attack.system.evaluatedTargets??[]).find(target=>target.actor===actor.uuid&&!target.isMiss);
+    const target=(attack.system.evaluatedTargets??[]).find(target=>target.actor===actor.uuid&&target.isMiss===false);
     if(!target)return;
     const token=await fromUuid(target.token);if(!token?.actor)return;
     const dealt=new Set(attack.getFlag(MODULE_ID,"masteryDamageTargets")??[]);
-    if(dealt.has(token.uuid))return;
-    for(const selected of masteries)await masteryEffect(attack,token,selected);
+    if(masteries.includes('sap')){
+        const handled=new Set(attack.getFlag(MODULE_ID,'sapHandled')??[]),undoneSap=new Set(attack.getFlag(MODULE_ID,'masterySapUndoneTargets')??[]);
+        if(!handled.has(token.uuid)||undoneSap.has(token.uuid)){
+            // Sap needs a hit, not positive damage. Record the actual recipient
+            // so a zero-HP-change Apply can still Undo only its own Sap.
+            const newer=undoneSap.has(token.uuid)&&effectsFor(token.actor,'sap').some(effect=>flag(effect,'masterySource')!==`${attack.id}:${token.uuid}`);
+            if(!newer){
+                await masteryEffect(attack,token,'sap');
+                const recipients=new Set(damage.getFlag(MODULE_ID,'masterySapTargets')??[]);
+                if(!recipients.has(token.uuid))await damage.setFlag(MODULE_ID,'masterySapTargets',[...recipients,token.uuid]);
+            }
+            if(!handled.has(token.uuid))await attack.setFlag(MODULE_ID,'sapHandled',[...handled,token.uuid]);
+            if(undoneSap.delete(token.uuid))await attack.setFlag(MODULE_ID,'masterySapUndoneTargets',[...undoneSap]);
+        }
+    }
+    if(!(amount>0)||!masteries.some(m=>m!=='sap'))return;
+    const undone=new Set(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]);
+    if(dealt.has(token.uuid)&&!undone.has(token.uuid))return;
+    for(const selected of masteries){
+        if(selected==='sap')continue;
+        if(dealt.has(token.uuid)&&(selected!=='slow'||!undone.has(token.uuid)))continue;
+        // Restoring an old damage application must not replace a newer card's
+        // non-stacking Slow or extend that newer effect's source-turn expiry.
+        if(selected==='slow'&&undone.has(token.uuid)&&effectsFor(token.actor,'slow').some(effect=>flag(effect,'masterySource')!==`${attack.id}:${token.uuid}`))continue;
+        await masteryEffect(attack,token,selected);
+    }
+    if(undone.delete(token.uuid))await attack.setFlag(MODULE_ID,'masterySlowUndoneTargets',[...undone]);
     dealt.add(token.uuid);await attack.setFlag(MODULE_ID,"masteryDamageTargets",[...dealt]);
 }
+export function undoDamageMasteries(damage,actorUuids,{emptyApplication=false}={}){return enqueue(async()=>{
+    if(!authoritative()||damage?.type!=='damage')return;
+    const attack=attackForDamage(damage);if(!attack)return;
+    const dealt=new Set(attack.getFlag(MODULE_ID,'masteryDamageTargets')??[]),undone=new Set(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]),actors=new Set(actorUuids);
+    const sapTargets=new Set(damage.getFlag(MODULE_ID,'masterySapTargets')??[]),sapUndone=new Set(attack.getFlag(MODULE_ID,'masterySapUndoneTargets')??[]);
+    const coupledSap=globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack);
+    for(const target of damage.system?.targets??[]){
+        const token=await fromUuid(target.token);if(!token?.actor)continue;
+        if(coupledSap&&(actors.has(token.actor.uuid)||emptyApplication&&sapTargets.has(token.uuid))){
+            const own=effectsFor(token.actor,'sap').filter(effect=>flag(effect,'masterySource')===`${attack.id}:${token.uuid}`);
+            const selected=attack.system?.mastery==='sap'||attack.rolls?.[0]?.options?.mastery==='sap'||globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack)==='sap';
+            if(own.length||selected&&((attack.getFlag(MODULE_ID,'sapHandled')??[]).includes(token.uuid)||sapTargets.has(token.uuid))){
+                if(own.length)await token.actor.deleteEmbeddedDocuments('ActiveEffect',own.map(effect=>effect.id));
+                sapUndone.add(token.uuid);sapTargets.delete(token.uuid);
+            }
+        }
+        if(!dealt.has(target.token)||!actors.has(token.actor.uuid))continue;
+        const effects=effectsFor(token.actor,'slow').filter(effect=>flag(effect,'masterySource')===`${attack.id}:${token.uuid}`);
+        if(!effects.length&&attack.system?.mastery!=='slow'&&attack.rolls?.[0]?.options?.mastery!=='slow'&&globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack)!=='slow')continue;
+        // The ledger supports reapplication even when this attack's Slow has
+        // expired; removing an effect always requires the exact source key.
+        if(effects.length)await token.actor.deleteEmbeddedDocuments('ActiveEffect',effects.map(effect=>effect.id));
+        undone.add(token.uuid);
+    }
+    if(JSON.stringify([...undone])!==JSON.stringify(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]))await attack.setFlag(MODULE_ID,'masterySlowUndoneTargets',[...undone]);
+    if(JSON.stringify([...sapUndone])!==JSON.stringify(attack.getFlag(MODULE_ID,'masterySapUndoneTargets')??[]))await attack.setFlag(MODULE_ID,'masterySapUndoneTargets',[...sapUndone]);
+    if(JSON.stringify([...sapTargets])!==JSON.stringify(damage.getFlag(MODULE_ID,'masterySapTargets')??[]))await damage.setFlag(MODULE_ID,'masterySapTargets',[...sapTargets]);
+    globalThis.Ugmuls55eAutomationChatRefresh?.card(attack);
+});}
+// Preserve the previous helper for existing integrations.
+export const undoDamageSlow=undoDamageMasteries;
 export async function performMastery(attack,tokenUuid,requestUser=game.user) {
     if(!enabled()||!masteryForAttack(attack)||(!requestUser.isGM&&attack.author?.id!==requestUser.id&&
         !attack.getAssociatedActor()?.testUserPermission(requestUser,"OWNER")))return;
     const mastery=masteryForAttack(attack),target=attack.system.evaluatedTargets?.find(target=>target.token===tokenUuid);
+    if(['sap','slow'].includes(mastery)&&globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack))return;
     if(!target||((mastery==="graze")!==target.isMiss))return;
     const token=await fromUuid(tokenUuid);if(!token?.actor)return;
     if(mastery==="graze"&&!isEligibleTarget(token))return;
@@ -291,6 +349,7 @@ export function addMasteryButtons(message,html) {
     }
     for(const entry of entries) {
         const mastery=masteryForAttack(entry.message);if(!mastery||!entry.message.isContentVisible||(!game.user.isGM&&!entry.message.isOwner))continue;
+        if(['sap','slow'].includes(mastery)&&globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(entry.message))continue;
         for(const pill of entry.root.querySelectorAll("target-pill")) {
             const uuid=pill.querySelector("datalist option")?.value;
             const target=entry.message.system.evaluatedTargets?.find(target=>target.token===uuid);
@@ -338,7 +397,7 @@ Hooks.once("init",()=>{
 });
 Hooks.once("ready",()=>{
     registerConditionBridge();
-    globalThis.Ugmuls55eAutomationMasteries={prepareAttackButtons,focusMasteryAttackButtons};
+    globalThis.Ugmuls55eAutomationMasteries={prepareAttackButtons,focusMasteryAttackButtons,undoDamageSlow,undoDamageMasteries};
     Hooks.on("dnd5e.renderChatMessage",addMasteryButtons);
     Hooks.on("dnd5e.preRollAttackV2",(config,dialog,message)=>
         masteryRollDefaults(config.subject,config,dialog,game.user.targets,message?.data?.system?.targets));
@@ -350,7 +409,16 @@ Hooks.once("ready",()=>{
     });
     Hooks.on("createChatMessage",message=>{
         if(!authoritative()||!enabled())return;
-        enqueue(async()=>{if(message.type==="attack"){await consumeNextAttack(message);await syncSap(message);await syncGraze(message);}else if(message.type==="save")await resolveTopple(message);}).catch(report);
+        enqueue(async()=>{
+            if(message.type==="attack"){await consumeNextAttack(message);await syncSap(message);await syncGraze(message);}
+            else if(message.type==="save")await resolveTopple(message);
+            else if(message.type==='damage'){
+                // A later extra damage card can move an initially supported
+                // attack onto its native fallback. Do not strand deferred Sap.
+                const attack=attackForDamage(message);
+                if(attack&&!globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack)&&(masteryForAttack(attack)==='sap'||globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack)==='sap'))await syncSap(attack);
+            }
+        }).catch(report);
     });
     Hooks.on("updateChatMessage",(message,changes)=>{
         if(authoritative()&&enabled()&&message.type==="save"&&toppleSaveContext(message).attackId)enqueue(()=>resolveTopple(message)).catch(report);

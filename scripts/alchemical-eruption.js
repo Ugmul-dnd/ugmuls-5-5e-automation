@@ -68,7 +68,7 @@ function request(card,target){const gm=game.users.activeGM;if(gm&&gm.id!==game.u
 export function renderEruption(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;const entries=[{card:message,node:root},...values(root.querySelectorAll(".card-summary[data-message-id]")).map(node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
  for(const {card,node}of entries){node.querySelectorAll(":scope > .rsa-alchemical-eruption").forEach(n=>n.remove());if(card?.isContentVisible===false)continue;const c=eruptionContext(card);if(!c)continue;const row=document.createElement("div");row.className="rsa-attack-actions rsa-alchemical-eruption";
-  for(const target of c.candidates){const button=document.createElement("button");button.type="button";button.textContent="Alchemical Eruption — "+target.name;button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();button.disabled=true;request(card,target.uuid);});row.append(button);}node.append(row);
+  for(const target of c.candidates){const button=document.createElement("button");button.type="button";button.textContent="Alchemical Eruption — "+target.name;button.dataset.rsaReactionIcon=c.damage.img??c.feature.img??"icons/svg/d20.svg";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();button.disabled=true;request(card,target.uuid);});row.append(button);}node.append(row);
  }
 }
 function report(error){console.error("Alchemical Eruption",error);ui.notifications.error(error.message);}

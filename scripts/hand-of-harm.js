@@ -58,7 +58,7 @@ export function renderStrike(message,html){
  for(const {card,node}of entries){node.querySelectorAll(':scope > .rsa-hand-of-harm').forEach(n=>n.remove());if(card.isContentVisible===false)continue;const c=strikeContext(card);if(!c)continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-hand-of-harm";
   if(c.used)controls.textContent="Hand of Harm used for this hit.";
-  else if(c.available){const button=document.createElement("button");button.type="button";button.textContent=c.free?"Hand of Harm — Free":"Hand of Harm — 1 Focus Point";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();requestStrike(card,button);});controls.append(button);}
+  else if(c.available){const button=document.createElement("button");button.type="button";button.textContent=c.free?"Hand of Harm — Free":"Hand of Harm — 1 Focus Point";button.dataset.rsaReactionIcon=c.feature.img??c.damage.img??"icons/svg/d20.svg";button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();requestStrike(card,button);});controls.append(button);}
   if(controls.childNodes.length)node.append(controls);
  }
 }

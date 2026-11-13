@@ -172,7 +172,9 @@ export function addDamageModeControls(message,html) {
         if(!entry.message.isContentVisible||!canAdjustDamage(entry.message,game.user)||entry.root.querySelector("[data-rsa-damage-modes]"))continue;
         const roll=entry.message.rolls?.find(roll=>roll instanceof CONFIG.Dice.DamageRoll);
         const dice=entry.root.querySelector(".dice-roll");if(!roll||!dice)continue;
-        const host=entry.root===root?dice.parentElement:entry.root;host.classList.add("rsa-save-mode-host");
+        // Full damage content inside a grouped summary also contains its
+        // application tray. Anchor to the roll row, not that entire summary.
+        const host=dice.parentElement;host.classList.add("rsa-save-mode-host");
         const menu=document.createElement("div");menu.className="rsa-save-mode-menu";menu.dataset.rsaDamageModes="";
         for(const [label,critical] of [["NORMAL",false],["CRITICAL",true]]) {
             const button=document.createElement("button");button.type="button";button.textContent=label;

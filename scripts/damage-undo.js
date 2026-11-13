@@ -1,13 +1,14 @@
-import {createEventQueue,isDamageOrHealingCard,isHealingCard} from "./shared-activity-card.js";
+import {createEventQueue,isDamageOrHealingCard,isHealingCard,linkedHpCards} from "./shared-activity-card.js";
 import {regionManagesCardEffect} from "./region-library.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const enqueue=createEventQueue();
 const hpKeys=["value","temp","tempmax"];
 const history=message=>message.getFlag(MODULE_ID,"damageUndoHistory")??[];
 const effectHistory=message=>message?.getFlag?.(MODULE_ID,"effectUndoHistory")??[];
-const originOf=message=>typeof message?.system?.origin==="string"?game.messages.get(message.system.origin):message?.system?.origin;
+const originOf=message=>typeof message?.system?.origin==="string"?game.messages.get(message.system.origin.replace(/^ChatMessage\./,'')):message?.system?.origin;
 const hpApplicationSessions=new Map();
 const applyingHpTrays=new WeakSet();
+const undoingAttackApplications=new Map();
 function hpApplicationMessage(options) {
     for(const reference of [options.origin,options.originatingMessage]) {
         const message=typeof reference==="string"?game.messages.get(reference.replace(/^ChatMessage\./,"")):reference;
@@ -21,14 +22,24 @@ async function refreshHpUndoCard(message) {
     if(origin&&origin!==current)await ui.chat?.updateMessage?.(origin);
 }
 
-export async function applyEffectWithUndo(card,usage,effect,actor,tray,{replace=null}={}) {
+export async function applyEffectWithUndo(card,usage,effect,actor,tray,{replace=null,identity=usage}={}) {
     return enqueue(async()=>{
         if(regionManagesCardEffect(usage?.getAssociatedActivity?.({scaled:true}),effect))return null;
         const existing=Array.from(actor.effects??[]).find(entry=>replace&&entry.uuid===replace.uuid)??Array.from(actor.effects??[]).find(entry=>entry._stats?.duplicateSource===effect.uuid||entry._stats?.compendiumSource===effect.uuid);
         const before=existing?existing.toObject():null;
-        const applied=await tray._applyEffectToActor(effect,actor);
+        const prepare=tray._prepareEffectData;
+        if(identity!==usage){
+            if(typeof prepare!=='function')throw Error('Native effect preparation is unavailable.');
+            tray._prepareEffectData=async function(...args){
+                const operation=await prepare.apply(this,args);operation.data.system??={};operation.data.system.origin??={};
+                // Keep native cast scaling and concentration, while giving
+                // each spell attack its own Undo/newer-application identity.
+                operation.data.system.origin.message=identity.uuid;return operation;
+            };
+        }
+        let applied;try{applied=await tray._applyEffectToActor(effect,actor);}finally{tray._prepareEffectData=prepare;}
         if(!applied?.uuid)return applied;
-        const record={id:foundry.utils.randomID(),effectUuid:applied.uuid,sourceMessage:usage.uuid,before,...(replace?{replacement:true}:{})};
+        const record={id:foundry.utils.randomID(),effectUuid:applied.uuid,sourceMessage:identity.uuid,before,...(replace?{replacement:true}:{})};
         await card.setFlag(MODULE_ID,"effectUndoHistory",[...effectHistory(card),record]);
         return applied;
     });
@@ -46,20 +57,26 @@ export async function applyConditionWithUndo(card,actor,statusId,updates={}){
         return applied;
     });
 }
+export function attackEffectState(attack){
+    return spellAttack(attack)?attack:originOf(attack)??attack;
+}
+const spellAttack=attack=>attack?.type==='attack'&&(attack.getAssociatedActivity?.()?.item??attack.getAssociatedItem?.())?.type==='spell';
 export function effectUndoSources(message) {
     if(!isDamageOrHealingCard(message))return [message].filter(Boolean);
     const usage=originOf(message);
     const explicit=message.getFlag(MODULE_ID,"damageAttackId");
-    const attack=explicit?game.messages.get(explicit):[...(usage?.getAssociatedRolls?.("attack")??[])]
+    const attack=explicit?game.messages.get(explicit):usage?.type==='attack'?usage:[...(usage?.getAssociatedRolls?.("attack")??[])]
         .filter(roll=>roll.timestamp<=message.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];
-    return [message,usage,attack].filter((card,index,list)=>card&&list.indexOf(card)===index);
+    const shared=spellAttack(attack)?[]:[usage];
+    return [message,...shared,attack].filter((card,index,list)=>card&&list.indexOf(card)===index);
 }
 export async function undoCardEffects(message) {
     if(!game.user.isGM)return;
     const usage=originOf(message)??message;
+    const sources=effectUndoSources(message),attack=sources.find(card=>card.type==='attack'),state=attack?attackEffectState(attack):usage;
     // An explicit undo hands this activity back to manual controls.
-    await usage.setFlag(MODULE_ID,"manualDamageWorkflow",true);
-    for(const card of effectUndoSources(message)) {
+    await state.setFlag(MODULE_ID,"manualDamageWorkflow",true);
+    for(const card of sources) {
         const records=[...effectHistory(card)];
         for(const record of [...records].reverse()) {
             const effect=await fromUuid(record.effectUuid);
@@ -76,13 +93,13 @@ export async function undoCardEffects(message) {
             await card.setFlag(MODULE_ID,"effectUndoHistory",[...records]);
         }
     }
-    for(const card of effectUndoSources(message))if(card!==usage&&card.getFlag?.(MODULE_ID,"searingBlindApplications")){
+    for(const card of sources)if(card!==state&&card.getFlag?.(MODULE_ID,"searingBlindApplications")){
         await card.setFlag(MODULE_ID,"outcomeEffectsApplied",false);
         await card.setFlag(MODULE_ID,"effectApplyReopened",Date.now());
     }
-    await usage.setFlag(MODULE_ID,"outcomeEffectsApplied",false);
-    await usage.setFlag(MODULE_ID,"buffAutoApplied",false);
-    await usage.setFlag(MODULE_ID,"effectApplyReopened",Date.now());
+    await state.setFlag(MODULE_ID,"outcomeEffectsApplied",false);
+    await state.setFlag(MODULE_ID,"buffAutoApplied",false);
+    await state.setFlag(MODULE_ID,"effectApplyReopened",Date.now());
 }
 
 export function addEffectUndoButton(message,html) {
@@ -118,7 +135,8 @@ export function addEffectUndoButton(message,html) {
 function refreshEffectActions(message,changes) {
     if(!Object.hasOwn(changes,`flags.${MODULE_ID}.effectUndoHistory`)&&!Object.hasOwn(changes.flags?.[MODULE_ID]??{},"effectUndoHistory"))return;
     const usage=originOf(message)??message;
-    for(const type of ["damage","healing"])for(const result of usage.getAssociatedRolls?.(type)??[])ui.chat?.updateMessage(result);
+    const cards=message.type==='attack'?linkedHpCards(message):[...(usage.getAssociatedRolls?.('damage')??[]),...(usage.getAssociatedRolls?.('healing')??[])];
+    for(const result of cards)globalThis.Ugmuls55eAutomationChatRefresh?.card(result);
 }
 
 export async function storeReappliedEffectUndo(message,records,user=game.user) {
@@ -223,6 +241,10 @@ export async function storeManualHpApplication(message,records,actorUuids,user=g
 }
 export async function applyManualHpWithUndo(tray,apply,event) {
     const message=tray.chatMessage;
+    if(globalThis.Ugmuls55eAutomationUndoAttackApplication?.pending?.(message))return;
+    // A unified attack's applied result is inspected here, not applied twice.
+    // Failed effects retain their effects-only Retry Apply recovery control.
+    if(globalThis.Ugmuls55eAutomationUnifiedAttack?.supports(message)&&(message.getFlag?.(MODULE_ID,'hpApplicationRecorded')||history(message).length))return;
     if(!isDamageOrHealingCard(message)||typeof tray.getMergedOptions!=="function")return apply.call(tray,event);
     if(applyingHpTrays.has(tray))return;
     applyingHpTrays.add(tray);
@@ -267,8 +289,10 @@ async function storeRecord(message,record,user) {
 export async function undoCardDamage(message) {
     if(!game.user.isGM)return;
     if(message.getFlag(MODULE_ID,"masteryGrazeUndone"))return;
+    const emptyApplication=message.getFlag(MODULE_ID,'hpApplicationRecorded')===true&&!history(message).length;
     await message.setFlag(MODULE_ID,"hpApplicationRecorded",false);
     const records=[...history(message)];
+    const restoredActors=new Set();
     for(const record of [...records].reverse()) {
         const actor=await fromUuid(record.actorUuid);
         if(!actor){ui.notifications.warn("Cannot undo damage for an unavailable actor.");continue;}
@@ -283,9 +307,12 @@ export async function undoCardDamage(message) {
             updates[`system.attributes.hp.${change.key}`]=restored;
         }
         await actor.update(updates,{rsaUndoDamage:true});
+        restoredActors.add(actor.uuid);
         const index=records.findIndex(entry=>entry.id===record.id);records.splice(index,1);
         await message.setFlag(MODULE_ID,"damageUndoHistory",[...records]);
     }
+    const undoMasteries=globalThis.Ugmuls55eAutomationMasteries?.undoDamageMasteries??globalThis.Ugmuls55eAutomationMasteries?.undoDamageSlow;
+    await undoMasteries?.(message,[...restoredActors],{emptyApplication});
     if(message.getFlag(MODULE_ID,"masteryGraze")&&!history(message).length) {
         await message.setFlag(MODULE_ID,"masteryGrazeUndone",true);
         const attack=game.messages.get(message.getFlag(MODULE_ID,"damageAttackId"));
@@ -295,6 +322,29 @@ export async function undoCardDamage(message) {
             await ui.chat?.updateMessage(attack);
         }
     } else await message.setFlag(MODULE_ID,"damageApplyReopened",Date.now());
+}
+export function undoAttackApplication(message){
+    const allowed=()=>game.user.isGM&&game.users.activeGM?.id===game.user.id&&message?.isContentVisible!==false&&globalThis.Ugmuls55eAutomationUnifiedAttack?.supports(message);
+    if(!allowed())return Promise.resolve();
+    if(undoingAttackApplications.has(message.id))return undoingAttackApplications.get(message.id);
+    const task=(async()=>{
+    // Stop autonomous application before either half is restored. Keep each
+    // existing history authoritative, including partial failures/newer effects.
+    const attack=effectUndoSources(message).find(card=>card.type==='attack'),usage=attack?attackEffectState(attack):originOf(message);
+    if(usage&&!usage.getFlag?.(MODULE_ID,'manualDamageWorkflow'))await usage.setFlag(MODULE_ID,'manualDamageWorkflow',true);
+    // Drain the effect queue OUTSIDE this queue: effect application writes its
+    // history through this queue, so awaiting it inside would deadlock.
+    await globalThis.Ugmuls55eAutomationHitEffects?.settle?.();
+    return enqueue(async()=>{
+    if(!allowed())return;
+    await undoCardDamage(message);
+    // Unavailable HP recipients keep their history and their effects for retry.
+    if(history(message).length)return;
+    await undoCardEffects(message);
+    for(const card of effectUndoSources(message))globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
+    });
+    })().finally(()=>undoingAttackApplications.delete(message.id));
+    undoingAttackApplications.set(message.id,task);return task;
 }
 export function addDamageUndoButton(message,html) {
     const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;
@@ -308,7 +358,7 @@ export function addDamageUndoButton(message,html) {
         const applied=entry.message.getFlag(MODULE_ID,"hpApplicationRecorded");
         const appliedGraze=entry.message.getFlag(MODULE_ID,"masteryGraze")&&
             !entry.message.getFlag(MODULE_ID,"masteryGrazeUndone")&&(entry.message.getFlag(MODULE_ID,"automaticDamageTargets")??[]).length>0;
-        if(records.length && game.settings.get("dnd5e","autoCollapseChatTrays") !== "manual")
+        if(records.length && game.settings.get("dnd5e","autoCollapseChatTrays") !== "manual"&&!entry.root.closest?.('.rsa-unified-attack'))
             for(const tray of entry.root.querySelectorAll("damage-application"))tray.open=false;
         if(!records.length&&!appliedGraze&&!applied) {
             entry.root.querySelector("[data-rsa-undo-damage]")?.remove();
@@ -333,6 +383,8 @@ export function addDamageUndoButton(message,html) {
 }
 function report(err){console.error("Ugmuls 5.5e Automation | Damage undo failed:",err);ui.notifications.error("Could not undo damage. Check the console.");}
 Hooks.once("ready",()=>{
+    globalThis.Ugmuls55eAutomationUndoAttackApplication=undoAttackApplication;
+    globalThis.Ugmuls55eAutomationUndoAttackApplication.pending=card=>undoingAttackApplications.has(card?.id);
     globalThis.Ugmuls55eAutomationEffectUndo={apply:applyEffectWithUndo,applyConditionWithUndo};
     const prototype=customElements.get("effect-application")?.prototype;
     if(prototype&&typeof prototype.buildEffectsList==="function"&&!prototype.rsaRegionEffectList){
@@ -373,6 +425,7 @@ Hooks.once("ready",()=>{
         if(!game.user.isGM||packet?.gmId!==game.user.id||game.users.activeGM?.id!==game.user.id)return;
         const user=game.users.get(packet.userId),message=game.messages.get(packet.messageId);
         if(!user?.active||!message)return;
+        if(packet.action==='undoAttackApplication'&&user.isGM){undoAttackApplication(message).catch(report);return;}
         if(packet.action==="recordReappliedEffectUndo") {
             enqueue(()=>storeReappliedEffectUndo(message,packet.records,user)).catch(report);return;
         }
