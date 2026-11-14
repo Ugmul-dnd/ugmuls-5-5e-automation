@@ -2,7 +2,7 @@
 
 Prepared release: **v1.1.0**. Changes are in CHANGELOG.md and RELEASE-NOTES-1.1.0.md. Local preparation does not publish a GitHub release.
 
-Compatibility: Foundry VTT 14 (verified build 14.370) and **D&D5e 6.1.0 exactly** (minimum, verified and maximum all 6.1.0). Earlier system versions are incompatible. PHB class compatibility targets the official **Player’s Handbook (2024) 3.0.0**. Updating the book does not replace owned character items; see the release notes before updating. Verification results are recorded in RELEASE-NOTES-1.1.0.md.
+Compatibility: Foundry VTT 14 (verified build 14.370) and **D&D5e 6.1.0 exactly** (minimum, verified and maximum all 6.1.0). Earlier system versions are incompatible. PHB class compatibility targets the official **Player’s Handbook (2024) 3.0.0**. Updating the book does not replace owned character items; see the release notes before updating.
 
 The archive includes module.json, LICENSE, RELEASE-NOTES-1.1.0.md, runtime JavaScript, and styles. Guides, changelog, repository instructions, tests, tools, state, and Git data are excluded. Tests and build tools are local-only and Git-ignored; restore the local tooling backup if absent.
 
@@ -11,7 +11,7 @@ The archive includes module.json, LICENSE, RELEASE-NOTES-1.1.0.md, runtime JavaS
 3. Review and commit the prepared changes, complete the intended branch merge, and push the release revision.
 4. Create a GitHub release from that revision with the exact tag **v1.1.0** (lowercase v), title **Ugmuls 5.5e Automation v1.1.0**, and RELEASE-NOTES-1.1.0.md as the description.
 5. Attach **both** dist/module.json and dist/ugmuls-5-5e-automation.zip. The generated dist folder is Git-ignored. The optional dist/ugmuls-5-5e-automation.zip.sha256 records the archive checksum.
-6. Publish, then test installation/update of the packaged v1.1.0 release in a second world or separate Foundry data directory. This final-package smoke test remains pending; development checks are recorded separately in the release notes.
+6. Publish, then test installation/update of the packaged v1.1.0 release in a second world or separate Foundry data directory. This final-package smoke test remains pending; development checks are recorded in the local test reports.
 7. If listed in Foundry's package directory, register the new release there.
 
 Stable installer manifest:
