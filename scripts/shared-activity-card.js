@@ -12,10 +12,23 @@ function cardOrigin(card) {
     const origin=card?.system?.origin;
     return typeof origin==="string"?game.messages?.get(origin.replace(/^ChatMessage\./,'')):origin;
 }
+export function linkedRecurringDamageUsage(card){
+    const flag=(c,key)=>c?.getFlag?.('ugmuls-5-5e-automation',key);
+    const id=flag(card,'recurringDamageCard');if(!id)return null;
+    const child=game.messages?.get?.(id),a=flag(card,'recurringTrigger'),b=flag(child,'recurringTrigger');
+    // Recorded effect/turn/recipient identity is required; spell names, totals
+    // and the current token selection are never a relationship between cards.
+    if(!child||child.type!=='usage'||!a||!b||b.phase!=='damage'||['effect','instance','stamp','key'].some(k=>a[k]!==b[k])||
+        flag(child,'recurringApplicationSource')&&flag(child,'recurringApplicationSource')!==card.id||
+        child.system?.targets?.length!==card.system?.targets?.length||child.system.targets.some(t=>!card.system.targets.some(s=>s.token===t.token&&s.actor===t.actor)))return null;
+    return child;
+}
 export function linkedHpCards(roll) {
     if(isDamageOrHealingCard(roll))return [roll];
     const origin=roll?.type==='usage'?roll:cardOrigin(roll);
     if(!origin)return [];
+    const recurring=linkedRecurringDamageUsage(origin);
+    if(recurring)return [...(origin.getAssociatedRolls?.('damage')??[]),...(recurring.getAssociatedRolls?.('damage')??[])];
     const stunningId=(origin.getFlag?.("ugmuls-5-5e-automation","stunningStrike")??origin.getFlag?.("ugmuls-5-5e-automation","grappleStrike")??origin.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")??origin.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave")??origin.getFlag?.("ugmuls-5-5e-automation","deathStrikeSave"))?.damageId;
     const stunningDamage=stunningId?game.messages.get(stunningId):null;
     if(stunningDamage)return [stunningDamage];
@@ -30,16 +43,18 @@ export function linkedHpCards(roll) {
     });
 }
 export function isRollAdjustmentLocked(roll) {
+    if(globalThis.Ugmuls55eAutomationUnifiedSave?.pending?.(roll)===true)return true;
     const origin=cardOrigin(roll);
     const effectsApplied=card=>card?.getFlag?.("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||(card?.getFlag?.("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
-    if(roll?.type==='attack'&&(roll.getAssociatedActivity?.()?.item??roll.getAssociatedItem?.())?.type==='spell'&&effectsApplied(roll))return true;
+    const attackItemType=roll?.type==='attack'?(roll.getAssociatedActivity?.()?.item??roll.getAssociatedItem?.())?.type:null;
+    if(attackItemType&&attackItemType!=='weapon'&&effectsApplied(roll))return true;
     if(roll?.type==="save"&&(effectsApplied(roll)||effectsApplied(origin)))return true;
     // Rider saves resolve their own effects independently of weapon HP changes.
     if(roll?.type==="save"&&(origin?.getFlag?.("ugmuls-5-5e-automation","stunningStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","grappleStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","maneuverStrike")||origin?.getFlag?.("ugmuls-5-5e-automation","cunningStrikeSave"))) {
         return origin.getFlag("ugmuls-5-5e-automation","outcomeEffectsApplied")===true||
             (origin.getFlag("ugmuls-5-5e-automation","effectUndoHistory")?.length??0)>0;
     }
-    return linkedHpCards(roll).some(card=>!card.getFlag?.("ugmuls-5-5e-automation","masteryGrazeUndone")&&
+    return linkedHpCards(roll).some(card=>(!card.getFlag?.("ugmuls-5-5e-automation","masteryGrazeUndone")||card.getFlag?.('ugmuls-5-5e-automation','hpApplicationRecorded')||card.getFlag?.('ugmuls-5-5e-automation','damageUndoHistory')?.length)&&
         (card.getFlag?.("ugmuls-5-5e-automation","hpApplicationRecorded")===true||card.getFlag?.("ugmuls-5-5e-automation","damageUndoHistory")?.length>0||roll?.type==="save"&&effectsApplied(card)||
         // A feat effect already committed this hit/critical outcome. Undo the
         // effect before changing the source attack; no additional history scan.
@@ -219,4 +234,18 @@ export function createEventQueue() {
         pending = result.catch(() => {});
         return result;
     };
+}
+
+// Read the native class/visibility gates without treating total character
+// level as a class level, or coupling availability to remaining resources.
+export function actorClassLevel(actor,identifier){
+ const items=Array.from(actor?.items?.values?.()??actor?.items??[]),item=actor?.classes?.[identifier]??items.find(i=>i.type==='class'&&(i.identifier??i.system?.identifier)===identifier);
+ return Number(item?.system?.levels??actor?.getRollData?.()?.classes?.[identifier]?.levels??NaN);
+}
+export function nativeActivityVisible(activity,actor=activity?.actor??activity?.item?.actor){
+ if(!activity||activity.isHidden===true)return false;
+ const visibility=activity.visibility,min=visibility?.level?.min,max=visibility?.level?.max;if(min==null&&max==null)return true;
+ const level=visibility.identifier?actorClassLevel(actor,visibility.identifier):Number(actor?.system?.details?.level);
+ if(!Number.isFinite(level))return activity.isHidden===false;
+ return (min==null||level>=Number(min))&&(max==null||level<=Number(max));
 }

@@ -19,11 +19,27 @@ export async function fireNextShot(state) {
     if(!activity?.item?.isOwner)return;
     if(game.user.targets?.size!==1){ui.notifications.warn("Select one target for the next attack.");return;}
     state.busy=true;state.window?.render({force:true});
+    let attackUsage;
     try {
         // Reuse the scaled activity and original usage, without another use or
         // resource consumption. Native attack cards retain the new live target.
-        const rolls=await activity.rollAttack({}, {}, {data:{system:{origin:state.message.id},...(state.attackFlags?{flags:state.attackFlags}:{})}});
+        let flags=state.attackFlags;
+        const flurry=flags?.[ID]?.flurryOfBlows;
+        if(flurry)flags={...flags,[ID]:{...flags[ID],flurryOfBlows:{...flurry,attackNumber:state.total-state.remaining+1,attackTotal:state.total}}};
+        // Each Flurry strike needs its own native attack usage home. The Focus
+        // usage remains the counter's source; these uses spend no further action
+        // or Focus and keep damage/targets/Undo isolated per strike.
+        if(flurry){
+            flags={...flags,[ID]:{...flags[ID],riderTriggered:true}};
+            const result=await activity.use({consume:false,subsequentActions:false,create:{measuredTemplate:false}},{configure:false},{data:{flags}});
+            attackUsage=result?.message;if(!attackUsage)return;
+        }
+        const rolls=await activity.rollAttack({}, {}, {data:{system:{origin:attackUsage?.id??state.message.id},...(flags?{flags}:{})}});
+        if(!rolls?.length&&attackUsage)await attackUsage.delete();
         if(rolls?.length){state.remaining--;state.attacksCompleted=(state.attacksCompleted??0)+1;if(state.attackFlags?.[ID]?.flurryOfBlows)await state.message.setFlag?.(ID,"flurryAttackStarted",true);}
+    } catch(error){
+        if(attackUsage&&!Array.from(attackUsage.getAssociatedRolls?.('attack')??[]).some(card=>card.rolls?.length))await attackUsage.delete();
+        throw error;
     } finally {
         state.busy=false;
         if(state.remaining===0)await state.window?.close();
@@ -87,6 +103,6 @@ Hooks.once("ready",()=>{
 
 export function openAttackCounter({activity,message,total,label,title,resolveActivity,attackFlags,getActions}){
  if(!message?.id||!Number.isInteger(total)||total<1||windows.has(message.id))return;
- const state={activity,message,remaining:total,firstPending:false,busy:false,label,title,resolveActivity,attackFlags,getActions};
+ const state={activity,message,total,remaining:total,firstPending:false,busy:false,label,title,resolveActivity,attackFlags,getActions};
  state.window=new MultiShotWindow(state);windows.set(message.id,state);state.window.render({force:true});return state;
 }

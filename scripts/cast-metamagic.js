@@ -1,5 +1,5 @@
 import {sorceryResource} from "./empowered-spell.js";
-import {innateSorceryActive} from "./innate-sorcery.js";
+import {innateSorceryActive} from "./shared-sorcerer.js";
 const ID="ugmuls-5-5e-automation";
 export const elements=["acid","cold","fire","lightning","poison","thunder"];
 const costs={transmuted:1,heightened:2,careful:1,empowered:1,seeking:1,quickened:2,subtle:1,distant:1,extended:1,twinned:1};

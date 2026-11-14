@@ -1,11 +1,11 @@
-import {createEventQueue,describeTarget} from './shared-activity-card.js';
-import {wrathBuffData,wrathRange,withinWrathRange} from './wrath-of-the-sea.js';
+import {createEventQueue,describeTarget,nativeActivityVisible} from './shared-activity-card.js';
+import {wrathBuffData,wrathRange,withinWrathRange,wrathManifestActivity,wrathStrikeActivity} from './wrath-of-the-sea.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),wrapped=new WeakSet(),waiting=new Map(),claims=new Map(),activationReceipts=new Map(),initialClaims=new Map(),posting=new Set(),dialogs=new Set();
 const values=v=>v?.values?Array.from(v.values()):Array.isArray(v)?v:Object.values(v??{}),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],resolve=r=>{try{return typeof r==='string'?globalThis.fromUuidSync?.(r,{strict:false}):r;}catch{return null;}};
 const enabled=()=>game.settings.get(ID,'wrathSeaAutomation')===true,authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),stamp=()=>game.combat?.started?`${game.combat.id}:${game.combat.round}:${game.combat.turn}`:'outside';
 const live=e=>e&&!e.disabled&&!e.isSuppressed&&!e.duration?.expired&&e.active!==false,incap=a=>['incapacitated','unconscious','dead','paralyzed','petrified','stunned'].some(s=>a?.statuses?.has(s)),owns=(a,u)=>!!a&&!!u?.active&&(u.isGM||a.testUserPermission?.(u,'OWNER'));
 const feature=(a,id)=>values(a?.items).find(i=>i.type==='feat'&&key(i)===id&&i.system?.source?.rules!=='2014'),effects=a=>values(a?.appliedEffects??a?.effects),actorOf=e=>e?.parent?.documentName==='Actor'?e.parent:e?.parent?.actor;
-export function activationActivity(a){return enabled()&&a?.type==='save'&&a.item?.system?.source?.rules!=='2014'&&(key(a.item)==='oceanic-gift'||key(a.item)==='stormborn'||key(a.item)==='wrath-of-the-sea'&&a.id==='nNTYj4vqURV4Dhjt');}
+export function activationActivity(a){return enabled()&&['save','utility'].includes(a?.type)&&nativeActivityVisible(a,a.actor??a.item?.actor)&&a.item?.system?.source?.rules!=='2014'&&(key(a.item)==='oceanic-gift'||key(a.item)==='stormborn'||key(a.item)==='wrath-of-the-sea'&&['nNTYj4vqURV4Dhjt','ituofBRxXKLI7wNW'].includes(a.id??a._id));}
 export function wildShapePool(actor){const item=feature(actor,'wild-shape'),spent=Number(item?.system?.uses?.spent??0),max=Number(item?.system?.uses?.max);return {item,available:Number.isFinite(max)&&Number.isFinite(spent)?Math.max(0,max-spent):0};}
 function actorToken(actor,ref){const token=resolve(ref);if(token?.actor?.uuid===actor?.uuid)return token;return actor?.token??values(globalThis.canvas?.scene?.tokens).find(t=>t.actor?.uuid===actor?.uuid);}
 export function activationCandidates(actor,source,user=game.user){return values(source?.parent?.tokens).filter(t=>t.actor&&(t.uuid===source.uuid||t.actor.uuid!==actor.uuid)&&!incap(t.actor)&&t.disposition===source.disposition&&(user.isGM||!t.hidden)&&(t.uuid===source.uuid||withinWrathRange(source,t,60,{sight:false})));}
@@ -13,11 +13,12 @@ export function activationPlan(actor,payload,user=game.user){
  const source=resolve(payload.source),target=resolve(payload.target),gift=feature(actor,'oceanic-gift'),wrath=feature(actor,'wrath-of-the-sea'),pool=wildShapePool(actor);
  if(!enabled()||!owns(actor,user)||incap(actor)||!wrath||!source||source.actor?.uuid!==actor.uuid||user.viewedScene&&source.parent?.id!==user.viewedScene)throw Error('Your Sea Druid must be available on your current map.');
  if(!target||!activationCandidates(actor,source,user).some(t=>t.uuid===target.uuid)||!gift&&target.uuid!==source.uuid)throw Error('Choose a friendly willing creature within 60 feet.');
+ if(target.uuid!==source.uuid&&values(wrath.system.activities).some(a=>(a.id??a._id)==='ituofBRxXKLI7wNW')&&!wrathManifestActivity(wrath,{other:true,actor}))throw Error('Oceanic Gift is not available at this Druid level.');
  const both=!!payload.self&&target.uuid!==source.uuid;if(both&&!gift)throw Error('Oceanic Gift is required to grant a second emanation.');const cost=both?2:1;if(pool.available<cost)throw Error('Not enough Wild Shape uses remain.');
  return {source,target,gift,wrath,pool,cost,recipients:both?[target,source]:[target]};
 }
 export function activationData(plan){
- const item=plan.gift??plan.wrath,id=plan.gift?(plan.cost===2?'LHQqJAKTruxBN27B':'HfSSFuPEcVqQLurp'):'nNTYj4vqURV4Dhjt',data=item.toObject(),native=data.system.activities[id];if(!native)throw Error('The native manifestation activity is unavailable.');
+ const modern=values(plan.wrath.system.activities).some(a=>a.type==='utility'&&(a.id??a._id)==='nNTYj4vqURV4Dhjt'),external=plan.target.uuid!==plan.source.uuid,item=modern?plan.wrath:plan.gift??plan.wrath,activity=modern?wrathManifestActivity(item,{other:external,actor:plan.source.actor}):null,id=modern?(activity?.id??activity?._id):plan.gift?(plan.cost===2?'LHQqJAKTruxBN27B':'HfSSFuPEcVqQLurp'):'nNTYj4vqURV4Dhjt',data=item.toObject(),native=data.system.activities[id];if(!native)throw Error('The native manifestation activity is unavailable.');
  data._id=foundry.utils.randomID();data.effects=[];data.system.identifier='rsa-wrath-sea-activation';data.system.activities={[id]:native};native.type='utility';delete native.save;delete native.damage;native.effects=[];native.appliedEffects=[];native.roll={prompt:false,formula:''};native.target={override:true,prompt:false,template:{type:''},affects:{type:'self',count:'1',choice:false}};native.range={override:true,units:'self'};
  native.consumption={...native.consumption,spellSlot:false,targets:[{type:'itemUses',target:plan.pool.item.id??plan.pool.item.uuid,value:String(plan.cost)}],scaling:{allowed:false}};
  return {data,id};
@@ -26,9 +27,11 @@ export async function activateOcean(actor,payload,user=game.user){
  if(!authority())throw Error('A connected GM is required.');const plan=activationPlan(actor,payload,user),{data,id}=activationData(plan),helper=new CONFIG.Item.documentClass(data,{parent:actor});helper.prepareFinalAttributes?.();const activity=helper.system.activities.get(id);
  const result=await activity.use({create:{measuredTemplate:false},subsequentActions:false},{configure:false},{data:{speaker:ChatMessage.getSpeaker({actor,token:plan.source}),system:{targets:[]},flags:{dnd5e:{item:{data}},[ID]:{activityOverrideData:data,wrathOceanActivation:{caster:actor.uuid,source:plan.source.uuid,cost:plan.cost}}}}});
  const card=result?.message;if(!card)throw Error('Manifestation was canceled or its Bonus Action/resource is unavailable.');
- const base=values(plan.wrath.system.activities).find(a=>a.id==='nNTYj4vqURV4Dhjt'),all=new Map(values(plan.source.parent.tokens).filter(t=>t.actor).map(t=>[t.actor.uuid,t.actor]));all.set(actor.uuid,actor);const priorRecipients=flag(actor,'wrathOceanRecipients');for(const ref of priorRecipients??[]){const prior=resolve(ref),bearer=actorOf(prior);if(bearer)all.set(bearer.uuid,bearer);}const changed=[],created=[];
+ const base=wrathManifestActivity(plan.wrath),all=new Map(values(plan.source.parent.tokens).filter(t=>t.actor).map(t=>[t.actor.uuid,t.actor]));all.set(actor.uuid,actor);const priorRecipients=flag(actor,'wrathOceanRecipients');for(const ref of priorRecipients??[]){const prior=resolve(ref),bearer=actorOf(prior);if(bearer)all.set(bearer.uuid,bearer);}const changed=[],created=[];
  try{
-  // Revalidate the chosen bearer after native consumption; do not charge twice.
+  // Revalidate the native source/level and chosen bearer after consumption; never charge twice.
+  if(feature(actor,'wrath-of-the-sea')?.uuid!==plan.wrath.uuid||plan.gift&&feature(actor,'oceanic-gift')?.uuid!==plan.gift.uuid)throw Error('The Sea Druid features changed during manifestation.');
+  activationData(plan);
   if(!activationCandidates(actor,plan.source,user).some(t=>t.uuid===plan.target.uuid))throw Error('The selected recipient moved or became unavailable.');
   for(const bearer of all.values())for(const effect of values(bearer.effects)){const state=flag(effect,'wrathSea');if(state?.caster===actor.uuid&&live(effect)){changed.push({effect,before:effect.toObject()});await effect.update({disabled:true});}}
   const instance=foundry.utils.randomID();
@@ -45,7 +48,7 @@ export async function oceanDialog(actor,source){
  }finally{dialogs.delete(actor.uuid);}
 }
 export function initialCandidates(effect,user=game.user){
- const state=oceanState(effect),bearer=actorOf(effect),token=actorToken(bearer,state?.bearerToken),item=resolve(state?.sourceItem),activity=values(item?.system?.activities).find(a=>a.id==='9U9AoJYvcrCQtIMm');if(!live(effect)||!state||incap(bearer)||!token||!activity)return [];
+ const state=oceanState(effect),bearer=actorOf(effect),token=actorToken(bearer,state?.bearerToken),item=resolve(state?.sourceItem),activity=wrathStrikeActivity(item);if(!live(effect)||!state||incap(bearer)||!token||!activity)return [];
  const hostile=CONST.TOKEN_DISPOSITIONS.HOSTILE,friendly=CONST.TOKEN_DISPOSITIONS.FRIENDLY,enemy=token.disposition===hostile?friendly:hostile;
  return values(token.parent?.tokens).filter(t=>t.disposition===enemy&&(user.isGM||!t.hidden)&&withinWrathRange(token,t,wrathRange(activity)));
 }
@@ -67,7 +70,7 @@ export async function initialOperation(operation,payload,user=game.user){
  for(const ref of activation.effects){const effect=resolve(ref),state=effect&&oceanState(effect),section=sections.find(s=>s.effect===ref),row=rows.find(r=>r.effect===ref);if(!live(effect)||!section||state.instance!==activation.instance)throw Error('A manifestation ended or changed before confirmation.');
   if(row?.target){const target=initialCandidates(effect,user).find(t=>t.uuid===row.target);if(!target)throw Error('An initial target moved out of range or is no longer eligible.');targets.push(describeTarget(target));}selectedEffects.push({effect,previous:flag(effect,'wrathSeaInitialUsed')});
  }
- const unique=[...new Map(targets.map(t=>[t.token,t])).values()],first=resolve(activation.effects[0]),state=oceanState(first),item=resolve(state.sourceItem),activity=values(item?.system.activities).find(a=>a.id==='9U9AoJYvcrCQtIMm');let built;
+ const unique=[...new Map(targets.map(t=>[t.token,t])).values()],first=resolve(activation.effects[0]),state=oceanState(first),item=resolve(state.sourceItem),activity=wrathStrikeActivity(item);let built;
  if(unique.length){const context={item,activity,caster,bearer:caster,token:resolve(activation.source),initial:true};built=strikeData(context);built.data.name='Wrath of the Sea — Initial manifestation';built.data.system.identifier='rsa-wrath-sea-initial';built.data.system.activities[built.id].target.affects.count=String(unique.length);}
  try{await card.setFlag(ID,'wrathOceanInitial',{...activation,used:true,request:payload.request});for(const e of selectedEffects)await e.effect.setFlag(ID,'wrathSeaInitialUsed',activation.instance);}catch(error){await card.setFlag(ID,'wrathOceanInitial',activation);for(const e of selectedEffects)if(flag(e.effect,'wrathSeaInitialUsed')===activation.instance)await e.effect.setFlag(ID,'wrathSeaInitialUsed',e.previous??null);throw error;}
  initialClaims.set(payload.request,{card,before:activation,effects:selectedEffects,user:user.id});if(initialClaims.size>128)initialClaims.delete(initialClaims.keys().next().value);return {...built,actor:caster.uuid,targets:unique};
@@ -83,7 +86,7 @@ export async function initialOceanDialog(activation){
 export function oceanState(effect){
  const bearer=actorOf(effect),state=flag(effect,'wrathSea');if(state)return {...state,instance:state.instance??state.source??effect.uuid,bearer:bearer?.uuid,sourceItem:state.sourceItem??effect.system?.origin?.item};
  if(effect?.name!=='Manifesting Ocean Spray')return null;const item=resolve(effect.system?.origin?.item??effect.origin),caster=item?.actor??bearer,wrath=feature(caster,'wrath-of-the-sea');if(!wrath)return null;
- return {caster:caster.uuid,bearer:bearer.uuid,sourceItem:wrath.uuid,instance:effect.uuid,range:wrathRange(values(wrath.system.activities).find(a=>a.id==='9U9AoJYvcrCQtIMm'))};
+ return {caster:caster.uuid,bearer:bearer.uuid,sourceItem:wrath.uuid,instance:effect.uuid,range:wrathRange(wrathStrikeActivity(wrath))};
 }
 export function promptUsers(actor){return values(game.users).filter(u=>u.isGM||actor?.testUserPermission?.(u,'OWNER')).map(u=>u.id);}
 export async function postOceanPrompt(effect,initial=false,tokenOverride){
@@ -99,7 +102,7 @@ export function strikeContext(card,user=game.user,targetRef){
  const initial=prompt.initial&&prompt.stamp===stamp()&&flag(effect,'wrathSeaInitialUsed')!==state.instance;
  if(game.combat?.started){const acting=game.combat.combatant?.actor?.uuid;if(!initial&&(prompt.stamp!==stamp()||acting!==bearer.uuid))throw Error('Use the current turn’s Wrath of the Sea card.');if(flag(effect,'wrathSeaStrike')?.stamp===stamp()&&flag(effect,'wrathSeaStrike')?.instance===state.instance)throw Error('Wrath of the Sea was already used this turn.');}
  if(!initial&&globalThis.Ugmuls55eAutomationResources?.bonusActionUsed(bearer))throw Error('Bonus Action already used.');
- const activity=values(item.system.activities).find(a=>a.id==='9U9AoJYvcrCQtIMm');if(!activity)throw Error('The original Druid’s Bonus Action Save is unavailable.');
+ const activity=wrathStrikeActivity(item);if(!activity)throw Error('The original Druid’s Bonus Action Save is unavailable.');
  const range=wrathRange(activity),target=targetRef?resolve(targetRef):null;if(targetRef&&!withinWrathRange(token,target,range))throw Error('Choose one visible target within '+range+' feet of the bearer.');return {prompt,effect,state,bearer,token,item,caster,activity,initial,target,range};
 }
 export function strikeData(context){
@@ -139,10 +142,9 @@ export function oceanItemUse(next,...args){
  if(globalThis.Ugmuls55eAutomationBastion?.isItem?.(this))return globalThis.Ugmuls55eAutomationBastion.open(this);
  if(globalThis.Ugmuls55eAutomationRevelation?.isItem?.(this))return globalThis.Ugmuls55eAutomationRevelation.open(this);
  if(globalThis.Ugmuls55eAutomationFont?.isItem?.(this))return globalThis.Ugmuls55eAutomationFont.open(this);
- if(globalThis.Ugmuls55eAutomationAffinity?.isItem?.(this))return globalThis.Ugmuls55eAutomationAffinity.open(this);
  if(globalThis.Ugmuls55eAutomationStars?.isItem?.(this))return globalThis.Ugmuls55eAutomationStars.open(this);
  if(enabled()&&this.actor&&this.type==='feat'&&['wrath-of-the-sea','oceanic-gift','stormborn'].includes(key(this))&&this.system?.source?.rules!=='2014'){
-  const activity=values(this.system.activities).find(activationActivity);if(activity)return oceanDialog(this.actor,activity.getUsageToken?.()).catch(report);
+  const activity=values(this.system.activities).find(activationActivity)??wrathManifestActivity(feature(this.actor,'wrath-of-the-sea'));if(activity)return oceanDialog(this.actor,activity.getUsageToken?.()).catch(report);
  }
  return next(...args);
 }
@@ -157,7 +159,7 @@ export function installOceanItem(Type){
 }
 function report(error){console.error('Oceanic Gift / Wrath of the Sea',error);ui.notifications.error(error.message);}
 Hooks.once('ready',()=>{
- installOceanUse(CONFIG.DND5E.activityTypes?.save?.documentClass);installOceanItem(CONFIG.Item.documentClass);
+ for(const type of ['save','utility'])installOceanUse(CONFIG.DND5E.activityTypes?.[type]?.documentClass);installOceanItem(CONFIG.Item.documentClass);
  Hooks.on('dnd5e.renderChatMessage',renderOceanPrompt);
  for(const event of ['createActiveEffect','updateActiveEffect'])Hooks.on(event,(effect,changes={})=>{if(!authority()||!enabled())return;const state=oceanState(effect);if(!state){if(flag(effect,'bonusActionUsed')||effect.name==='Bonus Action - used')for(const active of effects(actorOf(effect))){const prompt=flag(active,'wrathSeaPrompt');if(live(active)&&prompt?.card)globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(prompt.card));}return;}const previous=flag(effect,'wrathSeaPrompt');if(previous?.card)globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(previous.card));if(event==='createActiveEffect'||changes.disabled===false||changes.flags?.[ID]?.wrathSea||changes['flags.'+ID+'.wrathSea'])postOceanPrompt(effect,true).catch(report);});
  Hooks.on('deleteActiveEffect',effect=>{const prompt=flag(effect,'wrathSeaPrompt');if(prompt?.card)globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(prompt.card));});

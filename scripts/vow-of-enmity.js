@@ -1,6 +1,6 @@
 import {paladinFeatureNotice} from "./paladin-feature-notice.js";
 import {createEventQueue} from "./shared-activity-card.js";
-const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),requests=new Map();let bridge=false;
+const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),requests=new Map(),activations=new WeakMap(),refreshedDialogs=new WeakSet();let bridge=false;
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k);
 const enabled=()=>game.settings.get(ID,"vowOfEnmityAutomation")===true;
 export const vowEffect=actor=>values(actor?.effects).find(e=>flag(e,"vowOfEnmity")&&!e.disabled&&e.active!==false&&!e.duration?.expired&&!e.system?.expired);
@@ -48,11 +48,11 @@ export function vowAttackContext(config,message){
  const recorded=data.system?.targets,targets=recorded?.length?recorded.map(t=>resolve(t.token)).filter(Boolean):values(game.user?.targets).map(t=>t.document??t);
  return {activity,actor,source,target:targets.length===1?targets[0]:null};
 }
-export function vowDefaults(config,dialog,message){
+export function vowDefaults(config,dialog,message,refreshWithoutBridge=false){
  if(!enabled()||config.subject?.type!=="attack")return;
  const {actor,target}=vowAttackContext(config,message),effect=vowEffect(actor),matches=vowMatches(actor,target?.actor);
  if(matches)config.rsaVowSnapshot={effect:effect.uuid,targetActor:target.actor.uuid};
- if(!matches||bridge)return;
+ if(!matches||bridge&&!refreshWithoutBridge)return;
  const dis=config.disadvantage===true||(config.rolls??[]).some(r=>r.options?.disadvantage===true||r.options?.advantageMode===-1);
  config.advantage=true;for(const roll of config.rolls??[]){roll.options??={};roll.options.advantage=true;roll.options.advantageMode=dis?0:1;}
  dialog.options??={};dialog.options.defaultButton=dis?"normal":"advantage";
@@ -70,12 +70,38 @@ async function requestVow(context,transfer){
  const gm=game.users.activeGM;if(!gm||gm.id===game.user.id)return setVow(context.actor,context.source,context.target,{transfer});
  const id=foundry.utils.randomID();return new Promise((resolve,reject)=>{const timer=setTimeout(()=>{requests.delete(id);reject(Error("The GM did not answer the Vow request."));},15000);requests.set(id,{resolve,reject,timer});game.socket.emit("module."+ID,{action:"vowActivate",id,actor:context.actor.uuid,source:context.source?.uuid,target:context.target?.uuid,transfer,user:game.user.id,gm:gm.id});});
 }
-export async function useVowForAttack(app,transfer=false){
- const context=vowAttackContext(app.config,app.message);await requestVow(context,transfer);
- const activity=values(context.actor.items).find(i=>i.id===context.activity.item.id)?.system?.activities?.get(context.activity.id)??context.activity;
- const config={};for(const k of ["ability","attackMode","ammunition","mastery"])if(app.config[k]!==undefined)config[k]=app.config[k];
- const data=foundry.utils.deepClone(app.message?.data??{});delete data._id;delete data.rolls;
- await app.close();const dialog=globalThis.Ugmuls55eAutomationDamage?.configurePromptDialog?.("attack",{configure:true})??{configure:true};return activity.rollAttack(config,dialog,{data});
+export function useVowForAttack(app,transfer=false){
+ if(activations.has(app))return activations.get(app);
+ const task=(async()=>{
+  if(typeof app.rebuild!=='function')throw Error('This attack dialog cannot refresh Vow of Enmity.');
+  const context=vowAttackContext(app.config,app.message);await requestVow(context,transfer);
+  // Never close/restart rollAttack: its original promise owns the usage,
+  // pending-card cancellation and subsequent damage prompt.
+  if(app.rendered===false)return;
+  const current=vowEffect(context.actor);
+  if(!current||!vowMatches(context.actor,context.target?.actor))throw Error('Vow of Enmity changed before this attack could refresh.');
+  app.config.rsaVowSnapshot={effect:current.uuid,targetActor:context.target.actor.uuid};
+  const ac='automated-conditions-5e',states=new Set([app.config[ac],app.config.options?.[ac],...(app.config.rolls??[]).map(r=>r.options?.[ac])].filter(Boolean));
+  if(states.size){
+   // AC5E snapshots reasons when opening the dialog. Add the newly activated
+   // advantage reason to that snapshot, then let its ordinary native rebuild
+   // resolve cancellation, suppression and explicit player choices.
+   for(const state of states){state.subject??={};state.subject.advantage??=[];if(!state.subject.advantage.includes('Vow of Enmity'))state.subject.advantage.push('Vow of Enmity');}
+  }else vowDefaults(app.config,{options:{}},app.message,true);
+  await app.rebuild();
+  refreshedDialogs.add(app);
+  const button=app.element?.querySelector('[data-rsa-vow]');if(button){button.disabled=true;button.textContent='Vow of Enmity — Marked Target';}
+  await app.render?.({parts:['buttons']});return current;
+ })().finally(()=>activations.delete(app));activations.set(app,task);return task;
+}
+export function prepareVowButtons(app,context){
+ if(!refreshedDialogs.has(app))return;
+ const mode=app.rolls?.[0]?.options?.advantageMode;
+ if(mode===undefined)return;
+ // Application options are immutable after construction. Highlight the live
+ // resolved mode in the mutable render context, like other attack helpers.
+ const selected=mode===1?'advantage':mode===-1?'disadvantage':'normal';
+ for(const [key,button]of Object.entries(context.buttons??{}))button.default=key===selected;
 }
 export function addVowButton(app){
  if(!enabled()||app.config?.subject?.type!=="attack")return;
@@ -94,7 +120,7 @@ function report(error){console.error("Vow of Enmity",error);ui.notifications.err
 Hooks.once("init",()=>game.settings.register(ID,"vowOfEnmityAutomation",{name:"Vow of Enmity Assistance",hint:"Activate Vow against the current attack target, spend Channel Divinity and grant source-specific Advantage. Transfer for free if the mark is at 0 HP without resetting its duration. Checks run only during attack setup/use, with no movement refreshes.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerVowRule(usageRules));
 Hooks.once("ready",()=>{
- globalThis.Ugmuls55eAutomationVow={addVowButton,validateVowAttack};registerVowRule();Hooks.on("dnd5e.preRollAttackV2",vowDefaults);
+ globalThis.Ugmuls55eAutomationVow={addVowButton,validateVowAttack,prepareVowButtons};registerVowRule();Hooks.on("dnd5e.preRollAttackV2",vowDefaults);
  game.socket.on("module."+ID,packet=>{
   if(packet?.action==="vowResult"&&packet.user===game.user.id){const p=requests.get(packet.id);if(!p)return;requests.delete(packet.id);clearTimeout(p.timer);packet.error?p.reject(Error(packet.error)):p.resolve(true);return;}
   if(packet?.action!=="vowActivate"||!game.user.isGM||game.users.activeGM?.id!==game.user.id||packet.gm!==game.user.id)return;

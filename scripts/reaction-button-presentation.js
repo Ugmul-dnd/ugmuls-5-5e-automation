@@ -48,6 +48,8 @@ const rules=[
  ['.rsa-illusory-self','illusory-self','Use your Reaction to interpose an illusory duplicate, causing this attack to miss.'],
  // Follow-up abilities are presentation peers, not pre-application reactions.
  // Registering them here must not add a reactive automation hold.
+ ['[data-cleric-potent-vitality]','potent-spellcasting','After dealing Cleric cantrip damage, grant yourself or one creature within 60 feet temporary Hit Points equal to twice your Wisdom modifier.'],
+ ['[data-stars-chalice]','starry-form','After a slot-funded healing spell, heal yourself or another creature within 30 feet for your Starry Form die plus your Wisdom modifier.'],
  ['.rsa-superior-prey','superior-hunters-prey','Once per turn after damaging your marked creature, choose another visible enemy within 30 feet of it and apply the Hunter’s Mark damage already rolled. No additional dice are rolled.'],
  ['.rsa-psionic-strike','psionic-power','Spend one Psionic Energy Die after dealing weapon damage to add your native Psionic Strike damage to this hit.'],
  ['.rsa-hand-of-harm','hand-of-harm','After dealing unarmed damage, add your native Hand of Harm damage. Spend one Focus Point unless this use is free.'],

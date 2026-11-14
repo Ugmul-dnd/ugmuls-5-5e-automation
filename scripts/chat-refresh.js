@@ -2,6 +2,9 @@ import {recentIndexedMessages} from './chat-message-index.js';
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ potentVitality:{setting:'clericPotentVitalityAutomation',types:['usage','damage'],features:['potent-spellcasting','blessed-strikes-potent-spellcasting','improved-blessed-strikes'],activity:'heal',healingType:'temphp',own:true},
+ starryChalice:{setting:'starryFormAutomation',types:['usage','healing'],feature:'starry-form',own:true},
+ elementalAttunement:{setting:'elementalStrikesAutomation',types:['usage','attack','damage'],feature:'elemental-attunement',own:true},
  elementalAdept:{setting:'elementalAdeptAutomation',types:['damage'],effect:/^Elemental Adept — /,own:true},
  mageSlayer:{setting:'mageSlayerAutomation',types:['save'],feature:'mage-slayer',own:true},
  lucky:{setting:'luckyAutomation',types:['attack'],feature:'lucky',incoming:true},
@@ -64,7 +67,7 @@ function actorOf(doc){if(doc?.documentName==="Actor")return doc;return doc?.acto
 function relevant(actor,rule,doc){
  if(!owner(actor))return false;
  const items=[...Array.from(actor.items??[]),...(doc?.documentName==="Item"?[doc]:[])];
- if(rule.features&&!actor.getFlag?.(ID,rule.grant)&&!actor.flags?.[ID]?.[rule.grant]&&!items.some(item=>rule.features.includes(item.identifier??item.system?.identifier)||rule.features.some(f=>item.name?.trim().toLowerCase()===f.replaceAll("-"," "))))return false;
+ if(rule.features&&!(rule.grant&&(actor.getFlag?.(ID,rule.grant)||actor.flags?.[ID]?.[rule.grant]))&&!items.some(item=>(rule.features.includes(item.identifier??item.system?.identifier)||rule.features.some(f=>item.name?.trim().toLowerCase()===f.replaceAll("-"," ")))&&(!rule.activity||Array.from(item.system?.activities?.values?.()??item.system?.activities??[]).some(a=>a.type===rule.activity&&(!rule.healingType||Array.from(a.healing?.types??[]).includes(rule.healingType))))))return false;
  if(rule.feature&&!items.some(item=>(item.identifier??item.system?.identifier)===rule.feature||item.name?.trim().toLowerCase()===rule.feature.replaceAll("-"," ")))return false;
  if(rule.effect&&!Array.from(actor.effects??[]).concat(doc?.documentName==="ActiveEffect"?[doc]:[]).some(effect=>rule.effect.test(effect.name??"")))return false;
  return true;
@@ -89,10 +92,18 @@ export async function flushChatRefresh(){
    const requests=Array.from(pending.values()),cards=new Map(direct);pending.clear();direct.clear();
    // Feature state is recomputed when history cards are rendered again.
    // Keep explicit result/Undo refreshes even when their cards are unmounted.
-   const mounted=requests.length&&globalThis.document?.querySelectorAll?new Set(Array.from(document.querySelectorAll('[data-message-id]'),node=>node.dataset?.messageId).filter(Boolean)):null;
+   const mountedNodes=requests.length&&globalThis.document?.querySelectorAll?Array.from(document.querySelectorAll('[data-message-id]')):null;
+   const mounted=mountedNodes?new Set(mountedNodes.map(node=>node.dataset?.messageId).filter(Boolean)):null,hosts=new Map();
+   // Resource changes do not modify the child message's handoff signature.
+   // Render its visible unified home directly, once, instead of relying on a
+   // hidden standalone child to trigger another origin refresh.
+   for(const node of mountedNodes??[]){
+    const home=node.closest?.('.rsa-unified-attack,.rsa-unified-save'),host=home?.closest?.('.chat-message[data-message-id]');
+    if(host?.dataset?.messageId&&node.dataset?.messageId)hosts.set(node.dataset.messageId,host.dataset.messageId);
+   }
    if(requests.length)for(const card of recentIndexedMessages(100)){
     if(mounted&&!mounted.has(card.id))continue;
-    if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))))cards.set(card.id,card);
+    if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor))))){const host=game.messages?.get?.(hosts.get(card.id))??card;cards.set(host.id,host);}
    }
    const list=Array.from(cards.values());for(let index=0;index<list.length;index+=8){
     // Resolve again at render time: a queued Controlled Chaos/Undo card may have been deleted.

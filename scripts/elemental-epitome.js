@@ -7,6 +7,7 @@ export const epitomeFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&
 const live=e=>e&&!e.disabled&&e.active!==false&&!e.duration?.expired&&!e.system?.expired;
 export function epitomeActive(actor,excludedEffect=null){
  if(!epitomeEnabled()||!epitomeFeature(actor)||["incapacitated","unconscious","stunned","paralyzed","petrified"].some(s=>actor?.statuses?.has(s)))return false;
+ if(!excludedEffect&&globalThis.Ugmuls55eAutomationAttunement?.active)return globalThis.Ugmuls55eAutomationAttunement.active(actor);
  const feature=values(actor?.items).find(i=>key(i)==="elemental-attunement"),use=values(feature?.system?.activities).find(a=>a.type==="enchant");
  if(!feature||!use)return false;
  // Native self-enchantments live on the enchanted item, not necessarily actor.effects.

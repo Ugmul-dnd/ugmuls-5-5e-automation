@@ -8,7 +8,11 @@ export function physicianHarmContext(card){
  if(card?.type!=="damage"||flag(card,"pendingDamage")||!card.rolls?.some(r=>r._evaluated)||flag(card,"physicianPoisonProcessed"))return null;
  const activity=card.getAssociatedActivity?.({scaled:true}),item=activity?.item,actor=card.getAssociatedActor?.()??activity?.actor,physician=physicianFeature(actor);
  const harm=activity?.type==="damage"&&(key(item)==="hand-of-harm"||key(item)==="physicians-touch"&&(activity.id==="BW0d7xkRsDuv075E"||/^hand of harm$/i.test(activity.name??"")));
- return physician&&harm?{actor,physician}:null;
+ // Updated Hand of Harm carries its own native Poisoned effect. Its unified
+ // Apply/Undo workflow owns that effect; the legacy hook must not duplicate it.
+ const configured=key(item)==='hand-of-harm'&&(values(activity?.effects).length>0||values(activity?.appliedEffects).length>0);
+ const nativeHand=key(item)==='hand-of-harm'&&activity.visibility?.identifier==='monk';
+ return physician&&harm&&!configured&&!nativeHand?{actor,physician}:null;
 }
 export function physicianPoisonMarker(actor){return{source:actor.uuid,applied:game.combat?.started?{combat:game.combat.id,round:game.combat.round,turn:game.combat.turn}:null};}
 export function applyPhysicianHarm(card){return enqueue(async()=>{

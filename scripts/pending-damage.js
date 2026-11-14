@@ -135,7 +135,12 @@ export function installPendingDamagePublication(RollClass=CONFIG.Dice.DamageRoll
         if(!pendingDamageCurrent(context)){rolls.splice(0);return;}
         // Prepare native typed message data without creating a second chat card.
         const create=message.create;message.create=false;
-        try{await original.call(this,rolls,config,message);}finally{message.create=create;}
+        // A native follow-up Heal can retain the click on a turn reminder.
+        // BasicRoll.buildPost prefers that event's message over explicit origin,
+        // disconnecting the result from its already-published placeholder. Keep
+        // the recorded usage link while preserving the original roll/event.
+        const publicationConfig=message.data?.system?.origin?{...config,event:undefined}:config;
+        try{await original.call(this,rolls,publicationConfig,message);}finally{message.create=create;}
         const card=game.messages.get(context.cardId);
         if(game.dice3d?.showForRoll){
             // One evaluated pool keeps weapon and rider dice in the same throw.

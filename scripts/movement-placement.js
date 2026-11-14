@@ -24,10 +24,15 @@ export function guardMovementPlacementDamage(config,dialog,message){
 export function renderMovementPlacement(card,html){
  const root=html?.[0]??html;if(!root?.querySelectorAll)return;
  const entries=[{card,root},...Array.from(root.querySelectorAll('.card-summary[data-message-id]'),node=>({card:game.messages.get(node.dataset.messageId),root:node}))];
- for(const entry of entries){if(!entry.card?.getFlag?.(ID,"movementRegionPlacement")&&!entry.card?.getFlag?.(ID,"regionPlacementOnly"))continue;
+ for(const entry of entries){if(entry.card?.isContentVisible===false||!entry.card?.getFlag?.(ID,"movementRegionPlacement")&&!entry.card?.getFlag?.(ID,"regionPlacementOnly"))continue;
+  entry.root.dataset.rsaRegionPlacement='true';
   entry.root.querySelectorAll('[data-action="rollDamage"],[data-forward-action="rollDamage"],[data-action="rollSave"],[data-forward-action="rollSave"]').forEach(button=>button.hidden=true);
+  entry.root.querySelectorAll('effect-application').forEach(tray=>tray.hidden=true);
+  entry.root.querySelectorAll('[data-rsa-retarget],.rsa-save-pending,.rsa-save-setup').forEach(node=>node.remove());
   if(entry.card.getFlag(ID,"pendingCast")||entry.card.getFlag(ID,"targetsConfirmationPending")||entry.root.querySelector('[data-rsa-movement-placement]'))continue;
-  const note=document.createElement("p");note.dataset.rsaMovementPlacement="";note.textContent=entry.card.getFlag(ID,"regionPlacementOnly")?"Area placed — the Region prompts saves when its configured events occur.":"Area placed — damage is rolled only when a creature moves through it.";(entry.root.querySelector('.chat-card')??entry.root).append(note);
+  const activity=entry.card.getAssociatedActivity?.(),cloud=(activity?.item?.identifier??activity?.item?.system?.identifier)==='stinking-cloud'||activity?.item?.name==='Stinking Cloud';
+  const subtitle=entry.root.querySelector('.card-header .subtitle');if(subtitle)subtitle.textContent='Cast — Place Area';
+  const note=document.createElement("p");note.dataset.rsaMovementPlacement="";note.textContent=cloud?"Stinking Cloud cast — template placed. Creatures save at the start of their turns.":entry.card.getFlag(ID,"regionPlacementOnly")?"Area placed — the Region prompts saves when its configured events occur.":"Area placed — damage is rolled only when a creature moves through it.";(entry.root.querySelector('.chat-card')??entry.root).append(note);
  }
 }
 Hooks.once("ready",()=>{

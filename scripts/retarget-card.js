@@ -2,6 +2,8 @@ import { describeTarget, isEligibleTarget, isEligibleHealingTarget, isHealingCar
 const pendingCards = new WeakSet();
 
 export function supportsRetarget(message) {
+    if(message?.getFlag?.('ugmuls-5-5e-automation','unifiedSelfHealing'))return false;
+    if(message?.getFlag?.('ugmuls-5-5e-automation','regionPlacementOnly')||message?.getFlag?.('ugmuls-5-5e-automation','movementRegionPlacement'))return false;
     // A scoped Charm grant allows redirecting the actual enemy attack even
     // when its source item is not accessible to the wizard client.
     if(message?.type==="attack"&&globalThis.Ugmuls55eAutomationInstinctiveCharm?.canRetarget(message,globalThis.game?.user))return true;
@@ -9,13 +11,16 @@ export function supportsRetarget(message) {
     const landPart=globalThis.Ugmuls55eAutomationLandsAid?.part?.(message);if(landPart)return ['usage','healing'].includes(landPart);
     if (!["usage","attack"].includes(message?.type)) return false;
     const activity=message.getAssociatedActivity?.();
+    if(activity?.type==='heal'&&activity.target?.affects?.type==='self')return false;
     if(activity?.type==="enchant")return false; // Native item selection handles enchantment recipients.
     if(globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(message.getAssociatedActivity?.()))return false;
     if(globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(message.getAssociatedActivity?.()))return false;
     const item=message?.getAssociatedItem?.()??message?.getAssociatedActivity?.()?.item;
     if(item?.type==="feat"&&(["aura-of-elemental-shielding","aspect-of-the-wilds"].includes(item.identifier??item.system?.identifier)||/^aura of elemental shielding$/i.test(item.name??"")))return false;
-    if (["manualCheck","check"].includes(message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")?.phase)) return false;
+    // Recurring prompts belong to the recorded effect recipient, including
+    // save-based grapple escapes before and after the optional action starts.
+    if (message?.getFlag?.("ugmuls-5-5e-automation", "recurringTrigger")) return false;
     return ["usage","attack"].includes(message?.type) && (
         ["spell","feat","weapon"].includes(item?.type) ||
         message.getAssociatedActivity?.()?.type === "attack");
@@ -24,6 +29,8 @@ export function supportsRetarget(message) {
 const RETARGET_ID="ugmuls-5-5e-automation";
 export function canRetargetCard(message,user=game.user){
  if(message?.type==='attack'&&isRollAdjustmentLocked(message))return false;
+ if(message?.type==='usage'&&globalThis.Ugmuls55eAutomationUnifiedSave?.scope(message)&&
+  (globalThis.Ugmuls55eAutomationUnifiedSave?.pending?.(message)||message.getFlag?.(RETARGET_ID,'outcomeEffectsApplied')||message.getFlag?.(RETARGET_ID,'effectUndoHistory')?.length||isRollAdjustmentLocked(message)))return false;
  if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.canRetarget(message,user))return true;
  if(user?.isGM||message?.isOwner&&user?.id===game.user.id)return true;
  if(message?.isContentVisible===false||message?.type!=="usage"||!message.getFlag?.(RETARGET_ID,"epitomeStrideDamage"))return false;

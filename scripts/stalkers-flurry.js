@@ -1,5 +1,5 @@
 import {dreadContext,dreadEligible,dreadUsed} from "./dread-ambusher.js";
-import {createEventQueue,describeTarget} from "./shared-activity-card.js";
+import {createEventQueue,describeTarget,nativeActivityVisible} from "./shared-activity-card.js";
 import {redirectRangePoints} from "./deflect-attacks.js";
 const ID="ugmuls-5-5e-automation",channel="module."+ID,choices=new WeakMap(),enqueue=createEventQueue(),operations=createEventQueue(),waiting=new Map(),busy=new Set();
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
@@ -52,8 +52,9 @@ export function fearTargets(target){
  return values(target?.parent?.tokens).filter(t=>t.actor&&!['group','vehicle'].includes(t.actor.type)&&withinFlurryRange(target,t,10)).map(describeTarget);
 }
 export function prepareMassFear(feature,actor,job){
- const native=values(feature.system?.activities).find(a=>a.type==="save"&&/^mass fear$/i.test(a.name??""));if(!native)throw Error("Stalker's Flurry is missing its native Mass Fear save.");
- const data=feature.toObject(),id=native.id,use=data.system.activities[id];data.name="Stalker's Flurry — Mass Fear";data.system.activities={[id]:use};
+ const parent=dreadContext({config:{subject:{actor}}}).feature,source=values(parent?.system?.activities).some(a=>a.type==="save"&&/^mass fear$/i.test(a.name??""))?parent:feature;
+ const native=values(source.system?.activities).find(a=>a.type==="save"&&/^mass fear$/i.test(a.name??"")&&nativeActivityVisible(a,actor));if(!native)throw Error("Stalker's Flurry is missing its native Mass Fear save.");
+ const data=source.toObject(),id=native.id??native._id,use=data.system.activities[id];data.name="Stalker's Flurry — Mass Fear";data.system.activities={[id]:use};
  data.flags??={};data.flags.dnd5e={...data.flags.dnd5e,riders:{activity:[],effect:[],item:[]}};if(use.flags?.dnd5e)delete use.flags.dnd5e.dependentOn;
  const eid="rsaMassFear00001",effect={_id:eid,name:"Mass Fear — Frightened",img:"systems/dnd5e/icons/svg/statuses/frightened.svg",type:"base",disabled:false,transfer:false,origin:feature.uuid,statuses:["frightened"],start:null,duration:{value:null,units:"seconds",expiry:"sourceStart",expired:false},system:{changes:[],origin:{actor:actor.uuid,item:feature.uuid}},flags:{dnd5e:{isTemporary:true},[ID]:{stalkerMassFear:{source:actor.uuid,applied:job.applied}}}};
  data.effects=[effect];use.name="Mass Fear";use.activation={type:"special",override:true};use.consumption={targets:[],spellSlot:false,scaling:{allowed:false}};use.damage={parts:[],onSave:"none"};

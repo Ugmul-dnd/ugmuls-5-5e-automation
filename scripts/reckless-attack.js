@@ -20,7 +20,7 @@ export async function recordAttackTurn(rolls,{subject}={}) {
     await actor.setFlag(MODULE_ID,"recklessAttackTurn",turn);
 }
 export function syncRecklessConditionChoice(config,mode) {
-    const key="automated-conditions-5e",action=mode===0?"normal":"advantage";
+    const key="automated-conditions-5e",action=mode===1?"advantage":mode===-1?"disadvantage":"normal";
     const options=[config.options,...Array.from(config.rolls??[],roll=>roll.options)].filter(Boolean);
     const states=new Set([config[key],...options.map(options=>options[key])].filter(Boolean));
     for(const state of states) {
@@ -35,9 +35,9 @@ export function syncRecklessConditionChoice(config,mode) {
     for(const value of options) {
         value.advantageMode=mode;
         value.advantage=mode===1;
-        value.disadvantage=false;
+        value.disadvantage=mode===-1;
     }
-    config.advantage=mode===1;config.disadvantage=false;
+    config.advantage=mode===1;config.disadvantage=mode===-1;
 }
 export function finalizeRecklessRolls(app,rolls) {
     const mode=recklessSubmissions.get(app);
@@ -47,8 +47,8 @@ export function finalizeRecklessRolls(app,rolls) {
     // Apply the explicit Reckless choice after condition hooks finish, before evaluation.
     for(const roll of rolls??[]) {
         if(roll.evaluated)continue;
-        roll.options.advantage=true;
-        roll.options.disadvantage=mode===0;
+        roll.options.advantage=mode===1;
+        roll.options.disadvantage=mode===-1;
         roll.options.advantageMode=mode;
         roll.options.rsaRecklessSubmission=mode;
         syncRecklessConditionChoice({rolls:[roll]},mode);
@@ -65,8 +65,8 @@ export function completeRecklessConfiguration(rolls,config) {
         // after the dialog closes. Restore this submission's explicit choice
         // at the last configuration hook, immediately before evaluation.
         delete roll.options.rsaRecklessSubmission;
-        roll.options.advantage=true;
-        roll.options.disadvantage=mode===0;
+        roll.options.advantage=mode===1;
+        roll.options.disadvantage=mode===-1;
         roll.options.advantageMode=mode;
         roll.configureModifiers();
     }
@@ -138,13 +138,11 @@ function strengthAttack(config,roll=config.rolls?.[0]) {
 }
 export function recklessDefaults(config,dialog,message,force=false) {
     if(!enabled()||config.subject?.type!=="attack"||(!force&&conditionBridge&&game.modules?.get("automated-conditions-5e")?.active))return;
-    const actor=attackActor(config,message);
     const descriptors=message?.data?.system?.targets;
     const targets=Array.isArray(descriptors)?descriptors.map(target=>fromUuidSync(target.token,{strict:false})?.actor).filter(Boolean):
         Array.from(game.user.targets??[],token=>(token.document??token).actor).filter(Boolean);
-    const own=strengthAttack(config)&&recklessEffects(actor).length>0;
     const incoming=targets.length>0&&targets.every(target=>recklessEffects(target).length>0);
-    if(!own&&!incoming)return;
+    if(!incoming)return;
     config.advantage=true;
     for(const roll of config.rolls??[]) {
         roll.options??={};
@@ -162,11 +160,9 @@ export function recklessDefaults(config,dialog,message,force=false) {
 export function registerRecklessConditions(api=globalThis.ac5e?.usageRules) {
     if(!game.modules?.get("automated-conditions-5e")?.active||typeof api?.register!=="function")return false;
     try {
-        const own=api.register({key:"rsaRecklessAttack",scope:"universal",hook:"attack",target:"subject",mode:"advantage",name:"Reckless Attack",persistent:false,
-            evaluate:sandbox=>enabled()&&sandbox.ability?.str===true&&recklessEffects(fromUuidSync(sandbox.actorUuid,{strict:false})).length>0});
         const incoming=api.register({key:"rsaRecklessTarget",scope:"universal",hook:"attack",target:"subject",mode:"advantage",name:"Reckless target",persistent:false,
             evaluate:sandbox=>enabled()&&!!sandbox.opponentActorUuid&&recklessEffects(fromUuidSync(sandbox.opponentActorUuid,{strict:false})).length>0});
-        conditionBridge=!!(own&&incoming);
+        conditionBridge=!!incoming;
     } catch(err){conditionBridge=false;console.warn("Ugmuls 5.5e Automation | Reckless condition integration failed:",err);}
     return conditionBridge;
 }
@@ -175,6 +171,22 @@ export function prepareRecklessButtons(app,context) {
     if(config?.subject?.type!=="attack")return;
     const selected=recklessDefaults({...config,rolls:app.rolls??config.rolls},{options:{}},app.message);
     if(selected)for(const [key,button]of Object.entries(context.buttons??{}))button.default=key===selected;
+}
+export function nativeRecklessMode(app){
+    const config=app.config,activity=config.subject,actor=attackActor(config,app.message),options=app.rolls?.[0]?.options??config.rolls?.[0]?.options??{};
+    const ability=options.ability??config.ability,attackMode=options.attackMode??config.attackMode;
+    const field=globalThis.dnd5e?.dataModels?.shared?.D20RollModificationField;
+    if(!field?.combineFields||!activity.getRollData||!activity.getActionType)return undefined;
+    // Re-read the system's current rules after activating the native effect.
+    // Only the native feature can grant outgoing Advantage; this is the same
+    // model/context used by AttackActivity.rollAttack, without starting a new roll.
+    const native=field.combineFields(actor.system,[
+        'abilities.'+ability+'.attack.roll','rolls.attack','rolls.attack.'+activity.getActionType(attackMode)
+    ],{rules:{category:'attack',actor,item:activity.item,rollData:activity.getRollData({roll:{ability,attackMode}})}});
+    const state=options['automated-conditions-5e']??config.options?.['automated-conditions-5e']??config['automated-conditions-5e'],counts=state?.modeCounts;
+    const disadvantage=native.disadvantage||(counts?!!(counts.disadvantages?.present||counts.noAdvantages?.present||state.explicitModeOverride?.action==='disadvantage'):!!(config.disadvantage||options.disadvantage||options.advantageMode===-1));
+    const advantage=native.advantage||(counts?!!(counts.advantages?.present||state.explicitModeOverride?.action==='advantage'):!!(config.advantage||options.advantage));
+    return advantage&&!disadvantage?1:disadvantage&&!advantage?-1:0;
 }
 export function addRecklessButton(app) {
     if(!enabled()||app.config?.subject?.type!=="attack")return;
@@ -194,8 +206,11 @@ export function addRecklessButton(app) {
             await activateReckless(actor);
             if(!app.rendered)return;
             const config={...app.config,rolls:app.rolls??app.config.rolls};
-            const selected=recklessDefaults(config,{options:{}},app.message,true)??"advantage";
-            const mode=selected==="normal"?0:1;
+            const mode=nativeRecklessMode(app);
+            // Leave the dialog open if native recalculation is unavailable;
+            // do not invent an outgoing advantage when the native rule is absent.
+            if(mode===undefined){await app.rebuild?.();return;}
+            const selected=mode===1?'advantage':mode===-1?'disadvantage':'normal';
             recklessSubmissions.set(app,mode);
             syncRecklessConditionChoice(app.config,mode);
             syncRecklessConditionChoice(config,mode);
@@ -204,7 +219,7 @@ export function addRecklessButton(app) {
     });wrapper.prepend(button);
 }
 Hooks.once("init",()=>game.settings.register(MODULE_ID,"recklessAttackAutomation",{
-    name:"Reckless Attack Assistance",hint:"Offer Reckless beside Advantage only on the first attack of your turn, using Strength, for characters with the feature. Apply the feature's effect until next turn start and recommend advantage for attacks against Reckless creatures.",scope:"world",config:true,type:Boolean,default:true
+    name:"Reckless Attack Assistance",hint:"Offer Reckless beside Advantage only on the first attack of your turn, using Strength, for characters with the feature. Apply the feature's effect until next turn start and recommend advantage for attacks against Reckless creatures. The native feature owns outgoing Advantage.",scope:"world",config:true,type:Boolean,default:true
 }));
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerRecklessConditions(usageRules));
 Hooks.once("ready",()=>{

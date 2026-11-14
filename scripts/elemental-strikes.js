@@ -3,13 +3,14 @@ const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),choices=new WeakMap
 const flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],resolve=ref=>ref?globalThis.fromUuidSync?.(ref,{strict:false}):null;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 const enabled=()=>game.settings.get(ID,"elementalStrikesAutomation")===true;
+const elementalAttack=(activity,actor)=>activity?.type==='attack'&&(activity.id==='xCHcv0MDt4mopzrp'||/^elemental strike$/i.test(activity.name??'')||globalThis.Ugmuls55eAutomationAttunement?.active(actor)&&globalThis.Ugmuls55eAutomationAttunement?.unarmed(activity));
 export const elementalFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="elemental-attunement"&&i.system?.source?.rules!=="2014");
 export function elementalContext(app){
  const data=app.message?.data??{},pending=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(app),activity=app.config?.subject,actor=activity?.actor??activity?.item?.actor,feature=elementalFeature(actor);
  const id=data.flags?.[ID]?.damageAttackId??flag(pending,"damageAttackId"),ref=data.system?.origin??pending?.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
  const attack=(id?game.messages.get(id):null)??(origin?.type==="attack"?origin:values(origin?.getAssociatedRolls?.("attack")).filter(a=>a.timestamp<=(pending?.timestamp??Infinity)).sort((a,b)=>b.timestamp-a.timestamp)[0]);
  const targets=data.system?.targets?.length?data.system.targets:pending?.system?.targets??[],target=targets.length===1?resolve(targets[0].token):null;
- return enabled()&&feature&&actor?.isOwner&&activity?.type==="attack"&&(activity.id==="xCHcv0MDt4mopzrp"||/^elemental strike$/i.test(activity.name??""))&&target?.actor&&attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)?{actor,feature,attack,target}:null;
+ return enabled()&&feature&&actor?.isOwner&&elementalAttack(activity,actor)&&target?.actor&&attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)?{actor,feature,attack,target}:null;
 }
 export function addElementalChoice(app){
  if(!elementalContext(app)||app.element.querySelector('[data-rsa-elemental-motion]'))return;
@@ -39,14 +40,14 @@ export function resolveElemental(card){return enqueue(async()=>{
  if(globalThis.Ugmuls55eAutomationStunning?.stunningSaveReady(card)===false||globalThis.Ugmuls55eAutomationGrapple?.grappleSaveReady(card)===false)return;
  const stun=game.messages.get(flag(card,"stunningStrikeSave"));if(stun&&game.settings.get(ID,"autoApplySavedEffects")===true&&stun.system?.outcomes?.get(flag(stun,"stunningStrike")?.targetToken)==="failure"&&!flag(stun,"outcomeEffectsApplied"))return;
  const actor=card.getAssociatedActor?.(),feature=elementalFeature(actor),attack=game.messages.get(job.attack),target=resolve(job.target),activity=card.getAssociatedActivity?.();
- if(actor?.uuid!==job.actor||feature?.uuid!==job.feature||!["push","pull"].includes(job.choice)||!target?.actor||!card.system?.targets?.some(t=>t.token===target.uuid)||!attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)||activity?.type!=="attack"||!(activity.id==="xCHcv0MDt4mopzrp"||/^elemental strike$/i.test(activity.name??"")))return;
+ if(actor?.uuid!==job.actor||feature?.uuid!==job.feature||!["push","pull"].includes(job.choice)||!target?.actor||!card.system?.targets?.some(t=>t.token===target.uuid)||!attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)||!elementalAttack(activity,actor))return;
  const {data,id}=prepareElementalSave(feature,job.choice),helper=new CONFIG.Item.documentClass(data,{parent:actor});helper.prepareFinalAttributes?.();
  const result=await helper.system.activities.get(id).use({consume:false,subsequentActions:false,create:{measuredTemplate:false}},{configure:false},{data:{system:{targets:card.system.targets},flags:{dnd5e:{item:{data}},[ID]:{riderTriggered:true,activityOverrideData:data,elementalMotionSave:{source:card.id,choice:job.choice}}}}});
  if(!result?.message)throw Error("Elemental Push/Pull could not create its saving throw card.");await card.setFlag(ID,"elementalMotionResolved",{message:result.message.id,choice:job.choice});
 });}
 function report(error){console.error("Elemental Push/Pull",error);ui.notifications.error(error.message);}
 export function renderElementalMotion(card,html){const choice=flag(card,"elementalMotionSave")?.choice;if(!choice)return;const root=html?.querySelector?html:html?.[0];if(!root||card.isContentVisible===false||root.querySelector('.rsa-elemental-motion-note'))return;const note=document.createElement('p');note.className='rsa-elemental-motion-note';note.textContent='Elemental '+(choice==='push'?'Push':'Pull')+': on a failed Strength save, move the target up to 10 feet '+(choice==='push'?'away from':'toward')+' the Monk. Movement is manual.';root.append(note);}
-Hooks.once("init",()=>game.settings.register(ID,"elementalStrikesAutomation",{name:"Elemental Strike Push / Pull",hint:"Offer None/Push/Pull beneath Grapple in Elemental Strike damage configuration. Elemental damage prompts the native Strength save with a direction label. No extra Focus cost; movement stays manual.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"elementalStrikesAutomation",{name:"Elemental Attunement & Strikes",hint:"Show an Elemental Attunement buff while the native activation is active. Empowered and Unarmed Strikes gain elemental damage choices and reach, with optional Push/Pull using the native Strength save. No extra Focus cost; movement stays manual.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
  globalThis.Ugmuls55eAutomationElementalMotion={addElementalChoice,finalizeElemental};
  for(const event of ['createChatMessage','updateChatMessage'])Hooks.on(event,card=>{if(flag(card,'elementalMotion'))resolveElemental(card).catch(report);const ref=card.system?.origin,origin=typeof ref==='string'?game.messages.get(ref.replace(/^ChatMessage\./,'')):ref,link=flag(card,'stunningStrike')??flag(origin,'stunningStrike')??flag(card,'grappleStrike')??flag(origin,'grappleStrike');if(link?.damageId){const source=game.messages.get(link.damageId);if(flag(source,'elementalMotion'))resolveElemental(source).catch(report);}});

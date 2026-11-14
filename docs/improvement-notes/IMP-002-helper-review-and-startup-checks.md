@@ -41,10 +41,10 @@ The automated tests exercise the actual helper's discovery/cache behavior. The u
 | --- | --- | --- | --- |
 | [ ] | [Blessing of Moonlight](../../scripts/blessing-of-moonlight.js) | Authoritative ready-time discovery before `syncMoonlightRecovery`. | Reload with an existing eligible Bard; inspect feature recovery setup and perform the normal qualifying Moonlight workflow. |
 | [x] | [Elemental Adept](../../scripts/elemental-adept.js) | Ready-time and option-change discovery before feature synchronization/refresh. | Reload with an existing eligible Actor; check its selected damage-type setup and a matching damage roll. If testing option changes, restore the intended setting afterward. |
-| [x] | [Font of Inspiration](../../scripts/font-of-inspiration.js) | Recovery setup pass calls discovery before queued `syncFontRecovery`. | Reload with an eligible Bard and inspect the expected feature recovery configuration; verify the normal recovery path. |
+| [x] | Font of Inspiration (retired) | Recovery helper removed after updated PHB native Short Rest recovery was verified. | No startup consumer remains; use updated Bardic Inspiration feature data. |
 | [x] | [Hills Tumble](../../scripts/hills-tumble.js) | Ready-time and enabled-option-change discovery before owned-item synchronization. | Reload with the eligible feature already owned; inspect its setup and run a normal qualifying use. Check an unlinked token Actor where practical. |
 | [x] | [Inspired Eclipse](../../scripts/inspired-eclipse.js) | Ready-time discovery before synchronizing matching owned features. | Reload with an eligible feature already present; inspect its normal controls and run a qualifying workflow. |
-| [x] | [Warding Flare](../../scripts/warding-flare.js) | Ready-time discovery before queued `syncFlareRecovery` on matching Clerics. | Reload with an eligible Cleric, including Improved Flare if available; inspect recovery setup and a normal qualifying reaction. |
+| [x] | [Warding Flare](../../scripts/warding-flare.js) | Recovery helper and ready-time discovery retired; reaction workflow retained. | Use native feature recovery; verify the reaction and Improved Flare temporary HP sequence. |
 
 For a representative feature, include an unlinked/synthetic Actor and a later explicit recovery/setting pass. Discovery includes all scenes, so the current canvas alone must not determine which Actors exist in the snapshot. Do not change feature authority or settings just to force every ready handler to run on every client.
 

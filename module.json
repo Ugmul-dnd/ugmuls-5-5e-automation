@@ -30,7 +30,7 @@
         "type": "system",
         "compatibility": {
           "minimum": "6.0.5",
-          "verified": "6.0.6"
+          "verified": "6.1.0"
         }
       }
     ],
@@ -75,7 +75,6 @@
     "scripts/effect-automation.js",
     "scripts/shield-reaction.js",
     "scripts/reckless-attack.js",
-    "scripts/innate-sorcery.js",
     "scripts/savage-attacker.js",
     "scripts/great-weapons.js",
     "scripts/tavern-brawler.js",
@@ -165,6 +164,7 @@
     "scripts/corona-of-light.js",
     "scripts/weird-conditions.js",
     "scripts/unified-attack-card.js",
+    "scripts/unified-save-card.js",
     "scripts/reaction-button-presentation.js"
   ],
   "styles": [

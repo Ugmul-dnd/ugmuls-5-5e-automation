@@ -194,6 +194,7 @@ export function hideUndoneGraze(message,root) {
 export function showPendingSaves(message,root) {
     if(message.type!=="usage"||message.getAssociatedActivity?.()?.type!=="save")return;
     root.querySelectorAll(".rsa-save-pending").forEach(row=>row.remove());
+    if(message.getFlag?.(MODULE_ID,'regionPlacementOnly')||message.getFlag?.(MODULE_ID,'movementRegionPlacement'))return;
     const requested=new Set(message.getFlag?.(MODULE_ID,"requestedSaveTargets")??[]);
     if(!requested.size)return;
     const summaries=[...root.querySelectorAll(".card-summary[data-target-uuid]")];
@@ -252,7 +253,7 @@ export async function rollAttackCardDamage(attack,event) {
     const usage=typeof origin === "string" ? game.messages.get(origin) : origin;
     const activity=usage?.getAssociatedActivity?.();
     if (!usage || !activity || (!game.user.isGM && !usage.isOwner) || linkedAttackDamage(attack).length) return;
-    if(activity.item?.type==='spell'&&globalThis.Ugmuls55eAutomationDamage?.rollSpellAttackDamage)return globalThis.Ugmuls55eAutomationDamage.rollSpellAttackDamage(activity,usage,attack,event);
+    if(activity.item?.type&&activity.item.type!=='weapon'&&globalThis.Ugmuls55eAutomationDamage?.rollSpellAttackDamage)return globalThis.Ugmuls55eAutomationDamage.rollSpellAttackDamage(activity,usage,attack,event);
     const hook=Hooks.on("dnd5e.preRollDamageV2",(config,dialog,data)=>{
         if (config.subject?.uuid !== activity.uuid) return;
         data.data ??= {};data.data.system ??= {};data.data.flags ??= {};
@@ -362,6 +363,8 @@ function refreshOrigin(message){
         const signature=JSON.stringify([game.messages.get(message.id)!==undefined,rollCardVisible(message),message._dice3danimating===true,message._stats?.modifiedTime,(message.rolls??[]).map(roll=>roll.total)]);
         if(handoffStates.get(message.id)===signature)return;handoffStates.set(message.id,signature);
         globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
+        const application=globalThis.Ugmuls55eAutomationUnifiedSave?.supports?.(card)&&globalThis.Ugmuls55eAutomationUnifiedSave?.source?.(card);
+        if(application&&application!==card)globalThis.Ugmuls55eAutomationChatRefresh?.card(application);
         if(message.type==="damage")for(const attack of card.getAssociatedRolls?.("attack")??[])globalThis.Ugmuls55eAutomationChatRefresh?.card(attack);
     });
 }

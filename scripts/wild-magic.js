@@ -1,5 +1,5 @@
 import {createEventQueue} from './shared-activity-card.js';
-import {isSorcererSpell} from './innate-sorcery.js';
+import {isSorcererSpell} from './shared-sorcerer.js';
 const ID='ugmuls-5-5e-automation',TABLE='Compendium.dnd-players-handbook.tables.RollTable.phbWildMagicSurg',queues=new Map(),waiting=new Map(),receipts=new Map(),wired=new WeakSet();
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],enabled=()=>game.settings.get(ID,'wildMagicAutomation')===true;
 const resolve=r=>{try{return typeof r==='string'?globalThis.fromUuidSync?.(r,{strict:false}):r;}catch{return null;}},authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),owns=(a,u)=>!!a&&!!u?.active&&(u.isGM||a.testUserPermission?.(u,'OWNER'));

@@ -3,6 +3,7 @@ import {effectUndoSources,applyEffectWithUndo,attackEffectState} from './damage-
 import {regionManagesCardEffect} from './region-library.js';
 const ID='ugmuls-5-5e-automation',enqueue=createEventQueue();
 const flag=(card,key)=>card?.getFlag?.(ID,key)??card?.flags?.[ID]?.[key];
+const harmDamage=(usage,activity)=>activity?.type==='damage'&&(!!flag(usage,'handOfHarm')||(activity.item?.identifier??activity.item?.system?.identifier)==='hand-of-harm');
 const origin=card=>typeof card?.system?.origin==='string'?game.messages.get(card.system.origin.replace(/^ChatMessage\./,'')):card?.system?.origin;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
 export function hitEffectSources(card){
@@ -40,13 +41,14 @@ export function applyDamageLinkedEffects(card,actorUuids){return enqueue(async()
  if(globalThis.Ugmuls55eAutomationUndoAttackApplication?.pending?.(card))return 0;
  if(!authority()||card?.type!=='damage')return 0;
  const candidates=effectUndoSources(card),attack=candidates.find(c=>c.type==='attack'),usage=attack?origin(attack):origin(card),activity=(attack??usage)?.getAssociatedActivity?.({scaled:true});
- if(!usage||!['attack','save'].includes(activity?.type)||flag(usage,'manualEffectDecision'))return 0;
+ const harm=harmDamage(usage,activity);
+ if(!usage||(!['attack','save'].includes(activity?.type)&&!harm)||flag(usage,'manualEffectDecision')||harm&&!flag(card,'hpApplicationRecorded'))return 0;
  const state=attack?attackEffectState(attack):usage;
  const saving=activity.type==='save',source=attack??card,allowed=new Set(actorUuids),hits=new Set((attack?.system?.evaluatedTargets??[]).filter(t=>t.isMiss===false).map(t=>t.token)),effects=(await activity.getApplicableEffects?.()??[]).filter(e=>!regionManagesCardEffect(activity,e));
  if(!effects.length)return 0;const tray=document.createElement('effect-application');tray.chatMessage=usage;if(typeof tray._applyEffectToActor!=='function')throw Error('Native effect application is unavailable.');
  const ledger=new Set(flag(attack,'automaticEffectApplications')??[]),plan=[];let applied=0,pending=false,eligible=false;
  for(const target of card.system?.targets??[]){
-  if(!saving&&!hits.has(target.token))continue;
+  if(activity.type==='attack'&&!hits.has(target.token))continue;
   const outcome=saving?usage.system?.outcomes?.get(target.token):null;if(saving&&!['success','failure'].includes(outcome)){pending=true;continue;}
   const token=await fromUuid(target.token,{strict:false}),actor=token?.actor;if(!actor||target.actor&&actor.uuid!==target.actor)continue;
   const decision=globalThis.Ugmuls55eAutomationEffectPolicy?.reason(activity,effects,actor,outcome);if(decision){await globalThis.Ugmuls55eAutomationEffectPolicy.hold(card,decision);pending=true;continue;}
@@ -65,12 +67,13 @@ export function applyDamageLinkedEffects(card,actorUuids){return enqueue(async()
  refresh(card,[{attack:source,usage}]);return applied;
 });}
 export async function reapplyHitEffectsAfterDamage(card,actorUuids,user=game.user,{automatic=false}={}){
+ if(globalThis.Ugmuls55eAutomationUnifiedSave?.pending(card))return 0; // Combined save Apply owns its selected effects after HP commits.
  if(!authority()||!user?.active||card?.type!=='damage'||flag(card,'masteryGraze')||(!automatic&&!flag(card,'hpApplicationRecorded')))return 0;
  const allowed=[];for(const uuid of new Set(Array.isArray(actorUuids)?actorUuids:[])){const actor=await fromUuid(uuid,{strict:false});if(actor?.system?.attributes?.hp&&(user.isGM||actor.testUserPermission?.(user,'OWNER')))allowed.push(uuid);}
  if(!allowed.length)return 0;
  // This runs after the shared HP/Undo queue has committed. Calling the effect
  // helper from inside that queue would deadlock its own Undo-record writes.
- try{const attack=effectUndoSources(card).find(c=>c.type==='attack'),coupled=globalThis.Ugmuls55eAutomationUnifiedAttack?.supports(card)||attack?.getAssociatedActivity?.({scaled:true})?.type==='attack'&&game.settings?.get(ID,'autoApplyHitEffects')===true;if(automatic)return coupled?await applyDamageLinkedEffects(card,allowed):0;if(coupled||globalThis.Ugmuls55eAutomationReactive?.enabled())return await applyDamageLinkedEffects(card,allowed);if(!hitEffectSources(card).length)return 0;return await reapplyHitEffects(card,game.user,{actorUuids:allowed});}catch(error){const attack=effectUndoSources(card).find(c=>c.type==='attack'),usage=attack?attackEffectState(attack):origin(card);if(usage)await usage.update({['flags.'+ID+'.outcomeEffectsApplied']:false,['flags.'+ID+'.effectApplyReopened']:Date.now(),['flags.'+ID+'.manualDamageWorkflow']:true});refresh(card,[{attack:attack??card,usage}]);console.error('Damage applied; hit-effect reapplication failed',error);ui.notifications.error('Damage was applied, but its hit effects could not be restored. Retry the effect application from this card.');return 0;}
+ try{const attack=effectUndoSources(card).find(c=>c.type==='attack'),usage=origin(card),harm=harmDamage(usage,usage?.getAssociatedActivity?.({scaled:true}))&&game.settings?.get(ID,'autoApplyHitEffects')===true,coupled=harm||globalThis.Ugmuls55eAutomationUnifiedAttack?.supports(card)||attack?.getAssociatedActivity?.({scaled:true})?.type==='attack'&&game.settings?.get(ID,'autoApplyHitEffects')===true;if(automatic)return coupled?await applyDamageLinkedEffects(card,allowed):0;if(coupled||globalThis.Ugmuls55eAutomationReactive?.enabled())return await applyDamageLinkedEffects(card,allowed);if(!hitEffectSources(card).length)return 0;return await reapplyHitEffects(card,game.user,{actorUuids:allowed});}catch(error){const attack=effectUndoSources(card).find(c=>c.type==='attack'),usage=attack?attackEffectState(attack):origin(card);if(usage)await usage.update({['flags.'+ID+'.outcomeEffectsApplied']:false,['flags.'+ID+'.effectApplyReopened']:Date.now(),['flags.'+ID+'.manualDamageWorkflow']:true});refresh(card,[{attack:attack??card,usage}]);console.error('Damage applied; hit-effect reapplication failed',error);ui.notifications.error('Damage was applied, but its hit effects could not be restored. Retry the effect application from this card.');return 0;}
 }
 export function renderHitEffectReapply(message,html){
  const root=html?.[0]??html;if(!root?.querySelectorAll||!game.user.isGM)return;const entries=[{card:message,root}];for(const node of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(node.dataset.messageId);if(card&&!node.hidden)entries.push({card,root:node});}

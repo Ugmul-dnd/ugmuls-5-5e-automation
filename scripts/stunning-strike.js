@@ -82,7 +82,13 @@ export function stunningSaveReady(damage){
     const save=game.messages.get(id),target=save?.getFlag?.(ID,"stunningStrike")?.targetToken;
     return !!target&&["success","failure"].includes(save.system.outcomes?.get(target));
 }
-export async function applyStunningOutcome(usage,{manual=false}={}){
+const saveOutcomeTasks=new Map();
+export const settleSaveOutcome=usage=>saveOutcomeTasks.get(usage?.id)??Promise.resolve();
+export function applyStunningOutcome(usage,options={}){
+ if(saveOutcomeTasks.has(usage?.id))return saveOutcomeTasks.get(usage.id);
+ const task=applyStunningOutcomeWork(usage,options).finally(()=>saveOutcomeTasks.delete(usage?.id));saveOutcomeTasks.set(usage?.id,task);return task;
+}
+async function applyStunningOutcomeWork(usage,{manual=false}={}){
     const link=usage?.getFlag?.(ID,"stunningStrike");
     if(!authority()||!link||applying.has(usage.id)||!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
     if(!manual&&usage.getFlag(ID,"outcomeEffectsApplied"))return;
@@ -104,6 +110,7 @@ export async function applyStunningOutcome(usage,{manual=false}={}){
     applying.add(usage.id);
     try{
         if(!manual)await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);
+        if(!manual&&(usage.getFlag(ID,'manualDamageWorkflow')||globalThis.Ugmuls55eAutomationUnifiedSave?.pending(usage)))return;
         const tray=document.createElement('effect-application');tray.chatMessage=usage;
         const prepare=tray._prepareEffectData;
         tray._prepareEffectData=async function(effect,target){
@@ -177,7 +184,7 @@ function report(error){console.error("Ugmuls 5.5e Automation | Stunning Strike:"
 Hooks.once("init",()=>game.settings.register(ID,"stunningStrikeAutomation",{name:"Stunning Strike Assistance",hint:"Offer Stunning Strike on Monk weapon and Unarmed Strike hit damage. Costs 1 Focus Point, once per turn; prompts the native Constitution save and applies the appropriate outcome with damage.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerStunningConditions(usageRules));
 Hooks.once("ready",()=>{
-    globalThis.Ugmuls55eAutomationStunning={addStunningChoice,finalizeStunning,commitStunning,stunningSaveReady,applyStunningOutcome};registerStunningConditions();
+    globalThis.Ugmuls55eAutomationStunning={addStunningChoice,finalizeStunning,commitStunning,stunningSaveReady,applyStunningOutcome,settle: settleSaveOutcome};registerStunningConditions();
     Hooks.on("dnd5e.preRollAttackV2",stunningAttackDefaults);
     for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>{schedule(card);if(event==="createChatMessage")consumeOpening(card).catch(report);});
     Hooks.on("renderChatMessageHTML",schedule);Hooks.on("dnd5e.renderChatMessage",renderStunning);

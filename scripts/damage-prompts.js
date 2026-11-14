@@ -93,12 +93,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                 const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted,{preview:true})??transmuted;
                 const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave,{preview:this._rsaPreview===true})??grave;
                 const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant,{preview:this._rsaPreview===true})??radiant;
-                const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant,{preview:this._rsaPreview===true})??savant;
-                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity,{preview:true})??affinity;
+                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,savant,{preview:true})??savant;
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation,{preview:true})??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision,{preview:true})??precision;
-                const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
-                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple,{preview:true})??disciple;
+                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,druid,{preview:true})??druid;
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit,{preview:true})??spirit;
                 const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
                 const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
@@ -151,12 +149,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                     const grave=globalThis.Ugmuls55eAutomationGraveTouched?.finalizeGrave(this,transmuted)??transmuted;
                     const radiant=globalThis.Ugmuls55eAutomationRadiantSoul?.finalizeRadiant(this,grave)??grave;
                     const savant=globalThis.Ugmuls55eAutomationSavant?.finalizeSavant(this,radiant)??radiant;
-                const affinity=globalThis.Ugmuls55eAutomationAffinity?.finalizeAffinity(this,savant)??savant;
-                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,affinity)??affinity;
+                const evocation=globalThis.Ugmuls55eAutomationEvocation?.finalizeEvocation(this,savant)??savant;
                 const precision=globalThis.Ugmuls55eAutomationPrecision?.finalizePrecision(this,evocation)??evocation;
                 const druid=globalThis.Ugmuls55eAutomationDruidDamage?.finalizeDruid(this,precision)??precision;
-                const disciple=globalThis.Ugmuls55eAutomationDisciple?.finalize(this,druid)??druid;
-                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,disciple)??disciple;
+                const spirit=globalThis.Ugmuls55eAutomationEmpoweredChanneling?.finalize(this,druid)??druid;
                 const lunar=globalThis.Ugmuls55eAutomationLunarVitality?.finalize(this,spirit)??spirit;
                 const featRolls=globalThis.Ugmuls55eAutomationWeaponFeats?.finalizePiercer(this,lunar)??lunar;
                 const greatRolls=globalThis.Ugmuls55eAutomationGreatWeapons?.finalizeGreatWeapons(this,featRolls)??featRolls;
@@ -172,12 +168,12 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "attack") globalThis.Ugmuls55eAutomationStudied?.prepareStudiedButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationTactics?.prepareTacticsButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationReckless?.prepareRecklessButtons(this,prepared);
-                if(kind === "attack") globalThis.Ugmuls55eAutomationInnateSorcery?.prepareInnateButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationZealous?.prepareZealousButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationWeird?.prepareWeirdButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationOutlined?.prepareOutlinedButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationDuplicity?.prepareDuplicityButtons(this,prepared);
                 if(kind === "attack") globalThis.Ugmuls55eAutomationGuidingBolt?.prepareGuidingButtons(this,prepared);
+                if(kind === "attack") globalThis.Ugmuls55eAutomationVow?.prepareVowButtons(this,prepared);
                 return prepared;
             }
             _onRender(context,options) {
@@ -215,12 +211,10 @@ export function configurePromptDialog(kind, dialog = {}) {
                 if(kind === "damage") globalThis.Ugmuls55eAutomationJolt?.addJoltChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationPrecision?.addPrecisionChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationDruidDamage?.addDruidChoices(this);
-                if(kind === "damage") globalThis.Ugmuls55eAutomationDisciple?.addNote(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationEmpoweredChanneling?.addChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationLunarVitality?.addChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationFirearm?.addFirearmChoice(this);
                 if(kind === "damage") {globalThis.Ugmuls55eAutomationSavant?.addSavantChoice(this);globalThis.Ugmuls55eAutomationEvocation?.addEvocationChoice(this);globalThis.Ugmuls55eAutomationOverchannel?.addOverchannelChoice(this);}
-                if(kind === "damage") globalThis.Ugmuls55eAutomationAffinity?.addAffinityChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationRadiantSoul?.addRadiantTarget(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBrutal?.addBrutalDamageChoice(this);
                 if(kind === "damage") globalThis.Ugmuls55eAutomationBattleMaster?.addManeuverChoice(this);
@@ -275,7 +269,6 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,options);
                         await globalThis.Ugmuls55eAutomationEvocation?.commitEvocation(this,options);
                         await globalThis.Ugmuls55eAutomationOverchannel?.commitOverchannel(this,options);
-                        await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,options);
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,options);
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,options);
                         await globalThis.Ugmuls55eAutomationEmpoweredChanneling?.commit(this,options);
@@ -288,7 +281,6 @@ export function configurePromptDialog(kind, dialog = {}) {
                         await globalThis.Ugmuls55eAutomationSavant?.commitSavant(this,{});
                         await globalThis.Ugmuls55eAutomationEvocation?.commitEvocation(this,{});
                         await globalThis.Ugmuls55eAutomationOverchannel?.commitOverchannel(this,{});
-                        await globalThis.Ugmuls55eAutomationAffinity?.commitAffinity(this,{});
                         await globalThis.Ugmuls55eAutomationPrecision?.commitPrecision(this,{});
                         await globalThis.Ugmuls55eAutomationDruidDamage?.commitDruid(this,{});
                         await globalThis.Ugmuls55eAutomationLifedrinker?.commitLifedrinker(this,{});
@@ -410,14 +402,15 @@ export function recommendAttackCritical(config,dialog,attack){
 }
 export async function rollSpellAttackDamage(activity,usage,attack,event=null){
     const scaled=usage.getAssociatedActivity?.({scaled:true})??activity;
-    if(scaled?.type!=='attack'||scaled.item?.type!=='spell'||!attack||(!game.user.isGM&&!scaled.item.isOwner))throw Error('This spell attack is not yours to roll.');
+    if(scaled?.type!=='attack'||!scaled.item||!attack||(!game.user.isGM&&!scaled.item.isOwner))throw Error('This attack is not yours to roll.');
     // Native chat Damage chooses the last attack under a usage. Beams need
     // their own recorded target/critical result, using the already-scaled cast
     // activity without another item use or spell-slot consumption.
     const isCritical=attack.rolls?.[0]?.isCritical===true&&scaled.damage?.critical?.allow!==false;
+    const flurry=attack.getFlag?.(MODULE_ID,'flurryOfBlows');
     return scaled.rollDamage({event,ability:attack.system?.ability,attackMode:attack.system?.mode,isCritical},
         configurePromptDialog('damage',{configure:true,options:{defaultButton:isCritical?'critical':'normal'}}),
-        {data:{system:{origin:usage.id,targets:attack.system.targets},flags:{[MODULE_ID]:{damageAttackId:attack.id}}}});
+        {data:{system:{origin:usage.id,targets:attack.system.targets},flags:{[MODULE_ID]:{damageAttackId:attack.id,...(flurry?{flurryOfBlows:flurry}:{})}}}});
 }
 export function damageAlreadyRolled(message,attack){
     const cards=attack?linkedHpCards(attack):message.getAssociatedRolls?.('damage')??[];
@@ -468,7 +461,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         // attack animation played. Avoid opening a redundant dialog.
         if(damageAlreadyRolled(message,attack))return;
         opened.add(key);
-        if(attack&&activity.item?.type==='spell'){
+        if(attack&&activity.item?.type&&activity.item.type!=='weapon'){
             await rollSpellAttackDamage(activity,message,attack);return;
         }
         const {ability, ammunitionItem: ammunition, mode: attackMode} = attack?.system ?? {};

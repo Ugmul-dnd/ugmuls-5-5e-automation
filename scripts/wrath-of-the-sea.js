@@ -1,15 +1,17 @@
-import {createEventQueue,describeTarget,isEligibleTarget,isEligibleHealingTarget} from './shared-activity-card.js';
+import {createEventQueue,describeTarget,isEligibleTarget,isEligibleHealingTarget,nativeActivityVisible} from './shared-activity-card.js';
 const ID='ugmuls-5-5e-automation',wrapped=new WeakSet(),enqueue=createEventQueue(),activating=new Set(),finished=new Set();
 const values=v=>v?.values?Array.from(v.values()):Array.isArray(v)?v:Object.values(v??{}),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
 const enabled=()=>game.settings.get(ID,'wrathSeaAutomation')===true,live=e=>e&&!e.disabled&&!e.isSuppressed&&!e.duration?.expired&&e.active!==false;
 const resolve=r=>{try{return typeof r==='string'?globalThis.fromUuidSync?.(r,{strict:false}):r;}catch{return null;}};
+export const wrathManifestActivity=(item,{other=false,actor=item?.actor}={})=>values(item?.system?.activities).find(a=>(a.id??a._id)===(other?'ituofBRxXKLI7wNW':'nNTYj4vqURV4Dhjt')&&nativeActivityVisible(a,actor));
+export const wrathStrikeActivity=item=>values(item?.system?.activities).find(a=>(a.id??a._id)==='9U9AoJYvcrCQtIMm'&&nativeActivityVisible(a,item?.actor));
 export const wrathActivity=a=>enabled()&&a?.type==='save'&&a.item?.type==='feat'&&key(a.item)==='wrath-of-the-sea'&&a.item.system?.source?.rules!=='2014'&&['nNTYj4vqURV4Dhjt','9U9AoJYvcrCQtIMm'].includes(a.id);
 export const wrathInitial=a=>wrathActivity(a)&&a.id==='nNTYj4vqURV4Dhjt';
 export const wrathEffect=actor=>values(actor?.effects).find(e=>live(e)&&flag(e,'wrathSea'));
 const incapacitated=a=>['incapacitated','unconscious','dead','paralyzed','petrified','stunned'].some(s=>a?.statuses?.has(s));
 export function wrathRange(activity){
- const raw=activity._source?.target?.template?.size??activity._rsaWrathRange??activity.target?.template?.size??activity.range?.value,data=activity.getRollData?.()??activity.actor?.getRollData?.()??activity.item?.actor?.getRollData?.()??{};
- const value=Number(CONFIG.Dice.BasicRoll.replaceFormulaData(String(raw??''),data,{missing:0}));if(!Number.isFinite(value)||value<=0)throw Error('Wrath of the Sea’s native range scale is unavailable.');return value;
+ const manifest=wrathManifestActivity(activity.item),raw=[activity._source?.target?.template?.size,activity.target?.template?.size,manifest?._source?.target?.template?.size,manifest?.target?.template?.size,activity._rsaWrathRange,activity.range?.value].find(v=>v!=null&&String(v).trim()!==''),data=activity.getRollData?.()??activity.actor?.getRollData?.()??activity.item?.actor?.getRollData?.()??{};
+ const formula=CONFIG.Dice.BasicRoll.replaceFormulaData(String(raw??''),data,{missing:0}),numeric=Number(formula),value=Number.isFinite(numeric)?numeric:CONFIG.Dice.BasicRoll.safeEval(formula);if(!Number.isFinite(value)||value<=0)throw Error('Wrath of the Sea’s native range scale is unavailable.');return value;
 }
 export function prepareWrathActivity(activity){
  if(!wrathActivity(activity))return;const range=wrathRange(activity);activity._rsaWrathRange=range;
@@ -23,7 +25,7 @@ export function withinWrathRange(source,target,feet,{sight=true,healing=false}={
  const grid=source.parent?.grid,size=Number(grid?.size);if(!Number.isFinite(size)||!source.object?.center||!target.object?.center)return false;
  const a=source.object.center,b=target.object.center,clamp=(v,c,w)=>Math.max(c-Math.max(0,w-1)*size/2,Math.min(v,c+Math.max(0,w-1)*size/2));
  const first={x:clamp(b.x,a.x,source.width??1),y:clamp(b.y,a.y,source.height??1)},last={x:clamp(first.x,b.x,target.width??1),y:clamp(first.y,b.y,target.height??1)};
- const distance=canvas.grid.measurePath([first,last]).distance,convert=globalThis.dnd5e?.utils?.convertLength,limit=convert?convert(feet,'ft',grid.units,{strict:false}):feet*(/^(m|meters?|metres?)$/i.test(grid.units??'ft')?0.3048:1);
+ const distance=canvas.grid.measurePath([first,last]).distance,convert=globalThis.dnd5e?.utils?.convertLength,version=(game.system?.version??'6.1').split('.').map(Number),modern=version[0]>6||version[0]===6&&version[1]>=1,converted=convert?(modern?convert(feet,'ft',{to:grid.units,strict:false,legacy:false}):convert(feet,'ft',grid.units,{strict:false})):null,limit=convert?(modern?converted.value:converted):feet*(/^(m|meters?|metres?)$/i.test(grid.units??'ft')?0.3048:1);
  return Number.isFinite(distance)&&distance<=limit&&(!sight||!source.object.checkCollision?.(b,{type:'sight',mode:'any'}));
 }
 export function validateWrathTargets(activity,targets,{initial=wrathInitial(activity)}={}){
@@ -40,9 +42,13 @@ export function prepareWrathUse(activity,usage,dialog,message){
 }
 export function guardWrathConsumption(activity,usage,message){if(!wrathActivity(activity))return;try{validateWrathTargets(activity,message.data?.system?.targets??game.user.targets);}catch(error){ui.notifications.warn(error.message);return false;}}
 export function wrathBuffData(activity,card,bearer=activity.actor??activity.item.actor){
- const actor=activity.actor??activity.item.actor,native=values(activity.item.effects).find(e=>e.id==='mFMQIrMCCZdgYPMk'||e.name==='Manifesting Ocean Spray');if(!native)throw Error('Wrath of the Sea is missing its native duration effect.');
- const storm=values(actor.items).find(i=>i.type==='feat'&&key(i)==='stormborn'&&i.system?.source?.rules!=='2014'),bonus=values(storm?.effects).find(e=>e.name==='Stormborn'),data=native.toObject();delete data._id;delete data.folder;
- Object.assign(data,{disabled:false,transfer:false,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),origin:activity.item.uuid});data.system={...data.system,changes:[...values(data.system?.changes),...values(bonus?.system?.changes)].map(c=>({...c})),origin:{actor:actor.uuid,item:activity.item.uuid,message:card.uuid}};
+ const actor=activity.actor??activity.item.actor,legacy=values(activity.item.effects).find(e=>e.id==='mFMQIrMCCZdgYPMk'||e.name==='Manifesting Ocean Spray'),profile=values(activity.effects).find(p=>nativeActivityVisible({visibility:{identifier:'druid',level:p.level}},actor)),native=legacy??values(activity.item.effects).find(e=>(e.id??e._id)===(profile?._id??profile?.id));
+ const storm=values(actor.items).find(i=>i.type==='feat'&&key(i)==='stormborn'&&i.system?.source?.rules!=='2014'),bonus=legacy?values(storm?.effects).find(e=>e.name==='Stormborn'):native;
+ const duration=activity.duration,units=duration?.units,tracking=duration&&Number(duration.value)>0?{value:Number(duration.value),units:units.endsWith('s')?units:units+'s',expiry:duration.expiry??null,expired:false}:null;
+ if(!native&&!tracking)throw Error('Wrath of the Sea is missing its native duration.');
+ const data=native?native.toObject():{name:'Manifesting Ocean Spray',img:activity.item.img,type:'base',duration:tracking,system:{changes:[]}};delete data._id;delete data.folder;
+ if(!legacy)data.name='Manifesting Ocean Spray';
+ Object.assign(data,{disabled:false,transfer:false,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),origin:activity.item.uuid});data.system={...data.system,changes:[...values(data.system?.changes),...(legacy?values(bonus?.system?.changes):[])].map(c=>({...c})),origin:{actor:actor.uuid,item:activity.item.uuid,message:card.uuid}};
  data.flags={...data.flags,dnd5e:{...data.flags?.dnd5e,isTemporary:true},[ID]:{...data.flags?.[ID],wrathSea:{caster:actor.uuid,bearer:bearer.uuid,source:card.uuid,range:wrathRange(activity),stormborn:!!bonus}}};return data;
 }
 export async function finishWrathUse(activity,usage,results){

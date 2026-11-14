@@ -5,8 +5,51 @@ import {shotCount} from './multi-shot-attacks.js';
 
 const ID='ugmuls-5-5e-automation';
 const applicationTrayStates=new WeakMap(),boundApplicationTrays=new WeakSet();
+const boundCasterNames=new WeakSet();
+const rollDetailStates=new WeakMap(),boundRollDetails=new WeakSet();
 const origin=card=>typeof card?.system?.origin==='string'?game.messages.get(card.system.origin.replace(/^ChatMessage\./,'')):card?.system?.origin;
 const rolls=(card,type)=>Array.from(card.getAssociatedRolls?.(type)??[]);
+export function restoreRollDetails(card,summary){
+    if(card?.isContentVisible===false||summary.hidden)return;
+    let states=rollDetailStates.get(card);if(!states){states=[];rollDetailStates.set(card,states);}
+    for(const [index,button]of Array.from(summary.querySelectorAll('button.dice-roll')).entries()){
+        const popover=button.nextElementSibling?.matches?.('.roll-breakdown[popover]')?button.nextElementSibling:null;
+        const state=states[index]??={};
+        if(state.expanded!==undefined)button.classList.toggle('expanded',state.expanded);
+        if(!boundRollDetails.has(button)){
+            boundRollDetails.add(button);
+            // Keep native click/default popover handling. Only remember this
+            // viewer's choice; a queued unified render must not discard it.
+            button.addEventListener('click',()=>queueMicrotask(()=>{
+                if(button.isConnected!==false)state.expanded=button.classList.contains('expanded');
+            }));
+            popover?.addEventListener('beforetoggle',event=>{
+                if(popover.isConnected!==false)state.open=event.newState==='open';
+            });
+        }
+        if(!popover||state.open!==true)continue;
+        // Native showPopover requires a connected element. Rendering is still
+        // detached here; restore once after insertion without another render.
+        (globalThis.requestAnimationFrame??(callback=>setTimeout(callback,0)))(()=>{
+            if(popover.isConnected!==true||summary.hidden||state.open!==true||popover.matches(':popover-open'))return;
+            popover.showPopover({source:button});
+        });
+    }
+}
+export function moveUnifiedControls(summary,child,footer){
+    const group=document.createElement('div');group.dataset.messageId=child.id;group.className='rsa-unified-control-group';
+    // Move native nodes with their handlers and recorded source identity.
+    // Attack, save and healing layouts must use the same exclusions.
+    for(const button of summary.querySelectorAll('button')){
+        if(!button.closest('.rsa-attack-actions')&&!globalThis.Ugmuls55eAutomationReactive?.isControl?.(button))continue;
+        if(button.matches('[data-rsa-retarget]')||button.closest('[data-rsa-save-modes],[data-rsa-damage-modes],damage-application'))continue;
+        let controls=button.closest('.rsa-attack-actions');
+        if(!controls){controls=button;while(controls.parentElement!==summary&&globalThis.Ugmuls55eAutomationReactive?.isControl?.(controls.parentElement))controls=controls.parentElement;}
+        if(controls===summary||controls===summary.querySelector('.chat-card'))group.append(button);
+        else if(!group.contains(controls))group.append(controls);
+    }
+    if(group.children.length)footer.append(group);
+}
 export function mergeAttackTags(usageFace,attackFace){
     const properties=face=>face?.querySelector('.icon-row .fa-tag')?.closest('.icon-row')?.querySelector('ul.pills');
     const source=properties(usageFace),destination=properties(attackFace);
@@ -29,11 +72,13 @@ export function mergeAttackTags(usageFace,attackFace){
 }
 export function unifiedAttackScope(card){
     if(game.settings.get(ID,'simplifyAttackCards')!==true||card?.type!=='usage'||card.isContentVisible===false)return null;
-    const activity=card.getAssociatedActivity?.(),attacks=rolls(card,'attack'),damage=rolls(card,'damage');
+    const activity=card.getAssociatedActivity?.(),attacks=rolls(card,'attack'),damage=rolls(card,'damage').filter(result=>
+        !(result.getFlag?.(ID,'masteryGraze')&&result.getFlag?.(ID,'masteryGrazeUndone')&&!result.getFlag?.(ID,'hpApplicationRecorded')&&
+            !result.getFlag?.(ID,'damageUndoHistory')?.length&&!result.getFlag?.(ID,'effectUndoHistory')?.length));
     const spell=activity?.item?.type==='spell';
-    if(activity?.type!=='attack'||!['weapon','spell'].includes(activity.item?.type)||rolls(card,'save').length||rolls(card,'healing').length)return null;
-    if(!spell&&(card.system?.targets?.length!==1||attacks.length>1))return null;
-    if(!attacks.length&&(damage.length||(card.system?.targets?.length??0)>1))return null;
+    if(activity?.type!=='attack'||!activity.item||rolls(card,'save').length||rolls(card,'healing').length)return null;
+    if(activity.item.type==='weapon'&&(attacks.length>1||attacks.length&&card.system?.targets?.length!==1))return null;
+    if(!attacks.length&&damage.length)return null;
     if(attacks.some(attack=>attack.system?.targets?.length!==1))return null;
     const groups=attacks.map(attack=>({attack,damage:[]}));
     for(const result of damage){
@@ -42,10 +87,29 @@ export function unifiedAttackScope(card){
         // timestamps or the viewer's current target selection.
         const group=explicit?groups.find(g=>g.attack.id===explicit):groups.length===1?groups[0]:null;
         if(!group)return null;
-        if(spell&&(result.system?.targets?.length!==1||result.system.targets[0].token!==group.attack.system.targets[0].token))return null;
+        if(activity.item.type!=='weapon'&&(result.system?.targets?.length!==1||result.system.targets[0].token!==group.attack.system.targets[0].token))return null;
         group.damage.push(result);
     }
     return {attack:attacks[0],damage,groups,spell};
+}
+
+export async function renderAttackSetup(card,activity,{targets=card.system?.targets??[],rolling=false}={}){
+    const item=activity.item,modes=item.system?.attackModes??[],saved=item.getFlag?.('dnd5e',`last.${activity.id}.attackMode`);
+    const mode=modes.find(m=>m.value===saved)?.value??modes[0]?.value;
+    const masteryKey=item.getFlag?.('dnd5e',`last.${activity.id}.mastery`),mastery=CONFIG.DND5E?.weaponMasteries?.[masteryKey];
+    // Native markup and live cast data, without creating an attack document,
+    // evaluating dice or guessing hit/miss before a result actually exists.
+    const context={header:{item,activity,subtitle:activity.name},
+        rows:{properties:{entries:(activity.getActionLabel?.(mode)??[]).map(label=>({label})),icon:'fa-solid fa-tag',label:'DND5E.CHATMESSAGE.Row.Properties'}},
+        targets:targets.map(target=>({...target,showAC:false,showResult:false})),rolls:[],
+        ...(mastery?{mastery:{label:mastery.label,reference:mastery.reference}}:{})};
+    const row=document.createElement('div');row.className='icon-row rsa-attack-setup-roll';
+    const icon=document.createElement('i');icon.className='fa-fw fa-solid fa-dice';icon.setAttribute('aria-hidden','true');
+    const label=document.createElement('div');label.className='rsa-unified-pending rsa-attack-setup-dice';label.setAttribute('role','status');
+    label.setAttribute('aria-label',rolling?'Pending — rolling attack':'Pending — roll setup');
+    label.textContent='---PENDING---';row.append(icon,label);
+    const template=CONFIG.ChatMessage?.dataModels?.attack?.metadata?.template??'systems/dnd5e/templates/chat/attack-card.hbs';
+    return await foundry.applications.handlebars.renderTemplate(template,context)+row.outerHTML;
 }
 
 export async function renderUnifiedAttack(wrapped,options={}){
@@ -55,6 +119,12 @@ export async function renderUnifiedAttack(wrapped,options={}){
     container.querySelectorAll('.card-summary[data-message-id]').forEach(node=>node.remove());
     container.classList.add('rsa-unified-attack');
     const activity=card.getAssociatedActivity?.(),total=shotCount(activity,card);
+    if(!scope.groups.length){
+        const preparation=document.createElement('div');preparation.className='card-summary rsa-roll-attack rsa-attack-preparation';
+        try{preparation.innerHTML=await renderAttackSetup(card,card.getAssociatedActivity?.({scaled:true})??activity);}
+        catch(error){console.error('Ugmuls 5.5e Automation | Attack setup render failed; retaining native card.',error);return html;}
+        container.append(preparation);
+    }
     for(const [index,group]of scope.groups.entries()){
         const instance=document.createElement('section');instance.className='rsa-attack-instance';instance.dataset.rsaAttackId=group.attack.id;
         if(total>1||scope.groups.length>1){
@@ -63,9 +133,18 @@ export async function renderUnifiedAttack(wrapped,options={}){
         }
         for(const child of [group.attack,...group.damage]){
             if(child.visible===false||child.isContentVisible===false)continue;
-            const row=document.createElement('div');row.className=`card-summary rsa-roll-${child.type}`;row.dataset.messageId=child.id;
-            if(child._dice3danimating&&game.settings.get('dice-so-nice','immediatelyDisplayChatMessages')!==true){
-                const pending=document.createElement('p');pending.className='rsa-unified-pending';pending.textContent=`Pending — rolling ${child.type}`;row.append(pending);
+            const animating=child._dice3danimating&&game.settings.get('dice-so-nice','immediatelyDisplayChatMessages')!==true;
+            const row=document.createElement('div');row.className=`card-summary rsa-roll-${child.type}`;
+            // DsN hides nested [data-message-id] results while animating. This
+            // attack face contains only neutral setup, not a revealed result;
+            // leave it outside that selector until the actual result is shown.
+            if(animating&&child.type==='attack')row.dataset.rsaPendingAttackId=child.id;
+            else row.dataset.messageId=child.id;
+            if(animating){
+                if(child.type==='attack'){
+                    try{row.innerHTML=await renderAttackSetup(card,child.getAssociatedActivity?.({scaled:true})??activity,{targets:child.system.targets,rolling:true});}
+                    catch(error){console.error('Ugmuls 5.5e Automation | Attack animation setup render failed; retaining native card.',error);return html;}
+                }else{const pending=document.createElement('p');pending.className='rsa-unified-pending';pending.textContent=`Pending — rolling ${child.type}`;row.append(pending);}
             }else {
                 try {row.innerHTML=await child.system.render({summary:false});}
                 catch(error){console.error('Ugmuls 5.5e Automation | Unified attack render failed; retaining native cards.',error);return html;}
@@ -78,9 +157,9 @@ export async function renderUnifiedAttack(wrapped,options={}){
 }
 
 export function supportsUnifiedApplication(damage){
-    if(damage?.type!=='damage'||damage.getFlag?.(ID,'masteryGraze'))return false;
+    if(damage?.type!=='damage')return false;
     const scope=unifiedAttackScope(origin(damage));
-    return !!scope?.groups.some(group=>group.damage.length===1&&group.damage[0].id===damage.id);
+    return !!scope?.groups.some(group=>(group.damage.length===1||damage.getFlag?.(ID,'masteryGraze'))&&group.damage.some(result=>result.id===damage.id));
 }
 export function supportsUnifiedAttack(attack){
     if(attack?.type!=='attack')return false;
@@ -105,9 +184,12 @@ export function restoreApplicationTray(card,tray){
     // Viewer-local presentation only. Recompute application state from live
     // histories; never use this memory as an authority/adjustment-lock cache.
     const applied=!!card.getFlag?.(ID,'hpApplicationRecorded')||(card.getFlag?.(ID,'damageUndoHistory')??[]).length>0;
+    const reopened=card.getFlag?.(ID,'damageApplyReopened')??null;
     let state=applicationTrayStates.get(card);
-    if(!state||state.applied!==applied){
-        state={applied,open:applied?false:card.getFlag?.(ID,'damageApplyReopened')?true:tray.open};
+    // Undo's history writes can render before its final reopen receipt. Consume
+    // each receipt once, even if applied already became false in that gap.
+    if(!state||state.applied!==applied||!applied&&reopened&&state.reopened!==reopened){
+        state={applied,reopened,open:applied?false:reopened?true:tray.open};
         applicationTrayStates.set(card,state);
     }
     tray.open=state.open;
@@ -128,11 +210,14 @@ export function combineApplicationControls(card,home,scope){
     }
     for(const summary of home.querySelectorAll('.card-summary[data-message-id]')){
         const damage=game.messages.get(summary.dataset.messageId);if(!supportsUnifiedApplication(damage))continue;
-        const hp=damage.getFlag?.(ID,'hpApplicationRecorded')||(damage.getFlag?.(ID,'damageUndoHistory')??[]).length>0;
-        const effects=[damage,scope.attack,...(card.getAssociatedActivity?.()?.item?.type==='spell'?[]:[card])].some(source=>(source.getFlag?.(ID,'effectUndoHistory')??[]).length>0);
+        const graze=damage.getFlag?.(ID,'masteryGraze');
+        const hp=damage.getFlag?.(ID,'hpApplicationRecorded')||(damage.getFlag?.(ID,'damageUndoHistory')??[]).length>0||
+            graze&&!damage.getFlag?.(ID,'masteryGrazeUndone')&&(damage.getFlag?.(ID,'automaticDamageTargets')??[]).length>0;
+        const effects=!graze&&[damage,scope.attack,...(card.getAssociatedActivity?.()?.item?.type==='weapon'?[card]:[])].some(source=>(source.getFlag?.(ID,'effectUndoHistory')??[]).length>0);
         summary.classList.toggle('rsa-unified-applied',!!hp);
-        home.querySelectorAll('[data-rsa-undo-damage],[data-rsa-undo-effect]').forEach(button=>button.remove());
-        for(const button of home.querySelectorAll('[data-rsa-reapply-hit-effects]')){
+        const undoRoot=graze?summary:home;
+        for(const button of undoRoot.querySelectorAll?.(graze?'[data-rsa-undo-damage]':'[data-rsa-undo-damage],[data-rsa-undo-effect]')??[])button.remove();
+        for(const button of graze?[]:home.querySelectorAll('[data-rsa-reapply-hit-effects]')){
             if(!hp)button.remove();
             else {button.textContent='Retry Apply';button.dataset.tooltip='Retry remaining effects without applying damage again.';}
         }
@@ -166,6 +251,48 @@ export function restoreStandaloneChildren(card){
         }
     }
 }
+export function canViewAttackDescription(card,user=game.user){
+    if(card?.isContentVisible===false)return false;
+    if(user?.isGM)return true;
+    const actor=card?.getAssociatedActor?.(),token=card?.getAssociatedToken?.();
+    return !!actor&&(actor.hasPlayerOwner===true||token?.disposition===(globalThis.CONST?.TOKEN_DISPOSITIONS?.FRIENDLY??1));
+}
+export function presentUnifiedNames(card,root,home){
+    // Reuse only the viewer-enriched text already rendered in this usage card.
+    // Never fetch item/GM descriptions or enrich secrets independently here.
+    const description=home.querySelector(':scope > .chat-card .card-description .wrapper');
+    const allowed=canViewAttackDescription(card),text=description?.innerHTML?.trim();
+    for(const name of home.querySelectorAll('.rsa-roll-attack > .chat-card .card-header .name-stacked > .title')){
+        if(allowed&&text){name.dataset.tooltip=text;name.dataset.tooltipClass='dnd5e2 rsa-attack-description-tooltip';name.dataset.rsaAttackDescription='true';}
+        else if(name.dataset.rsaAttackDescription){delete name.dataset.tooltip;delete name.dataset.tooltipClass;delete name.dataset.rsaAttackDescription;}
+    }
+    const sender=root.querySelector('.message-sender'),name=sender?.querySelector('.name-stacked')??sender;
+    // Native usage headers attach hover to the avatar; compact styling hides
+    // that avatar. Bind the visible name to the same native token handlers.
+    // Headers already bound on the sender continue using their native listener.
+    if(!name||sender?.dataset.tokenUuid||boundCasterNames.has(name)||card.isContentVisible===false)return;
+    const actor=card.getAssociatedActor?.(),token=card.getAssociatedToken?.();
+    if(!token||typeof card._onTargetHoverIn!=='function'||typeof card._onTargetHoverOut!=='function')return;
+    if(actor)name.dataset.actorUuid=actor.uuid;name.dataset.tokenUuid=token.uuid;
+    name.addEventListener('pointerover',card._onTargetHoverIn.bind(card));
+    name.addEventListener('pointerout',card._onTargetHoverOut.bind(card));
+    boundCasterNames.add(name);
+}
+export function renderFlurryLabels(card,root){
+    if(!root?.querySelectorAll||!['attack','usage'].includes(card?.type))return;
+    const entries=[{card,node:root}];
+    for(const node of root.querySelectorAll('.card-summary[data-message-id],.card-summary[data-rsa-pending-attack-id]')){
+        const attack=game.messages.get(node.dataset.messageId??node.dataset.rsaPendingAttackId);if(attack)entries.push({card:attack,node});
+    }
+    for(const {card:attack,node}of entries){
+        if(attack?.type!=='attack'||attack.isContentVisible===false)continue;
+        const meta=attack.getFlag?.(ID,'flurryOfBlows'),number=meta?.attackNumber,total=meta?.attackTotal;
+        if(!Number.isInteger(number)||!Number.isInteger(total)||number<1||number>total)continue;
+        if(node.querySelector('[data-rsa-flurry-label]'))continue;
+        const label=document.createElement('div');label.className='rsa-attack-label';label.dataset.rsaFlurryLabel='true';label.textContent=`Flurry ${number} of ${total}`;
+        (node.querySelector('.chat-card')??node).prepend(label);
+    }
+}
 function finishUnifiedAttack(card,root){
     const home=root.querySelector('.rsa-unified-attack');
     if(!home){restoreStandaloneChildren(card);return;}
@@ -173,6 +300,7 @@ function finishUnifiedAttack(card,root){
     const scope=unifiedAttackScope(card);if(!scope)return;
     home.dataset.rsaUnifiedFinished='true';
     root.classList.add('rsa-unified-action');
+    presentUnifiedNames(card,root,home);
     const face=home.querySelector(':scope > .chat-card');
     // Native child results own their native header and target pills. Keep the
     // usage face while preparing; after publication use the attack face once.
@@ -182,6 +310,16 @@ function finishUnifiedAttack(card,root){
         attackFace.classList.add('rsa-unified-primary-face');
         face.hidden=true;
         face.dataset.rsaUnifiedUsage='true';
+    }
+    home.querySelectorAll('.rsa-pending-cast,.rsa-attack-awaiting-result').forEach(node=>node.remove());
+    const preparation=home.querySelector('.rsa-attack-preparation');
+    if(preparation){
+        // These remain real usage-card controls with their original handlers.
+        // Pending-cast owns hiding/cancellation; no synthetic result controls.
+        for(const controls of face?.querySelectorAll('.card-buttons,.rsa-attack-actions')??[])preparation.append(controls);
+        addRetargetButton(card,preparation);
+        const retarget=preparation.querySelector('[data-rsa-retarget]');
+        if(retarget)preparation.querySelector('ul.targets')?.closest('.icon-row')?.append(retarget);
     }
     if(scope.groups.every(group=>group.damage.length<=1)&&!card.getFlag?.(ID,'manualEffectDecision'))for(const tray of home.querySelectorAll('effect-application')){tray.hidden=true;tray.dataset.rsaUnifiedEffects='true';}
     for(const groupScope of scope.groups){
@@ -203,22 +341,9 @@ function finishUnifiedAttack(card,root){
                 if(summary.hidden)continue;
                 for(const tray of summary.querySelectorAll('damage-application'))restoreApplicationTray(child,tray);
             }
+            restoreRollDetails(child,summary);
             hideLockedReactionControls(child,summary);
-            const group=document.createElement('div');group.dataset.messageId=child.id;group.className='rsa-unified-control-group';
-            // Move existing controls rather than recreate their handlers. The
-            // source identity survives outside its result summary.
-            for(const button of summary.querySelectorAll('button')){
-                if(!button.closest('.rsa-attack-actions')&&!globalThis.Ugmuls55eAutomationReactive?.isControl?.(button))continue;
-                if(button.matches('[data-rsa-retarget]')||button.closest('[data-rsa-save-modes],[data-rsa-damage-modes],damage-application'))continue;
-                let control=button.closest('.rsa-attack-actions');
-                if(!control){
-                    control=button;
-                    while(control.parentElement!==summary&&globalThis.Ugmuls55eAutomationReactive?.isControl?.(control.parentElement))control=control.parentElement;
-                }
-                if(control===summary||control===summary.querySelector('.chat-card'))group.append(button);
-                else if(!group.contains(control))group.append(control);
-            }
-            if(group.children.length)footer.append(group);
+            moveUnifiedControls(summary,child,footer);
         }
         if(footer.children.length)instance.append(footer);
     }
@@ -244,5 +369,6 @@ Hooks.once('ready',()=>{
             const represented=unifiedAttackScope(parent)&&document.querySelector(`.rsa-unified-attack .card-summary[data-message-id="${card.id}"]`);
             if(represented){root.hidden=true;root.dataset.rsaUnifiedChild='true';}
         }
+        renderFlurryLabels(card,root);
     });
 });

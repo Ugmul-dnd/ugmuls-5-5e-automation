@@ -48,6 +48,45 @@
 .rsa-unified-controls .rsa-attack-actions { width:auto; margin:0; }
 .rsa-unified-controls button { width:auto; min-height:24px; font-size:11px; padding:3px 6px; }
 .rsa-unified-pending { font-size:12px; opacity:.8; text-align:center; margin:4px; }
+.rsa-unified-save .card-summary { margin:4px 0; padding:3px 0 3px 5px; }
+/* These casts declare an area; outcomes belong to its later event cards. */
+[data-rsa-region-placement] effect-application,
+[data-rsa-region-placement] recorded-targets,
+[data-rsa-region-placement] .icon-row:has(> .fa-shield-heart),
+[data-rsa-region-placement] .icon-row:has(> .fa-bullseye),
+[data-rsa-region-placement] .icon-row:has(> .fa-circle-play) { display:none !important; }
+/* Color each action stage rather than carrying the save border around damage. */
+.rsa-unified-save-action.rsa-save-usage { border-left:0 !important; }
+.rsa-unified-save-action.rsa-save-usage .rsa-unified-save > .chat-card,
+.rsa-unified-save-action.rsa-save-usage .rsa-unified-save > effect-application,
+.rsa-unified-save-action.rsa-save-usage .card-summary.rsa-roll-save { border-left:3px solid #57a8ed !important; }
+.rsa-unified-save-action.rsa-save-usage .rsa-unified-save > .chat-card { padding-left:5px; }
+.rsa-unified-save-action.rsa-save-usage .rsa-unified-save > effect-application { margin-inline:0; padding-left:5px; }
+.rsa-unified-save .rsa-roll-damage > .chat-card > .card-header,
+.rsa-unified-save .rsa-roll-healing > .chat-card > .card-header,
+.rsa-unified-save .rsa-roll-usage > .chat-card > .card-header,
+.rsa-unified-save .rsa-roll-usage > .chat-card > .card-description,
+.rsa-unified-save damage-application .apply-button,
+.rsa-unified-save effect-application .apply-button,
+.rsa-unified-save > .chat-card .card-description[hidden],
+.rsa-unified-save > .chat-card .card-header .chevron,
+.chat-message[data-rsa-unified-save-child] { display:none !important; }
+.rsa-unified-save .icon-row { margin-block:3px; }
+.rsa-unified-save .rsa-roll-damage { border-top:1px dashed var(--color-border-light-primary,#777); padding-top:5px; }
+.rsa-unified-healing-action { border-left:0 !important; }
+.rsa-unified-healing > .chat-card,
+.rsa-unified-healing > effect-application,
+.rsa-unified-healing .rsa-roll-damage { border-left:3px solid #43b76b !important; }
+.rsa-unified-healing > .chat-card { padding-left:5px; }
+.rsa-unified-healing > effect-application { margin-inline:0; padding-left:5px; }
+.rsa-unified-healing .rsa-roll-healing { border-top:1px dashed var(--color-border-light-primary,#777); padding-top:5px; }
+.rsa-unified-healing[data-rsa-native-healing-controls] :is(damage-application,effect-application) .apply-button { display:flex !important; }
+.rsa-unified-healing[data-rsa-healing-hp-applied] damage-application .apply-button { display:none !important; }
+.rsa-unified-save .rsa-save-setup,.rsa-unified-save .rsa-save-rolling,.rsa-unified-save .rsa-save-pending-label { padding:7px; min-height:32px; background:#2f323c; color:#c9cbd2; border:1px solid #424651; border-radius:3px; font-weight:bold; opacity:1; text-align:center; }
+.rsa-attack-description-tooltip { max-width:420px; max-height:70vh; overflow-y:auto; text-align:left; }
+.rsa-attack-description-tooltip p:first-child { margin-top:0; }
+.rsa-attack-description-tooltip p:last-child { margin-bottom:0; }
+.rsa-unified-attack .rsa-attack-setup-dice { flex:1; min-height:32px; padding:7px; margin:0; border:1px solid #424651; border-radius:3px; background:#2f323c; color:#c9cbd2; opacity:1; font-weight:bold; }
 
 .dnd5e2 button.rsa-reaction-icon {
     display:inline-flex; align-items:center; justify-content:center;
@@ -62,21 +101,21 @@
 }
 .dnd5e2 button.rsa-reaction-icon > i { font-size:22px; }
 
-/* Native summary CSS intentionally strips the roll face. These summaries
-   contain full native rolls, so restore the standalone face in this home only. */
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll {
+/* Native summary CSS strips the roll face, including saves and escape checks.
+   Restore the same boxed result/d20 display for module-styled summaries. */
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll {
     --button-background-color:var(--dnd5e-chat-button-background);
     --button-border-color:var(--dnd5e-chat-button-border);
     --button-hover-border-color:var(--dnd5e-color-gold);
     justify-content:center;
     padding:3px 8px;
 }
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .d20die { display:block; }
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .result { flex:1; }
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .icons { position:absolute; }
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total { border:1px solid var(--dnd5e-color-gold); }
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total::before,
-:is(.chat-log,.chat-popout) .message.compact.rsa-unified-action .card-summary button.dice-roll .total::after { content:""; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .d20die { display:block; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .result { flex:1; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .icons { position:absolute; }
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .total { border:1px solid var(--dnd5e-color-gold); }
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .total::before,
+:is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .total::after { content:""; }
 
 /* Keep actions out of the native property-pill list. */
 .rsa-attack-actions {

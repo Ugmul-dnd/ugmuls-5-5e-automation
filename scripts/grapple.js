@@ -154,7 +154,13 @@ export function grappleSaveReady(damage){
     const save=game.messages.get(id),target=save?.getFlag?.(ID,"grappleStrike")?.targetToken;
     return !!target&&["success","failure"].includes(save.system.outcomes?.get(target));
 }
-export async function applyGrappleOutcome(usage,{manual=false}={}){
+const saveOutcomeTasks=new Map();
+export const settleSaveOutcome=usage=>saveOutcomeTasks.get(usage?.id)??Promise.resolve();
+export function applyGrappleOutcome(usage,options={}){
+ if(saveOutcomeTasks.has(usage?.id))return saveOutcomeTasks.get(usage.id);
+ const task=applyGrappleOutcomeWork(usage,options).finally(()=>saveOutcomeTasks.delete(usage?.id));saveOutcomeTasks.set(usage?.id,task);return task;
+}
+async function applyGrappleOutcomeWork(usage,{manual=false}={}){
     const link=usage?.getFlag?.(ID,"grappleStrike");
     if(!authority()||!link||applying.has(usage.id)||usage.getFlag(ID,"outcomeEffectsApplied")||!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
     if(usage.system.outcomes?.get(link.targetToken)!=="failure")return;
@@ -165,6 +171,7 @@ export async function applyGrappleOutcome(usage,{manual=false}={}){
     applying.add(usage.id);
     try{
         await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);
+        if(!manual&&(usage.getFlag(ID,'manualDamageWorkflow')||globalThis.Ugmuls55eAutomationUnifiedSave?.pending(usage)))return;
         const tray=document.createElement("effect-application");tray.chatMessage=usage;
         const prepare=tray._prepareEffectData;
         if(prepare)tray._prepareEffectData=async function(effect,target){
@@ -252,7 +259,7 @@ Hooks.once("init",()=>{
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerGrapplerConditions(usageRules));
 Hooks.once("ready",()=>{
     registerGrapplerConditions();Hooks.on("dnd5e.preRollAttackV2",grapplerAttackDefaults);
-    globalThis.Ugmuls55eAutomationGrapple={grappleDC,bestGrappleSave,addGrappleChoice,finalizeGrapple,replacesGrappleDamage,commitGrapple,grappleSaveReady,applyGrappleOutcome,deferGrappleSave};
+    globalThis.Ugmuls55eAutomationGrapple={grappleDC,bestGrappleSave,addGrappleChoice,finalizeGrapple,replacesGrappleDamage,commitGrapple,grappleSaveReady,applyGrappleOutcome,deferGrappleSave,settle: settleSaveOutcome};
     Hooks.on("dnd5e.renderChatMessage",renderGrapple);
     for(const event of ["createChatMessage","updateChatMessage","renderChatMessageHTML"])Hooks.on(event,schedule);
     Hooks.on("updateCombat",(combat,changes)=>resetGrappler(combat,changes).catch(report));Hooks.on("deleteCombat",combat=>resetGrappler(combat,{},true).catch(report));

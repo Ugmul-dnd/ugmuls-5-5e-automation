@@ -1,8 +1,8 @@
-import {freeFlurryHarm} from "./mercy-flurry.js";
+import {freeFlurryHarm,mercyHandActivity} from "./mercy-flurry.js";
 import {createEventQueue} from "./shared-activity-card.js";
 import {focusResource} from "./stunning-strike.js";
 import {weaponDamageApplied} from "./psionic-strike.js";
-const ID="ugmuls-5-5e-automation",STRIKE="3LBCmLni9BQUpgcv",enqueue=createEventQueue();
+const ID="ugmuls-5-5e-automation",enqueue=createEventQueue();
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier;
 const stamp=()=>game.combat?.started?game.combat.id+":"+game.combat.round+":"+game.combat.turn:null;
 const enabled=()=>game.settings.get(ID,"handOfHarmAutomation")===true;
@@ -12,7 +12,7 @@ const remaining=i=>Number(i?.system?.uses?.value??Number(i?.system?.uses?.max)-N
 export function strikeUsed(actor){return !!stamp()&&values(actor?.effects).some(e=>!e.disabled&&e.active!==false&&!e.duration?.expired&&e.getFlag?.(ID,"handOfHarmTurn")===stamp());}
 export function strikeContext(card,user=game.user){
  if(!enabled()||card?.type!=="damage"||card.getFlag?.(ID,"pendingDamage")||card.getFlag?.(ID,"masteryGraze")||card.getFlag?.(ID,"handOfHarm")||!card.rolls?.some(r=>r._evaluated))return null;
- const activity=card.getAssociatedActivity?.(),actor=card.getAssociatedActor?.()??activity?.actor,resource=focusResource(actor),feature=harmFeature(actor),damage=values(feature?.system?.activities).find(a=>a.type==="damage"&&(a.id===STRIKE||a.name==="Hand of Harm"));
+ const activity=card.getAssociatedActivity?.(),actor=card.getAssociatedActor?.()??activity?.actor,resource=focusResource(actor),feature=harmFeature(actor),damage=mercyHandActivity(feature,actor,"damage");
  const targets=card.system?.targets??[],target=targets.length===1?globalThis.fromUuidSync?.(targets[0].token,{strict:false}):null;
  const id=card.getFlag?.(ID,"damageAttackId"),ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
  const attack=(id?game.messages.get(id):null)??(origin?.type==="attack"?origin:values(origin?.getAssociatedRolls?.("attack")).filter(a=>a.timestamp<=card.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0]);
@@ -25,20 +25,20 @@ export function useStrike(card,user=game.user){return enqueue(async()=>{
  let c=strikeContext(card,user);if(!c||c.used||!c.available)throw Error("Hand of Harm needs applied Unarmed/Empowered Strike damage, an unused turn and either 1 Focus Point or enabled Flurry of Healing and Harm.");
  await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
  c=strikeContext(card,user);if(!c||c.used||!c.available)throw Error("Hand of Harm changed before it could be used.");
- const {actor,resource,feature,damage,attack,targets,free}=c,data=feature.toObject(),id=damage.id,use=data.system.activities[id];
- data.system.activities={[id]:use};data.effects=[];data.name="Hand of Harm";
- use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.activation={type:"special",override:true};use.effects=[];use.damage.critical={...use.damage.critical,allow:game.settings.get(ID,"handOfHarmCriticalDamage")===true};
+ const {actor,resource,feature,damage,attack,targets,free}=c,data=feature.toObject(),id=damage.id??damage._id,use=data.system.activities[id];
+ data.system.activities={[id]:use};const referenced=new Set((use.effects??[]).map(e=>e._id??e.id));data.effects=(data.effects??[]).filter(e=>referenced.has(e._id));data.name="Hand of Harm";
+ use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.activation={type:"special",override:true};use.damage.critical={...use.damage.critical,allow:use.damage.critical?.allow!==false&&game.settings.get(ID,"handOfHarmCriticalDamage")===true};
  use.range={override:true,units:"any"};use.target={override:true,prompt:false,template:{type:""},affects:{type:"creature",count:"1",choice:false}};
  const helper=new CONFIG.Item.documentClass(data,{parent:actor});helper.prepareFinalAttributes?.();
  const turn=stamp(),spent=Number(resource?.system?.uses?.spent??0);let charged=false,marker,committed=false,usage;
  try{
   if(!free){await resource.update({"system.uses.spent":spent+1});charged=true;}
   if(turn){const effect={name:"Hand of Harm - used",img:feature.img,disabled:false,transfer:false,system:{changes:[]},flags:{[ID]:{handOfHarmTurn:turn,handOfHarmCombat:game.combat.id}}};marker=globalThis.Ugmuls55eAutomationResources?.reuseMarker?await globalThis.Ugmuls55eAutomationResources.reuseMarker(actor,effect,"handOfHarmTurn"):(await actor.createEmbeddedDocuments("ActiveEffect",[effect]))?.[0];if(!marker)throw Error("Could not record Hand of Harm’s turn use.");}
-  const metadata={actor:actor.uuid,feature:feature.uuid,resource:resource?.uuid,attack:attack.id,source:card.id,turn,free};
+  const metadata={actor:actor.uuid,feature:feature.uuid,resource:resource?.uuid,attack:attack.id,source:card.id,activity:id,turn,free};
   const flags={dnd5e:{item:{data}},[ID]:{riderTriggered:true,activityOverrideData:data,handOfHarm:metadata}};
   const result=await helper.system.activities.get(id).use({consume:false,subsequentActions:false,create:{measuredTemplate:false}},{configure:false},{data:{system:{targets},flags}});usage=result?.message;
   if(!usage)throw Error("Could not create the Hand of Harm card.");
-  const rolls=await helper.system.activities.get(id).rollDamage({isCritical:game.settings.get(ID,"handOfHarmCriticalDamage")===true&&attack.rolls?.[0]?.isCritical===true},{configure:false},{data:{system:{origin:usage.id,targets},flags}});
+  const rolls=await helper.system.activities.get(id).rollDamage({isCritical:use.damage.critical.allow&&attack.rolls?.[0]?.isCritical===true},{configure:false},{data:{system:{origin:usage.id,targets},flags}});
   if(!rolls?.length)throw Error("Hand of Harm did not roll damage. No Focus Point was spent.");committed=true;
   await attack.setFlag(ID,"handOfHarmUsed",{...metadata,message:usage.id});return rolls;
  }finally{

@@ -21,7 +21,7 @@ export function selectEpitomeResistance(card,type,user=game.user){
   // Resolve the real owned item: card scaling can provide a temporary copy.
   const owned=actor.items?.get?.(item.id)??values(actor.items).find(i=>i.uuid===item.uuid);
   if(!owned||key(owned)!=="elemental-epitome")throw Error("The Monk no longer owns Elemental Epitome.");
-  const choices=values(actor.effects).filter(e=>resistanceCopy(e,owned)),existing=choices.find(e=>flag(e,"epitomeResistance"))??choices.find(e=>resistanceType(e)===type);
+  const choices=values(actor.effects).filter(e=>resistanceCopy(e,owned)),buff=globalThis.Ugmuls55eAutomationAttunement?.buff(actor),existing=buff??choices.find(e=>flag(e,"epitomeResistance"))??choices.find(e=>resistanceType(e)===type);
   const data=source.toObject();delete data._id;delete data.folder;delete data.start;
   for(const change of data.system?.changes??[])if(change.key==="system.traits.dr")change.key="system.traits.dr.value";
   data.type="base";data.transfer=false;data.disabled=false;data.origin=actor.uuid;data.statuses=[];
@@ -29,6 +29,12 @@ export function selectEpitomeResistance(card,type,user=game.user){
   data.system={...data.system,origin:{actor:actor.uuid,item:owned.uuid,activity:activity.uuid,message:card.uuid}};
   data.flags={...data.flags,dnd5e:{...data.flags?.dnd5e,isTemporary:true},[ID]:{...data.flags?.[ID],epitomeResistance:{item:owned.uuid,type}},autoanimations:{version:5,isEnabled:false,isCustomized:false,killAnim:true}};
   data._stats={duplicateSource:source.uuid};
+  if(buff){
+   const current=buff.toObject();data.name='Elemental Attunement';data.img=buff.img;data.duration=current.duration;
+   data.start=current.start;data.flags={...current.flags,...data.flags,[ID]:{...current.flags?.[ID],...data.flags[ID]}};
+   data.system.origin={...buff.system?.origin};
+   data.system.changes=[...values(buff.system?.changes).filter(c=>!['system.traits.dr','system.traits.dr.value'].includes(c.key)),...data.system.changes];
+  }
   const native=values(owned.effects).filter(e=>resistanceType(e)&&!e.disabled);
   if(native.length)await owned.updateEmbeddedDocuments("ActiveEffect",native.map(e=>({_id:e.id,disabled:true})));
   if(existing){
@@ -41,14 +47,21 @@ export function selectEpitomeResistance(card,type,user=game.user){
   return type;
  });queues.set(actor.uuid,task);return task.finally(()=>{if(queues.get(actor.uuid)===task)queues.delete(actor.uuid);});
 }
-async function deleteResistanceCopies(actor){
- const feature=epitomeFeature(actor);
- const ids=values(actor.effects).filter(e=>flag(e,"epitomeResistance")||feature&&resistanceCopy(e,feature)).map(e=>e.id);
+async function deleteResistanceCopies(actor,removedItem=null,preserveAttunement=false){
+ const feature=removedItem??epitomeFeature(actor);
+ const copies=values(actor.effects).filter(e=>removedItem?resistanceCopy(e,removedItem):flag(e,"epitomeResistance")||feature&&resistanceCopy(e,feature)),ids=[];
+ for(const effect of copies){
+  // The Attunement workflow owns deleting its entire buff on end/expiry.
+  // Avoid racing that deletion with a second component update from this queue.
+  if(preserveAttunement&&flag(effect,'elementalAttunement'))continue;
+  if(flag(effect,'elementalAttunement'))await effect.update({'system.changes':values(effect.system?.changes).filter(c=>!['system.traits.dr','system.traits.dr.value'].includes(c.key)),['flags.'+ID+'.epitomeResistance']:null},{rsaAttunementSync:true});
+  else ids.push(effect.id);
+ }
  if(ids.length)await actor.deleteEmbeddedDocuments("ActiveEffect",ids);
 }
-export function removeEndedResistance(actor){
+export function removeEndedResistance(actor,{ending=false}={}){
  if(!actor?.isOwner)return Promise.resolve();
- const task=(queues.get(actor.uuid)??Promise.resolve()).catch(()=>{}).then(()=>deleteResistanceCopies(actor));
+ const task=(queues.get(actor.uuid)??Promise.resolve()).catch(()=>{}).then(()=>deleteResistanceCopies(actor,null,ending));
  queues.set(actor.uuid,task);return task.finally(()=>{if(queues.get(actor.uuid)===task)queues.delete(actor.uuid);});
 }
 const endWrapped=new WeakSet();
@@ -62,7 +75,7 @@ export function installAttunementEnd(Type){
   // then await the native end operation before removing its managed resistance.
   const actor=this.actor??this.item.actor;
   const result=await original.call(this,config,results);
-  if(ending)await removeEndedResistance(actor);
+  if(ending)await removeEndedResistance(actor,{ending:true});
   return result;
  };
 }
@@ -74,7 +87,7 @@ export function clearEndedAttunementResistance(effect,{deleted=false}={}){
   // Ignore the just-deleted document even if the native enchantment registry
   // has not finished removing it when deleteActiveEffect fires.
   if(epitomeActive(actor,deleted?effect:null))return;
-  await deleteResistanceCopies(actor);
+  await deleteResistanceCopies(actor,null,true);
  });queues.set(actor.uuid,task);return task.finally(()=>{if(queues.get(actor.uuid)===task)queues.delete(actor.uuid);});
 }
 const activationPending=new Set();
@@ -159,8 +172,7 @@ Hooks.once("ready",()=>{
  Hooks.on("dnd5e.applyEnchantment",(item,effect,options)=>{openAttunementResistance(item,effect,options).catch(report);});
  Hooks.on("deleteItem",item=>{
   const actor=item.actor??item.parent;if(key(item)!=="elemental-epitome"||!actor?.isOwner||game.users.activeGM&&game.users.activeGM.id!==game.user.id)return;
-  const ids=values(actor.effects).filter(e=>resistanceCopy(e,item)).map(e=>e.id);
-  if(ids.length)actor.deleteEmbeddedDocuments("ActiveEffect",ids).catch(report);
+  deleteResistanceCopies(actor,item).catch(report);
  });
  game.socket.on("module."+ID,packet=>{
   if(packet?.action==="epitomeResistanceError"&&packet.userId===game.user.id){ui.notifications.error(packet.error);return;}

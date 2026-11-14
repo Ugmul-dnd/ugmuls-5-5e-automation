@@ -1,4 +1,4 @@
-import {createEventQueue,isRollAdjustmentLocked,isHealingCard,describeTarget} from "./shared-activity-card.js";
+import {createEventQueue,isRollAdjustmentLocked,isHealingCard,describeTarget,actorClassLevel,nativeActivityVisible} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 import {seekingSnapshot} from "./seeking-spell.js";
 import {fieldReduction} from "./protective-field.js";
@@ -11,10 +11,19 @@ const unable=actor=>['incapacitated','unconscious','dead','stunned','paralyzed',
 const owns=(actor,user)=>!!actor&&(user?.isGM||actor.testUserPermission?.(user,"OWNER"));
 const flags=(card,k)=>card?.getFlag?.(ID,k)??card?.flags?.[ID]?.[k];
 const records=card=>values(flags(card,"protectiveFields")).filter(r=>r.kind==="deflect");
+const modernDeflectFeatures=actor=>values(actor?.items).filter(i=>i.type==='feat'&&i.system?.source?.rules!=='2014');
+function deflectLevelAllowed(item,actor){const required=Number(item?.system?.prerequisites?.level),level=actorClassLevel(actor,'monk');return !Number.isFinite(level)||!required||level>=required;}
+function reduceActivity(item,actor){return values(item?.system?.activities).find(a=>a.type==='heal'&&nativeActivityVisible(a,actor)&&deflectFormula(a));}
 export function deflectFeature(actor){
- const feats=values(actor?.items).filter(i=>i.type==="feat"&&i.system?.source?.rules!=="2014");
- return feats.find(i=>key(i)==="deflect-energy")??feats.find(i=>key(i)==="deflect-attacks");
+ const feats=modernDeflectFeatures(actor);
+ // Updated Energy is descriptive. The parent owns reduction and both native
+ // redirects; retain an activity-bearing legacy Energy feature as a fallback.
+ return [feats.find(i=>key(i)==='deflect-attacks'),feats.find(i=>key(i)==='deflect-energy')].find(i=>i&&deflectLevelAllowed(i,actor)&&reduceActivity(i,actor));
 }
+export function deflectEnergyFeature(actor){return modernDeflectFeatures(actor).find(i=>key(i)==='deflect-energy'&&deflectLevelAllowed(i,actor));}
+function deflectConfig(actor){const item=deflectFeature(actor),reduce=reduceActivity(item,actor),energyFeature=deflectEnergyFeature(actor);return item&&reduce?{item,reduce,formula:deflectFormula(reduce),energy:!!energyFeature,energyFeature}:null;}
+function sameDeflectConfig(c){const current=deflectConfig(c.actor);return current?.item.uuid===c.item.uuid&&current.reduce.id===c.reduce.id&&current.formula===c.formula&&current.energy===c.energy&&current.energyFeature?.uuid===c.energyFeature?.uuid;}
+export function deflectRedirectActivity(item,actor=item?.actor){return values(item?.system?.activities).find(a=>a.type==='save'&&values(a.damage?.parts).length&&nativeActivityVisible(a,actor));}
 export function deflectAttack(card){
  const explicit=flags(card,"damageAttackId");if(explicit)return game.messages.get(explicit);
  const ref=card?.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
@@ -33,10 +42,9 @@ export function deflectCandidates(card,user=game.user){
  const attack=deflectAttack(card),activity=attack?.getAssociatedActivity?.()??card.getAssociatedActivity?.();if(attack?.type!=="attack"||activity?.type!=="attack"||!attack.rolls?.length)return [];
  const hit=new Set(values(attack.system?.evaluatedTargets).filter(t=>t.isMiss===false).map(t=>t.token)),types=incomingDamageTypes(card),seen=new Set();
  return values(card.system?.targets).flatMap(t=>{
-  const token=resolve(t.token),actor=token?.actor,item=deflectFeature(actor),energy=key(item)==="deflect-energy";
-  const reduce=values(item?.system?.activities).find(a=>a.name==="Reduce"&&a.type==="heal"),formula=deflectFormula(reduce);
+  const token=resolve(t.token),actor=token?.actor,config=deflectConfig(actor),{item,reduce,formula,energy,energyFeature}=config??{};
   if(!actor||!item||!formula||!hit.has(token.uuid)||seen.has(actor.uuid)||!owns(actor,user)||unable(actor)||reactionUsed(actor)||records(card).some(r=>r.target===token.uuid)||!types.length||!energy&&!types.some(t=>['bludgeoning','piercing','slashing'].includes(t))||rawDamage(card)-fieldReduction(card,actor,token.uuid)<=0)return [];
-  seen.add(actor.uuid);return[{actor,token,item,reduce,formula,energy,attack,types}];
+  seen.add(actor.uuid);return[{actor,token,item,reduce,formula,energy,energyFeature,attack,types}];
  });
 }
 export function applyDeflect(card,targetUuid,user=game.user){return enqueue(async()=>{
@@ -46,24 +54,24 @@ export function applyDeflect(card,targetUuid,user=game.user){return enqueue(asyn
  try{
   await card.setFlag(ID,"deflectPending",{actor:c.actor.uuid,target:targetUuid});
   const roll=await new CONFIG.Dice.BasicRoll(c.formula,c.actor.getRollData?.()??{}).evaluate();
-  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||reactionUsed(c.actor)||unable(c.actor))throw Error("The attack or Monk’s Reaction changed before Deflect completed.");
+  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||reactionUsed(c.actor)||unable(c.actor)||!sameDeflectConfig(c))throw Error("The attack or Monk’s Reaction changed before Deflect completed.");
   marker=await recordReactionUse(c.reduce,{}, {message:{id:card.id}});
   const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&values(game.combat.combatants).some(x=>x.actor?.uuid===c.actor.uuid);
   if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id)throw Error("Could not reserve the Monk’s Reaction.");
   if(game.dice3d?.showForRoll){const animation=game.dice3d.showForRoll(roll,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker);await(globalThis.Ugmuls55eAutomationWaitForAnimation?.(animation)??animation);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);}
-  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||unable(c.actor)||deflectFeature(c.actor)?.uuid!==c.item.uuid)throw Error("The damage or Monk’s eligibility changed during Deflect.");
+  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||unable(c.actor)||!sameDeflectConfig(c))throw Error("The damage or Monk’s eligibility changed during Deflect.");
   const total=Math.max(0,Number(roll.total)||0),before=Math.max(0,rawDamage(card)-fieldReduction(card,c.actor,targetUuid));
-  const record={kind:"deflect",label:c.energy?"Deflect Energy":"Deflect Attacks",actor:c.actor.uuid,name:c.actor.name,target:targetUuid,targetActor:c.actor.uuid,targetName:c.token.name,total,formula:roll.formula??c.formula,attack:c.attack.id,feature:c.item.uuid,snapshot,attackSnapshot,before,zero:total>=before,types:c.types};
+  const record={kind:"deflect",label:c.energy?"Deflect Energy":"Deflect Attacks",actor:c.actor.uuid,name:c.actor.name,target:targetUuid,targetActor:c.actor.uuid,targetName:c.token.name,total,formula:roll.formula??c.formula,attack:c.attack.id,feature:c.item.uuid,energyFeature:c.energyFeature?.uuid??null,snapshot,attackSnapshot,before,zero:total>=before,types:c.types};
   await card.setFlag(ID,"protectiveFields",[...values(flags(card,"protectiveFields")),record]);committed=true;return record;
  }catch(error){if(!committed&&marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});throw error;}
  finally{await card.unsetFlag(ID,"deflectPending");globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}
 });}
 export function redirectContext(card,targetUuid,user=game.user){
  if(!enabled()||flags(card,"deflectPending"))return null;
- const record=records(card).find(r=>r.target===targetUuid),token=resolve(targetUuid),actor=token?.actor,item=deflectFeature(actor),attack=deflectAttack(card);
- const redirect=values(item?.system?.activities).find(a=>a.name==="Redirect"&&a.type==="save"),resource=focusResource(actor),uses=resource?.system?.uses;
+ const record=records(card).find(r=>r.target===targetUuid),token=resolve(targetUuid),actor=token?.actor,item=record?.feature?modernDeflectFeatures(actor).find(i=>i.uuid===record.feature&&deflectLevelAllowed(i,actor)):deflectFeature(actor),attack=deflectAttack(card);
+ const redirect=deflectRedirectActivity(item,actor),resource=focusResource(actor),uses=resource?.system?.uses;
  const remaining=Number(uses?.value??(Number(uses?.max??0)-Number(uses?.spent??0)));
- if(!record?.zero||record.redirect||record.snapshot!==seekingSnapshot(card)||record.attack!==attack?.id||record.attackSnapshot!==attackState(attack)||!owns(actor,user)||unable(actor)||actor.statuses?.has("blinded")||!redirect||remaining<1||!Number.isFinite(remaining))return null;
+ if(!record?.zero||record.redirect||record.feature!==item?.uuid||record.energyFeature&&deflectEnergyFeature(actor)?.uuid!==record.energyFeature||record.snapshot!==seekingSnapshot(card)||record.attack!==attack?.id||record.attackSnapshot!==attackState(attack)||!owns(actor,user)||unable(actor)||actor.statuses?.has("blinded")||!redirect||remaining<1||!Number.isFinite(remaining))return null;
  const activity=attack.getAssociatedActivity?.(),mode=attack.system?.mode,ranged=mode==="ranged"||String(mode??"").includes("thrown")||activity?.attack?.type?.value==="ranged";
  return{actor,token,item,redirect,resource,record,range:ranged?60:5,types:incomingDamageTypes(card).filter(t=>record.types.includes(t))};
 }
@@ -93,7 +101,7 @@ export function redirectTargets(context,user=game.user){
  });
 }
 export function buildDeflectRedirect(item,activity,type){
- const data=item.toObject(),id=activity.id,use=data.system.activities[id];if(!use?.damage?.parts?.length)throw Error("Deflect is missing its native Redirect damage.");
+ const data=item.toObject(),id=activity.id??activity._id,use=activity.toObject?.()??data.system.activities[id];if(!use?.damage?.parts?.length)throw Error("Deflect is missing its native Redirect damage.");
  data.name="Deflect — Redirect";data.system.activities={[id]:use};data.effects=[];
  use.activation={type:"special",override:true};use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.effects=[];
  use.target={override:true,prompt:false,template:{type:""},affects:{type:"creature",count:"1",choice:false}};use.range={override:true,units:"any"};

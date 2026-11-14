@@ -1,7 +1,7 @@
-import {mercyFlurryEnabled} from "./mercy-flurry.js";
+import {mercyFlurryEnabled,mercyHandActivity} from "./mercy-flurry.js";
 import {describeTarget} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
-export function healingHand(actor){const item=values(actor?.items).find(i=>i.type==="feat"&&key(i)==="hand-of-healing"&&i.system?.source?.rules!=="2014");const activity=values(item?.system?.activities).find(a=>a.type==="heal");return activity?{item,activity}:null;}
+export function healingHand(actor){const item=values(actor?.items).find(i=>i.type==="feat"&&key(i)==="hand-of-healing"&&i.system?.source?.rules!=="2014");const activity=mercyHandActivity(item,actor,"heal");return activity?{item,activity}:null;}
 export function healingTouch(source,target){
  if(!source?.actor||!target?.actor||source.parent?.id!==target.parent?.id||target.hidden||target.object?.visible===false)return false;
  if(source.actor.uuid===target.actor.uuid)return true;
@@ -15,7 +15,7 @@ export function healingTouch(source,target){
  return Number.isFinite(distance)&&distance<=limit+1e-6&&!source.object?.checkCollision?.(points[1],{origin:points[0],type:"sight",mode:"any"});
 }
 export function prepareFlurryHealing(item,activity){
- const data=item.toObject(),id=activity.id,use=data.system.activities[id];data.system.activities={[id]:use};data.effects=[];
+ const data=item.toObject(),id=activity.id??activity._id,use=data.system.activities[id];data.system.activities={[id]:use};data.effects=[];
  use.activation={type:"special",override:true};use.consumption={spellSlot:false,targets:[],scaling:{allowed:false}};use.effects=[];
  use.target={override:true,prompt:false,template:{type:""},affects:{type:"creature",count:"1",choice:false}};use.range={override:true,units:"touch"};
  return{data,id};

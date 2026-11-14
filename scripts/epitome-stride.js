@@ -94,7 +94,9 @@ export async function cleanupEpitome(actor=null,force=false){
   if(expired){if(values(scene.regions).some(r=>r.id===region.id))await region.delete();await clearSpeed(caster,region.uuid);}
  }
  for(const caster of actors.values()){
-  const ids=values(caster.effects).filter(e=>flag(e,"epitomeStrideSpeed")&&!values(game.scenes).some(s=>values(s.regions).some(r=>r.uuid===flag(e,"epitomeStrideSpeed")))||flag(e,"epitomeResistance")&&!epitomeActive(caster)).map(e=>e.id);
+  const ids=values(caster.effects).filter(e=>flag(e,"epitomeStrideSpeed")&&!values(game.scenes).some(s=>values(s.regions).some(r=>r.uuid===flag(e,"epitomeStrideSpeed")))||flag(e,"epitomeResistance")&&!flag(e,'elementalAttunement')&&!epitomeActive(caster)).map(e=>e.id);
+  if(!epitomeActive(caster)&&(globalThis.Ugmuls55eAutomationAttunement?.active(caster)??true))for(const e of values(caster.effects).filter(e=>flag(e,'elementalAttunement')&&flag(e,'epitomeResistance')))
+   await e.update({'system.changes':values(e.system?.changes).filter(c=>!['system.traits.dr','system.traits.dr.value'].includes(c.key)),['flags.'+ID+'.epitomeResistance']:null},{rsaAttunementSync:true});
   if(ids.length)await caster.deleteEmbeddedDocuments("ActiveEffect",ids);
  }
 }

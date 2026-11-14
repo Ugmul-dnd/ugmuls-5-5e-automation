@@ -128,14 +128,20 @@ export async function commitManeuver(app,options){
     finally{pending.delete(app);if(reservations.get(entry.attack.id)===entry)reservations.delete(entry.attack.id);}
 }
 export function maneuverSaveReady(damage){const id=damage?.getFlag?.(ID,"maneuverSave");if(!id)return true;const save=game.messages.get(id),target=save?.getFlag?.(ID,"maneuverStrike")?.targetToken;return !!target&&["success","failure"].includes(save.system.outcomes?.get(target));}
-export async function applyTripOutcome(usage,{manual=false}={}){
+const saveOutcomeTasks=new Map();
+export const settleSaveOutcome=usage=>saveOutcomeTasks.get(usage?.id)??Promise.resolve();
+export function applyTripOutcome(usage,options={}){
+ if(saveOutcomeTasks.has(usage?.id))return saveOutcomeTasks.get(usage.id);
+ const task=applyTripOutcomeWork(usage,options).finally(()=>saveOutcomeTasks.delete(usage?.id));saveOutcomeTasks.set(usage?.id,task);return task;
+}
+async function applyTripOutcomeWork(usage,{manual=false}={}){
     const link=usage?.getFlag?.(ID,"maneuverStrike");
     if(!authority()||!link||["pushing","disarming"].includes(link.key)||applying.has(usage.id)||usage.getFlag(ID,"outcomeEffectsApplied")||usage.system.outcomes?.get(link.targetToken)!=="failure")return;
     if(!manual&&(game.settings.get(ID,"autoApplySavedEffects")!==true||usage.getFlag(ID,"manualDamageWorkflow")))return;
     const damage=game.messages.get(link.damageId);
     if(!manual&&damage&&(damage.getFlag(ID,"pendingDamage")||game.settings.get(ID,"autoApplyCardDamage")===true&&!damage.getFlag(ID,"hpApplicationRecorded")&&!(damage.getFlag(ID,"automaticDamageTargets")??[]).includes(link.targetToken)))return;
     const actor=(await fromUuid(link.targetToken))?.actor;if(!actor)return;applying.add(usage.id);
-    try{await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);if(link.key==="goading")await applyGoading(usage,actor,link);else await applyConditionWithUndo(usage,actor,link.key==="menacing"?"frightened":"prone",link.key==="menacing"?{"system.origin.actor":link.casterActor,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),duration:{rounds:null,turns:null,seconds:null,value:null,expired:false,expiry:"sourceEnd"}}:{});await usage.setFlag(ID,"outcomeEffectsApplied",true);await usage.setFlag(ID,"effectApplyReopened",null);}
+    try{await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);if(!manual&&(usage.getFlag(ID,'manualDamageWorkflow')||globalThis.Ugmuls55eAutomationUnifiedSave?.pending(usage)))return;if(link.key==="goading")await applyGoading(usage,actor,link);else await applyConditionWithUndo(usage,actor,link.key==="menacing"?"frightened":"prone",link.key==="menacing"?{"system.origin.actor":link.casterActor,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),duration:{rounds:null,turns:null,seconds:null,value:null,expired:false,expiry:"sourceEnd"}}:{});await usage.setFlag(ID,"outcomeEffectsApplied",true);await usage.setFlag(ID,"effectApplyReopened",null);}
     finally{applying.delete(usage.id);}
 }
 export function renderTrip(message,html){
@@ -279,7 +285,7 @@ Hooks.once("init",()=>game.settings.register(ID,"relentlessAutomation",{name:"Re
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerManeuverConditions(usageRules));
 Hooks.once("ready",()=>{
     repairGoadingExpiry().catch(report);
-    globalThis.Ugmuls55eAutomationBattleMaster={addManeuverChoice,finalizeManeuver,commitManeuver,maneuverSaveReady,applyTripOutcome};registerManeuverConditions();
+    globalThis.Ugmuls55eAutomationBattleMaster={addManeuverChoice,finalizeManeuver,commitManeuver,maneuverSaveReady,applyTripOutcome,settle: settleSaveOutcome};registerManeuverConditions();
     Hooks.on("dnd5e.renderChatMessage",renderTrip);Hooks.on("dnd5e.renderChatMessage",addPrecisionButton);Hooks.on("dnd5e.renderChatMessage",renderDistracting);Hooks.on("dnd5e.preRollAttackV2",distractingDefaults);
     for(const event of ["createChatMessage","updateChatMessage","renderChatMessageHTML"])Hooks.on(event,card=>{if(card.type==="damage")setTimeout(()=>applyDistracting(card).catch(report),100);if(event==="createChatMessage")consumeDistracting(card).catch(report);});
     Hooks.on("updateChatMessage",(card,changes)=>{const record=changes.flags?.[ID]?.battleManeuver;if(record?.key!=="precision"||!card.system.evaluatedTargets?.some(target=>target.isMiss===false))return;const origin=originOf(card);if(origin)globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);});

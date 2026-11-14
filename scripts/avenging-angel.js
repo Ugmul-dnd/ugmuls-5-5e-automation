@@ -1,10 +1,21 @@
 import {createEventQueue,describeTarget,isEligibleTarget} from "./shared-activity-card.js";
 import {auraProfile,syncPaladinScene} from "./paladin-auras.js";
+import {startupActors} from './startup-actors.js';
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),running=new Set();let bridge=false;
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier,flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k];
 const enabled=()=>game.settings.get(ID,"avengingAngelAutomation")===true,authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),live=e=>e&&!e.disabled&&e.active!==false&&!e.duration?.expired&&!e.system?.expired;
 const feature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="avenging-angel"&&i.system?.source?.rules!=="2014");
 export const angelEffect=actor=>values(actor?.effects).find(e=>live(e)&&flag(e,"avengingAngel"));
+export async function syncAngelIcons(actor){
+ if(!authority()||!enabled()||!actor)return;
+ const updates=[];
+ for(const effect of values(actor.effects)){
+  const own=flag(effect,'avengingAngel'),fear=flag(effect,'avengingAngelFear');if(!own&&!fear)continue;
+  const source=own?actor:globalThis.fromUuidSync?.(fear.actor,{strict:false}),img=feature(source)?.img;
+  if(img&&effect.img!==img)updates.push({_id:effect.id,img});
+ }
+ if(updates.length)await actor.updateEmbeddedDocuments('ActiveEffect',updates);
+}
 export function angelActivation(card){
  if(card?.type!=="usage")return null;const activity=card.getAssociatedActivity?.(),item=activity?.item;if(key(item)!=="avenging-angel"||item.system?.source?.rules==="2014"||activity.id!=="PUWfXLPucizXR8p0")return null;
  const actor=card.getAssociatedActor?.()??activity.actor,native=feature(actor);return native?{actor,feature:native}:null;
@@ -13,7 +24,7 @@ export async function activateAngel(card){
  if(!authority()||!enabled())return;const context=angelActivation(card);if(!context)return;
  return enqueue(async()=>{
   if(flag(card,"avengingAngelActivated"))return;const {actor,feature:item}=context,native=values(item.effects).find(e=>e.id==="r3Dvi3peq1i23QVP");if(!native)throw Error("Avenging Angel needs its native flight effect.");
-  const data=native.toObject();delete data._id;Object.assign(data,{disabled:false,transfer:false,origin:actor.uuid,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),duration:{value:600,units:"seconds",expiry:"turnStart",expired:false}});
+  const data=native.toObject();delete data._id;Object.assign(data,{img:item.img??data.img,disabled:false,transfer:false,origin:actor.uuid,start:CONFIG.ActiveEffect.documentClass.getEffectStart(),duration:{value:600,units:"seconds",expiry:"turnStart",expired:false}});
   data.system={...data.system,origin:{actor:actor.uuid,item:item.uuid,message:card.uuid}};data.flags??={};data.flags[ID]={...data.flags[ID],avengingAngel:{feature:item.uuid,source:card.uuid}};data.flags.dnd5e={...data.flags.dnd5e,isTemporary:true};
   const old=values(actor.effects).filter(e=>flag(e,"avengingAngel"));if(old[0])await old[0].update(data);else await actor.createEmbeddedDocuments("ActiveEffect",[data]);if(old.length>1)await actor.deleteEmbeddedDocuments("ActiveEffect",old.slice(1).map(e=>e.id));await card.setFlag(ID,"avengingAngelActivated",true);globalThis.Ugmuls55eAutomationPaladinAuras?.queue();
  });
@@ -22,7 +33,8 @@ export function buildAngelSave(item,source,stamp){
  const data=item.toObject(),id="UV3wzKmXpqDjWDAy",save=data.system.activities[id];if(!save)throw Error("Avenging Angel is missing its native Wisdom save.");
  const effect=data.effects.find(e=>e._id==="ucmM8P37dhbuz8eK");if(!effect)throw Error("Avenging Angel is missing its native Frightened effect.");
  data._id=foundry.utils.randomID();data.name="Avenging Angel — Frightful Aura";data.system.activities={[id]:save};data.effects=[effect];
- Object.assign(effect,{name:"Avenging Angel — Frightened",disabled:false,transfer:false,duration:{value:60,units:"seconds",expiry:"turnStart",expired:false}});delete effect.start;effect.statuses=[...new Set([...(effect.statuses??[]),"frightened"])];effect.flags??={};effect.flags[ID]={...effect.flags[ID],avengingAngelFear:{source:source.uuid,actor:source.actor.uuid,stamp}};effect.flags.dnd5e={...effect.flags.dnd5e,isTemporary:true};
+ Object.assign(effect,{name:"Avenging Angel — Frightened",img:item.img??effect.img,disabled:false,transfer:false,duration:{value:60,units:"seconds",expiry:"turnStart",expired:false}});delete effect.start;effect.statuses=[...new Set([...(effect.statuses??[]),"frightened"])];effect.flags??={};effect.flags[ID]={...effect.flags[ID],avengingAngelFear:{source:source.uuid,actor:source.actor.uuid,stamp}};effect.flags.dnd5e={...effect.flags.dnd5e,isTemporary:true};
+ save.img=item.img??save.img;
  save.effects=[{_id:effect._id,onSave:false}];save.appliedEffects=[effect._id];save.save.ability=["wis"];save.damage={parts:[],onSave:"none"};save.activation={type:"special",override:true};save.consumption={targets:[],spellSlot:false,scaling:{allowed:false}};save.duration={units:"inst",override:true,concentration:false};save.range={units:"any",override:true};save.target={override:true,prompt:false,template:{type:""},affects:{type:"creature",count:"1",choice:false}};
  const quiet={version:5,isEnabled:false,isCustomized:false,killAnim:true};data.flags??={};data.flags.autoanimations=quiet;save.flags??={};save.flags.autoanimations=quiet;return {data,id};
 }
@@ -63,6 +75,7 @@ function report(error){console.error("Avenging Angel",error);ui.notifications.er
 Hooks.once("init",()=>game.settings.register(ID,"avengingAngelAutomation",{name:"Avenging Angel Assistance",hint:"Use the native Vengeance flight activation and existing Paladin aura. Prompt enemy turn-start Wisdom saves, apply Frightened on failure for one minute or until damage, and grant Advantage on attacks against affected creatures. Native feature and restore-use costs remain unchanged.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerAngelRule(usageRules));
 Hooks.once("ready",()=>{
+ if(authority()&&enabled())for(const actor of startupActors())if(values(actor.effects).some(e=>flag(e,'avengingAngel')||flag(e,'avengingAngelFear')))enqueue(()=>syncAngelIcons(actor)).catch(report);
  registerAngelRule();for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,card=>activateAngel(card).catch(report));
  Hooks.on("preCreateActiveEffect",effect=>{if(flag(effect,"avengingAngelFear")&&effect.parent?.documentName==="Actor")effect.updateSource({start:CONFIG.ActiveEffect.documentClass.getEffectStart(),"duration.expired":false});});
  Hooks.on("updateCombat",(combat,changes)=>triggerAngel(combat,changes).catch(report));Hooks.on("dnd5e.preRollAttackV2",angelAttackDefaults);Hooks.on("dnd5e.applyDamage",(actor,amount,options)=>endAngelFear(actor,amount,options).catch(report));

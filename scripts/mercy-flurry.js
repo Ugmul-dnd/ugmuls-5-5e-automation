@@ -1,6 +1,8 @@
-import {createEventQueue} from "./shared-activity-card.js";
+import {createEventQueue,nativeActivityVisible} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 const stamp=()=>game.combat?.started?game.combat.id+":"+game.combat.round+":"+game.combat.turn:null;
+// Keep base/upgraded Mercy hands on their own feature; use native Monk level gates.
+export function mercyHandActivity(item,actor,type){return values(item?.system?.activities).filter(a=>a.type===type&&nativeActivityVisible(a,actor)).sort((a,b)=>Number(b.visibility?.level?.min??0)-Number(a.visibility?.level?.min??0))[0];}
 export const mercyFlurryFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="flurry-of-healing-and-harm"&&i.system?.source?.rules!=="2014");
 const available=item=>{const uses=item?.system?.uses;return Math.max(0,Number(uses?.value??(Number(uses?.max)-Number(uses?.spent??0)))||0);};
 export function mercyFlurryEnabled(message,actor){
@@ -11,7 +13,12 @@ export function mercyFlurryEnabled(message,actor){
 export function freeFlurryHarm(attack,actor){
  const flurry=attack?.getFlag?.(ID,"flurryOfBlows");if(flurry?.actor!==actor?.uuid||!flurry.source)return false;
  const origin=attack.system?.origin,id=typeof origin==="string"?origin.replace(/^ChatMessage\./,""):origin?.id;
- return id===flurry.source&&mercyFlurryEnabled(game.messages.get(flurry.source),actor);
+ if(!mercyFlurryEnabled(game.messages.get(flurry.source),actor))return false;
+ if(id===flurry.source)return true; // Older Flurry attacks point straight to the counter.
+ // Unified strikes now have independent usage cards. Follow only their explicit
+ // Flurry identity, never another attack with the same actor or rolled total.
+ const usage=game.messages.get(id),link=usage?.getFlag?.(ID,'flurryOfBlows'),source=usage?.getAssociatedActor?.();
+ return usage?.type==='usage'&&link?.source===flurry.source&&link.actor===actor.uuid&&(!source||source.uuid===actor.uuid)&&['attackNumber','attackTotal'].every(k=>flurry[k]==null||link[k]===flurry[k]);
 }
 export async function activateMercyFlurry(state,actor){
  if(state.busy||state.firstPending||state.remaining<1||state.attacksCompleted>0||state.message.getFlag?.(ID,"flurryAttackStarted"))return false;

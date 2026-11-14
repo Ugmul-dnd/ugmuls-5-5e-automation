@@ -1,9 +1,19 @@
-import {isRollAdjustmentLocked,createEventQueue} from "./shared-activity-card.js";
+import {isRollAdjustmentLocked,createEventQueue,nativeActivityVisible} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",selected=new WeakMap(),pending=new WeakMap(),reserved=new Map(),enqueue=createEventQueue();
 const values=v=>Array.from(v?.values?.()??v??[]),key=i=>i?.identifier??i?.system?.identifier;
 const turn=()=>game.combat?.started?`${game.combat.id}:${game.combat.round}:${game.combat.turn}`:null;
 const enabled=()=>game.settings.get(ID,"dreadAmbusherAutomation")===true;
 export const dreadFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&(key(i)==="dread-ambusher"||/^dread ambusher$/i.test(i.name?.trim()??""))&&i.system?.source?.rules!=="2014");
+// These Rangers now use separate level-gated damage activities on the same parent.
+export function rangerDamageActivity(feature,actor){
+ return values(feature?.system?.activities).filter(a=>a.type==='damage'&&a.damage?.parts?.length&&nativeActivityVisible(a,actor)).sort((a,b)=>Number(b.visibility?.level?.min??0)-Number(a.visibility?.level?.min??0))[0];
+}
+export function rangerDamageFormula(damage){const part=damage?.damage?.parts?.[0];if(!part)throw Error('The native Ranger damage activity is unavailable.');return part.custom?.enabled?part.custom.formula:part.formula??`${part.number}d${part.denomination}${part.bonus?' + '+part.bonus:''}`;}
+export function dreadResource(feature,damage){
+ const target=values(damage?.consumption?.targets).find(t=>t.type==='itemUses'&&!t.target),itemPool=!!target,uses=itemPool?feature?.system?.uses:damage?.uses;
+ const path=itemPool?'system.uses.spent':`system.activities.${damage?.id??damage?._id}.uses.spent`;
+ return {path,spent:Number(uses?.spent??0),remaining:Number(uses?.value??(Number(uses?.max)-Number(uses?.spent??0))),cost:Number(target?.value??1)};
+}
 export function dreadContext(app){
  const activity=app.config?.subject,data=app.message?.data??{},card=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard?.(app);
  // Player-owned pending damage can carry a reconstructed activity. Resolve
@@ -11,7 +21,7 @@ export function dreadContext(app){
  const speaker=data.speaker??card?.speaker;
  const actor=(speaker?globalThis.ChatMessage?.getSpeakerActor?.(speaker):null)??card?.getAssociatedActor?.()??activity?.actor??activity?.item?.actor;
  const feature=dreadFeature(actor);
- const damage=values(feature?.system?.activities).find(a=>a.type==="damage"&&/^dreadful strike$/i.test(a.name??""));
+ const damage=rangerDamageActivity(feature,actor);
  const reference=data.system?.origin??card?.system?.origin;
  const usage=typeof reference==="string"?game.messages.get(reference.replace(/^ChatMessage\./,"")):reference;
  const attackId=data.flags?.[ID]?.damageAttackId??card?.getFlag?.(ID,"damageAttackId");
@@ -20,8 +30,8 @@ export function dreadContext(app){
 }
 export function dreadUsed(actor,app){return !!(reserved.has(actor?.uuid)&&reserved.get(actor.uuid).app!==app)||!!turn()&&actor?.getFlag?.(ID,"dreadfulStrikeTurn")===turn();}
 export function dreadEligible(app){
- const {activity,actor,damage,attack}=dreadContext(app),remaining=Number(damage?.uses?.value??(Number(damage?.uses?.max)-Number(damage?.uses?.spent??0)));
- return enabled()&&actor?.isOwner&&activity?.type==="attack"&&activity.item?.type==="weapon"&&remaining>0&&!app.message?.data?.flags?.[ID]?.masteryGraze&&!isRollAdjustmentLocked(attack)&&values(attack?.system?.evaluatedTargets).filter(t=>t.isMiss===false).length===1;
+ const {activity,actor,feature,damage,attack}=dreadContext(app),resource=dreadResource(feature,damage);
+ return enabled()&&actor?.isOwner&&activity?.type==="attack"&&activity.item?.type==="weapon"&&!!damage&&Number.isFinite(resource.cost)&&resource.cost>0&&resource.remaining>=resource.cost&&!app.message?.data?.flags?.[ID]?.masteryGraze&&!isRollAdjustmentLocked(attack)&&values(attack?.system?.evaluatedTargets).filter(t=>t.isMiss===false).length===1;
 }
 export function selectDread(app,yes){
  selected.set(app,yes===true);
@@ -39,24 +49,24 @@ export function finalizeDread(app,rolls,{preview=false}={}){
  const existing=pending.get(app);if(existing)return [...rolls,existing.roll];
  const {actor,feature,damage}=dreadContext(app);if(!selected.get(app)||!dreadEligible(app)||dreadUsed(actor,app))return rolls;
  const part=damage.damage?.parts?.[0];if(!part)return rolls;
- const formula=part.custom?.enabled?part.custom.formula:part.formula??`${part.number}d${part.denomination}${part.bonus?" + "+part.bonus:""}`;
+ const formula=rangerDamageFormula(damage);
  const roll=new CONFIG.Dice.DamageRoll(formula+"[Dreadful Strike]",actor.getRollData(),{type:"psychic",types:["psychic"],flavor:"Dreadful Strike",isCritical:damage.damage?.critical?.allow!==false&&rolls[0]?.options?.isCritical===true,critical:{...rolls[0]?.options?.critical,bonusDice:0,bonusDamage:""},rsaDreadfulStrike:true});
- if(!preview){const entry={actor,feature,damage,roll,turn:turn(),app};pending.set(app,entry);reserved.set(actor.uuid,entry);}
+ if(!preview){const entry={actor,feature,damage,roll,nativeDamage:JSON.stringify(damage.damage),resource:dreadResource(feature,damage),turn:turn(),app};pending.set(app,entry);reserved.set(actor.uuid,entry);}
  return [...rolls,roll];
 }
 export async function commitDread(app,options){
- const entry=pending.get(app);if(!entry)return;let charged=false;const path=`system.activities.${entry.damage.id}.uses.spent`,spent=Number(entry.damage.uses.spent??0);
+ const entry=pending.get(app);if(!entry)return;let charged=false;const current=dreadContext(app),resource=dreadResource(current.feature,current.damage),path=resource.path,spent=resource.spent;
  try{
   if(!options?.dnd5e?.submitted)return;
-  if(entry.turn!==turn()||!dreadEligible(app)||dreadUsed(entry.actor,app)||dreadContext(app).damage?.id!==entry.damage.id)throw Error("Dreadful Strike is no longer available. Reopen the damage prompt.");
+  if(entry.turn!==turn()||!dreadEligible(app)||dreadUsed(entry.actor,app)||current.feature?.uuid!==entry.feature.uuid||(current.damage?.id??current.damage?._id)!==(entry.damage.id??entry.damage._id)||JSON.stringify(current.damage?.damage)!==entry.nativeDamage||resource.path!==entry.resource.path||resource.cost!==entry.resource.cost)throw Error("Dreadful Strike is no longer available. Reopen the damage prompt.");
   const flurry=globalThis.Ugmuls55eAutomationStalkersFlurry?.flurryFor(app);
-  await entry.feature.update({[path]:spent+1});charged=true;
+  await entry.feature.update({[path]:spent+resource.cost});charged=true;
   if(entry.turn)await entry.actor.setFlag(ID,"dreadfulStrikeTurn",entry.turn);
   app.message.data.flags??={};app.message.data.flags[ID]={...app.message.data.flags[ID],dreadfulStrike:{actor:entry.actor.uuid,feature:entry.feature.uuid,turn:entry.turn,...(flurry?{flurry}:{})}};
   // Launch the save alongside the weapon dice, before pending damage waits
   // for Dice So Nice. Save effects still use their normal animation barrier.
   Promise.resolve(globalThis.Ugmuls55eAutomationStalkersFlurry?.beginFlurry(app)).catch(error=>{console.error("Mass Fear",error);ui.notifications.error(error.message);});
- }catch(error){if(charged)await entry.feature.update({[path]:spent});ui.notifications.error(error.message);throw error;}
+ }catch(error){if(charged&&dreadResource(entry.feature,entry.damage).spent===spent+resource.cost)await entry.feature.update({[path]:spent});ui.notifications.error(error.message);throw error;}
  finally{pending.delete(app);if(reserved.get(entry.actor.uuid)===entry)reserved.delete(entry.actor.uuid);}
 }
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
@@ -93,7 +103,7 @@ export function refreshLeapMovement(effect){
  };
  if(typeof globalThis.requestAnimationFrame==="function")globalThis.requestAnimationFrame(refresh);else setTimeout(refresh,0);
 }
-Hooks.once("init",()=>game.settings.register(ID,"dreadAmbusherAutomation",{name:"Dread Ambusher Assistance",hint:"Offer Dreadful Strike in weapon damage configuration, using native activity uses and scaling once per turn. Automatically grant Ambusher's Leap on the Ranger's first combat turn and remove it at turn end.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"dreadAmbusherAutomation",{name:"Dread Ambusher Assistance",hint:"Offer Dreadful Strike in weapon damage configuration, using the selected native damage activity and its item/activity charges once per turn. Automatically grant Ambusher's Leap on the Ranger's first combat turn and remove it at turn end.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
  globalThis.Ugmuls55eAutomationDread={addDreadChoice,finalizeDread,commitDread};
  for(const hook of ["createActiveEffect","updateActiveEffect","deleteActiveEffect"])Hooks.on(hook,refreshLeapMovement);

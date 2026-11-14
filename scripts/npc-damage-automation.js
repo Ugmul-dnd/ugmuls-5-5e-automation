@@ -365,7 +365,7 @@ Hooks.once("ready",async()=>{
     // Seed the new healing preference once from the former combined setting.
     const worldSettings=game.settings.storage?.get?.("world");
     if(authority()&&worldSettings&&!worldSettings.has(MODULE_ID+".autoApplyCardHealing"))await game.settings.set(MODULE_ID,"autoApplyCardHealing",game.settings.get(MODULE_ID,"autoApplyCardDamage"));
-    globalThis.Ugmuls55eAutomationNpcDamage={shouldAutoRollNpc,waitForWorkflowAnimations,waitForDamageAnimation,resumeReactive:card=>{if(!authority()||isManual(card))return;const source=manualKey(card);for(const hp of source?.type==="attack"?linkedHpCards(source):[...(source?.getAssociatedRolls?.("damage")??[]),...(source?.getAssociatedRolls?.("healing")??[])])schedule(hp);scheduleEffects(card,source?.type==="attack"?source:null);}};
+    globalThis.Ugmuls55eAutomationNpcDamage={shouldAutoRollNpc,waitForWorkflowAnimations,waitForDamageAnimation,settle:()=>enqueue(()=>{}),resumeReactive:card=>{if(!authority()||isManual(card))return;const source=manualKey(card);for(const hp of source?.type==="attack"?linkedHpCards(source):[...(source?.getAssociatedRolls?.("damage")??[]),...(source?.getAssociatedRolls?.("healing")??[])])schedule(hp);scheduleEffects(card,source?.type==="attack"?source:null);}};
 
     Hooks.on("dnd5e.preRollD20TestV2",(config,dialog)=>{if(config.rsaAutoNpcSave)dialog.configure=false;});
     for(const event of ["createChatMessage","updateChatMessage"])Hooks.on(event,(message)=>{
