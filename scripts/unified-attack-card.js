@@ -50,6 +50,18 @@ export function moveUnifiedControls(summary,child,footer){
     }
     if(group.children.length)footer.append(group);
 }
+export function brutalStrikeLabels(damage){
+    return [...new Set(damage.filter(card=>card.isContentVisible!==false).flatMap(card=>card.getFlag?.(ID,'brutalEffects')?.values??[]))];
+}
+export function brutalStrikeTooltip(name){
+    const descriptions={
+        'Forceful Blow':'Push the target 15 feet straight away. You may then move up to half your Speed straight toward it without provoking Opportunity Attacks. Movement is manual.',
+        'Hamstring Blow':'Reduce the target’s Speed by 15 feet until the start of your next turn. Only the most recent Hamstring Blow applies.',
+        'Staggering Blow':'The target has Disadvantage on its next saving throw and cannot make Opportunity Attacks until the start of your next turn.',
+        'Sundering Blow':'Before the start of your next turn, the next attack roll against the target by another creature gains +5. Only one Sundering Blow bonus applies.'
+    };
+    return descriptions[name]??'Brutal Strike option selected for this attack.';
+}
 export function mergeAttackTags(usageFace,attackFace){
     const properties=face=>face?.querySelector('.icon-row .fa-tag')?.closest('.icon-row')?.querySelector('ul.pills');
     const source=properties(usageFace),destination=properties(attackFace);
@@ -324,6 +336,12 @@ function finishUnifiedAttack(card,root){
     if(scope.groups.every(group=>group.damage.length<=1)&&!card.getFlag?.(ID,'manualEffectDecision'))for(const tray of home.querySelectorAll('effect-application')){tray.hidden=true;tray.dataset.rsaUnifiedEffects='true';}
     for(const groupScope of scope.groups){
         const instance=home.querySelector('[data-rsa-attack-id="'+groupScope.attack.id+'"]');if(!instance)continue;
+        const properties=instance.querySelector('.rsa-roll-attack > .chat-card .icon-row .fa-tag')?.closest('.icon-row')?.querySelector('ul.pills');
+        if(properties)for(const name of brutalStrikeLabels(groupScope.damage)){
+            const pill=document.createElement('li');pill.className='pill transparent';pill.dataset.rsaBrutalTag='';
+            pill.dataset.tooltip=brutalStrikeTooltip(name);
+            const label=document.createElement('span');label.className='label';label.textContent=name;pill.append(label);properties.append(pill);
+        }
         combineApplicationControls(card,instance,groupScope);
         const footer=document.createElement('div');footer.className='rsa-unified-controls';
         for(const summary of instance.querySelectorAll('.card-summary[data-message-id]')){

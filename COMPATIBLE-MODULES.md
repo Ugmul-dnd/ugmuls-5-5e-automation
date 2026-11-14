@@ -1,5 +1,7 @@
 # Module Compatibility and Test Setup
 
+Version 1.1.0 requires **D&D5e 6.1.0 exactly** and targets official **Player’s Handbook (2024) 3.0.0** content. Earlier system versions are incompatible. The historical snapshot below describes an older release, not this release’s supported system version.
+
 The module is now named **Ugmuls 5.5e Automation** (`ugmuls-5-5e-automation`). This historical testing snapshot retains its previous name and ID as recorded in the world at that time.
 
 This reference records Region Spell Automation v0.6.0 development testing in **Fragment of the Fallen**.

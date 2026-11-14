@@ -120,9 +120,15 @@ export function renderBrutalEffects(card,html){
 const applyingEffects=new Set();
 const effectNames={"Hamstring Blow":"Hamstrung","Staggering Blow":"Staggered","Sundering Blow":"Sundered"};
 export function brutalSourceEffect(actor,value){
-    const identifier=value==="Hamstring Blow"?"brutal-strike":"improved-brutal-strike";
-    const item=Array.from(actor?.items??[]).find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier);
-    return Array.from(item?.effects??[]).find(effect=>effect.name?.toLowerCase()===effectNames[value]?.toLowerCase());
+    const name=effectNames[value];if(!name)return;
+    // Updated PHB items keep all three effects on Brutal Strike; older owned
+    // features keep Staggered/Sundered on Improved Brutal Strike.
+    const features=Array.from(actor?.items??[]);
+    for(const identifier of ["brutal-strike",...(value!=="Hamstring Blow"?["improved-brutal-strike"]:[])]){
+        const item=features.find(item=>item.type==="feat"&&(item.identifier??item.system?.identifier)===identifier);
+        const effect=Array.from(item?.effects??[]).find(effect=>effect.name?.toLowerCase()===name.toLowerCase());
+        if(effect)return effect;
+    }
 }
 function brutalCardContext(card){return damageContext({message:{data:{system:card.system,flags:card.flags}}});}
 export async function applyBrutalEffects(card,{manual=false}={}){

@@ -1,6 +1,18 @@
 # Changelog
 
-## Unreleased — unified action card development
+## v1.1.0 — Unified Cards & PHB 3.0.0 (2026-11-14)
+
+- Require D&D5e 6.1.0 exactly; earlier system versions are incompatible. PHB class updates target official Player’s Handbook (2024) 3.0.0 items.
+
+- Shorten Flash of Genius hover text and identify the recipient of each failed save or check, keeping the icons together in the unified footer.
+
+- Shorten all class-menu descriptions to brief, plain-language summaries of how each automation helps. Class searches use the same summaries; settings and feature behavior are unchanged.
+
+- Reconnect the Long Rest Circle of the Land selector to updated PHB land features. Read the current native choice, replace its land and spell grants through native advancements on a detached actor, and commit the prepared changes in one system batch. Native land effects supply level-gated Nature’s Ward resistance. Preserve ordinary spells, old-item support, canceled rests and failure rollback; retire only explicitly module-managed old spell copies.
+
+- Show recorded Brutal Strike choices as property pills on their grouped attack card, with hover descriptions explaining each blow. Keep labels tied to that attack and respect damage-card visibility.
+
+- Fix Apply Brutal Strike Effects for updated PHB items: resolve Staggered and Sundered from the Brutal Strike parent, retaining older Improved Brutal Strike sources. Preserve damage, targeting, source-turn expiry and shared effect Undo.
 
 - Reconnect Sea Druid to updated Wrath of the Sea: native Self/Another manifestations are Utility activities on Wrath, with Oceanic Gift and Stormborn now descriptive. Keep the existing bearer dialog, one/two Wild Shape and Bonus Action handling, initial optional saves and next-turn bearer prompts. Read live 5/10-foot range from the native manifestation formula; use its duration for base tracking and its level-10 Stormborn effect for flight/resistances. Gate other-bearer manifestation at native level 14, revalidate native sources/eligibility after consumption and refund failed activation. Preserve legacy layouts, original-Druid DC/Wisdom damage, targeting, incapacitation cleanup, unified cards, animation and Apply/Undo workflows. Aquatic Affinity remains native.
 

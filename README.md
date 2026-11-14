@@ -12,9 +12,9 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 1.0.1
+## Version 1.1.0
 
-Version 1.0.1 adds Fount of Moonlight blinding Reaction prompts on incoming damage cards, corrects Blessing of Moonlight offers after save corrections, adds an Inspired Eclipse teleport range guide, and completes legendary initiative sorting compatibility with Monk's Combat Details. Shared distance and startup helpers now have dedicated scripts, alongside expanded developer guides. See [1.0.1 release notes](RELEASE-NOTES-1.0.1.md) for details, compatibility, verification, and updating instructions.
+Version 1.1.0 brings grouped attack, saving throw and healing cards, compact reaction controls, and compatibility fixes for the official Player’s Handbook (2024) 3.0.0. It requires **D&D5e 6.1.0 exactly**; earlier versions are incompatible. See [1.1.0 release notes](RELEASE-NOTES-1.1.0.md) for changes, verification and updating instructions.
 
 ## Main features
 
@@ -45,7 +45,7 @@ Version 1.0.1 adds Fount of Moonlight blinding Reaction prompts on incoming dama
 - **Crusher, Slasher, and Piercer:** qualifying damage cards offer selective feat controls. Piercer selects one weapon damage die to reroll (excluding extra riders) and adds its extra critical die to the initial roll. Crusher automatically applies its critical-hit advantage debuff without a damage-card button; Slasher automatically applies Hamstring on the first qualifying hit each turn and attack disadvantage on critical hits. Effects expire at the source's next turn start and support Effect Undo. Hamstring and Piercer rerolls are tracked once per combat turn, including off-turn attacks; outside combat, limits are per card. Crusher/Slasher require a single recorded hit target. Undo applied damage before adjustments; Crusher movement remains manual.
 - **Battle Master maneuvers:** Precision Attack adds the current Superiority Die to missed attacks; Trip Attack, Distracting Strike, Menacing Attack, Goading Attack, Maneuvering Attack, and Pushing Attack join damage Configuration with shared resource spending, one maneuver per attack, saves/effects, and Undo support. Relentless offers a free d8 once per active combat turn, shared with Precision Attack. Parry reduces incoming single-target melee damage from its card, spending a Reaction and the current Superiority Die.
 - **Bonus damage riders:** Hex, Hunter's Mark, and Conjure Minor Elementals add eligible bonus damage to the existing damage card. Class riders include Divine Smite, Eldritch Smite, Hunter's Prey, and Frenzy. The Smite selector also offers prepared 2024 Smite spells: the selected spell adds its own damage to the weapon roll. Only Smites requiring a save create a separate save card; effects apply on failure, or directly when no save is needed. Target-dependent riders currently support single-target damage cards.
-- **Sorcerer assistance:** Innate Sorcery attack advantage, cast-time Transmuted/Heightened/Careful Spell, and Empowered/Seeking reroll actions with Sorcery Point consumption and Metamagic card tags.
+- **Sorcerer assistance:** Native Innate Sorcery support, cast-time Transmuted/Heightened/Careful Spell, and Empowered/Seeking reroll actions with Sorcery Point consumption and Metamagic card tags.
 - **Multiple spell attacks:** Eldritch Blast and Scorching Ray offer a remaining-attacks window so users can choose targets between shots without casting or spending a slot again.
 - **Weapon masteries:** assistance for Graze, Sap, Slow, Topple, Vex, and Cleave, with individual enable/disable options. Cleave offers a separate chat-card attack once per active combat turn; choose one different target manually. It shares its use across Cleave weapons and removes only a positive ability modifier from damage. Distance/reach decisions and Undo after later corrections to the original hit remain manual. Push and Nick are not automated.
 - **Interface conveniences:** compact chat cards, remembered roll-popup positions, chat scrolling improvements, and character-sheet Add Item buttons that open the matching compendium browser tab.
@@ -58,9 +58,10 @@ Aura emanations default to **Grid Shaped**. Match scene grid spacing and distanc
 
 | Component | Support |
 | --- | --- |
-| Foundry Virtual Tabletop | v14; tested on build 369 |
-| Dungeons & Dragons Fifth Edition system | 6.0.5 minimum; tested with 6.0.6 |
-| Official Player's Handbook (2024) and Monster Manual | Content used to develop and test the corresponding automations |
+| Foundry Virtual Tabletop | v14; verified on build 14.370 |
+| Dungeons & Dragons Fifth Edition system | 6.1.0 only (minimum, verified and maximum) |
+| Official Player's Handbook (2024) | Class compatibility targets version 3.0.0; update owned items as needed |
+| Official Monster Manual | Content used to develop and test the corresponding automations |
 | D&D Beyond Importer content | May work, but has not been tested |
 
 An **active GM must be connected** for GM-managed region effects, NPC automation, and other operations affecting actors a player does not own.
