@@ -1,9 +1,10 @@
 const effectiveCombatant=(actor,combat=game.combat)=>globalThis.Ugmuls55eAutomationCompanions?.effectiveCombatant(actor,combat)??(combat?.started?Array.from(combat.combatants??[]).find(c=>c.actor?.uuid===actor?.uuid):null);
 const ID="ugmuls-5-5e-automation",creating=new Set();
 const enabled=()=>game.settings.get(ID,"reactionTracker")===true;
-export function reactionUsed(actor) {
+export function reactionUsed(actor,{ignoreCounterspell=false}={}) {
     const menacing=globalThis.Ugmuls55eAutomationRot?.menacingEffect(actor);if(menacing)return menacing;
     if(!actor||!game.combat?.started||!effectiveCombatant(actor))return;
+    const reserved=!ignoreCounterspell&&globalThis.Ugmuls55eAutomationCounterspell?.reservation(actor);if(reserved)return reserved;
     return Array.from(actor?.effects??[]).find(effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true&&
         (effect.getFlag?.(ID,"reactionUsed")===true||effect.name==="Reaction - used"));
 }
@@ -36,13 +37,13 @@ export function reactionActivity(activity) {
 export function allowReactionUse(activity,usage,dialog,message) {
     if(!enabled()||!manualActivity(activity,message)||!reactionActivity(activity))return;
     const actor=activity.actor??activity.item.actor;
-    if(reactionUsed(actor)||creating.has(actor.uuid)) {
+    if(reactionUsed(actor,{ignoreCounterspell:globalThis.Ugmuls55eAutomationCounterspell?.ownsReservation(activity,message)===true})||creating.has(actor.uuid)) {
         ui.notifications.warn("Reaction already used. Disable or delete Reaction - used to act again.");return false;
     }
 }
 export async function recordReactionUse(activity,usage,results) {
     const message=results?.message,actor=activity?.actor??activity?.item?.actor;
-    if(!enabled()||!message||message.getFlag?.(ID,"cleaveSource")||message.getFlag?.(ID,"regionTriggered")||message.getFlag?.(ID,"riderTriggered")||!manualActivity(activity,{})||!reactionActivity(activity)||!actor?.isOwner||reactionUsed(actor)||creating.has(actor.uuid))return;
+    if(!enabled()||!message||message.getFlag?.(ID,"cleaveSource")||message.getFlag?.(ID,"regionTriggered")||message.getFlag?.(ID,"riderTriggered")||!manualActivity(activity,{})||!reactionActivity(activity)||!actor?.isOwner||reactionUsed(actor,{ignoreCounterspell:globalThis.Ugmuls55eAutomationCounterspell?.ownsReservation(activity,{data:{flags:message.flags}})===true})||creating.has(actor.uuid))return;
     creating.add(actor.uuid);
     try {
         const data={name:"Reaction - used",img:"icons/svg/clockwork.svg",disabled:false,transfer:false,

@@ -1,3 +1,4 @@
+// Timing: legacy holds; staged timing takes precedence (docs/reaction-timing.md).
 import {bastionCandidates} from "./bastion-of-law.js";
 import {balanceCandidates,balanceDisabled,captureBalance} from "./restore-balance.js";
 import {beguilingCandidates} from './beguiling-defenses.js';
@@ -16,7 +17,7 @@ import {uncannyCandidates} from './uncanny-dodge.js';
 import {chainResistanceCandidates} from './chain-investment.js';
 import {defenseCandidates} from './superior-hunters-defense.js';
 import {rebukeCandidates} from './elemental-rebuke.js';
-import {linkedHpCards,isRollAdjustmentLocked} from './shared-activity-card.js';
+import {createEventQueue,linkedHpCards,isRollAdjustmentLocked} from './shared-activity-card.js';
 import {shieldActivity} from './shield-reaction.js';
 import {flashCandidates} from './flash-of-genius.js';
 import {omenCandidates,omenDisabled,captureOmen} from './cosmic-omen.js';
@@ -26,6 +27,7 @@ import {parryCandidate} from './parry.js';
 import {deflectCandidates} from './deflect-attacks.js';
 import {fieldCandidates} from './protective-field.js';
 import {deflectCandidates as steelCandidates} from './steel-deflect.js';
+const declineQueue=createEventQueue();
 const ID='ugmuls-5-5e-automation',stopped=new Set(),stopping=new Map(),finishing=new Map(),live=new WeakSet(),pendingReactions=new WeakMap();
 const flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],values=v=>Array.from(v?.values?.()??v??[]);
 const origin=c=>typeof c?.system?.origin==='string'?game.messages.get(c.system.origin.replace(/^ChatMessage\./,'')):c?.system?.origin;
@@ -42,7 +44,8 @@ export function reactiveScope(card){
  return {root,tests,hp:[...new Map([...hp,...(['damage','healing'].includes(card?.type)?[card]:[])].map(c=>[c.id,c])).values()].filter(c=>!flag(c,'masteryGrazeUndone')&&(!flag(c,'masteryGraze')||root?.type!=='attack'||values(root.system?.evaluatedTargets).some(t=>t.token===(flag(c,'masteryGrazeTarget')??c.system?.targets?.[0]?.token)&&t.isMiss===true)))};
 }
 function shieldOffered(card){
- if(game.settings.get(ID,'showShieldReaction')!==true||card.type!=='attack'||isRollAdjustmentLocked(card)||card.isContentVisible===false)return false;
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed(card,'shield'))return false;
+ if(card.rolls?.some(roll=>roll.isCritical===true)||game.settings.get(ID,'showShieldReaction')!==true||card.type!=='attack'||isRollAdjustmentLocked(card)||card.isContentVisible===false)return false;
  const hits=new Set(values(card.system?.evaluatedTargets).filter(t=>t.isMiss===false).map(t=>t.token));
  return values(card.system?.targets).some(t=>{if(!hits.has(t.token))return false;let token;try{token=fromUuidSync(t.token,{strict:false});}catch{return false;}return !!shieldActivity(token?.actor);});
 }
@@ -82,6 +85,8 @@ export function reactiveDamageRollPending(card){
  return hp.some(c=>c.type==='damage'&&(flag(c,'pendingDamage')||!c.rolls?.length))||!!expectsDamage&&!hp.some(c=>c.type==='damage');
 }
 export async function stopForReactions(card){
+ if(flag(card,'parryAdjusting')||flag(card,'cosmicOmenAdjusting')||flag(card,'superiorHunterDefensePending')||flag(card,'chainResistancePending')||reactiveScope(card).hp.some(c=>flag(c,'parryAdjusting')||flag(c,'chainResistancePending')||flag(c,'superiorHunterDefensePending')))return true;
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.blocked(card))return true;
  if(globalThis.Ugmuls55eAutomationMirrorImage?.ready(card)===false)return true;
  if(globalThis.Ugmuls55eAutomationUnbreakable?.ready(card)===false)return true;
  if(!authority()||!reactiveEnabled()||card?.type==='healing')return false;if(globalThis.Ugmuls55eAutomationSentinel?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationModifyMagic?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationWardingFlare?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationBalance?.ready(card)===false||globalThis.Ugmuls55eAutomationBendLuck?.ready(card)===false)return true;const {root}=reactiveScope(card);if(globalThis.Ugmuls55eAutomationMageSlayer?.ready(card)===false)return true;if(globalThis.Ugmuls55eAutomationLucky?.ready(root)===false)return true;if(globalThis.Ugmuls55eAutomationDuelist?.ready(root)===false)return true;if(globalThis.Ugmuls55eAutomationIllusorySelf?.ready(root)===false)return true;if(globalThis.Ugmuls55eAutomationInstinctiveCharm?.ready(root)===false)return true;if(!root||flag(root,'manualDamageWorkflow')||flag(origin(root),'manualDamageWorkflow'))return false;
@@ -98,25 +103,64 @@ export function reactionCompleted(card){
 }
 const changed=(changes,key)=>Object.hasOwn(changes??{},'flags.'+ID+'.'+key)||Object.hasOwn(changes?.flags?.[ID]??{},key)||Object.hasOwn(changes??{},'flags.'+ID+'.-='+key)||Object.hasOwn(changes?.flags?.[ID]??{},'-='+key);
 function completedChange(card,changes){
- if(changed(changes,'battleManeuver')&&flag(card,'battleManeuver')?.key==='precision')return true;
+ if(!flag(card,'precisionAdjusting')&&changed(changes,'battleManeuver')&&flag(card,'battleManeuver')?.key==='precision')return true;
  if(card.type==='damage'&&changed(changes,'beguilingDefenses')&&Object.values(flag(card,'beguilingDefenses')??{}).some(r=>r.save&&r.taken===null))return true;
  if(card.type==='damage'&&changed(changes,'empoweredSpellSettled')&&flag(card,'empoweredSpellSettled'))return true;
- if(['countercharmUsed','guidedStrikeUsed','shieldReactionSettled','flashOfGenius','cosmicOmenUsed','bardicUsed','cuttingWords','parry','seekingSpellUsed','darkOnesOwnLuck','fanaticalFocus','indomitable','disciplinedSurvivor','sharedResilience','homingStrikes','peerlessSkill','valorDefense','uncannyDodges','chainResistance','superiorHunterDefense','elementalRebukes'].some(k=>changed(changes,k)&&flag(card,k)))return true;
+ if(!flag(card,'cosmicOmenAdjusting')&&!flag(card,'guidedStrikeAdjusting')&&!flag(card,'seekingAdjusting')&&['countercharmUsed','guidedStrikeUsed','shieldReactionSettled','flashOfGenius','cosmicOmenUsed','bardicUsed','cuttingWords','seekingSpellUsed','darkOnesOwnLuck','fanaticalFocus','indomitable','disciplinedSurvivor','sharedResilience','homingStrikes','peerlessSkill','valorDefense','uncannyDodges','elementalRebukes'].some(k=>changed(changes,k)&&flag(card,k)))return true;
  let pending=pendingReactions.get(card);if(!pending)pendingReactions.set(card,pending=new Map());let completed=false;
  for(const [key,record]of [['sentinelPending','sentinelUsed'],['modifyMagicPending','modifyMagicUsed'],['bendLuckAdjusting','bendLuckUsed'],['restoreBalanceAdjusting','restoreBalanceUsed'],['steelDeflectAdjusting','steelDeflections'],['deflectPending','protectiveFields'],['protectiveFieldPending','protectiveFields']]){
   if(!changed(changes,key))continue;const signature=JSON.stringify(flag(card,record)??null);if(flag(card,key))pending.set(key,signature);else if(pending.has(key)){if(pending.get(key)!==signature)completed=true;pending.delete(key);}
  }
  return completed;
 }
-export function isReactiveControl(node){return !!node?.closest?.('.rsa-mirror-image,.rsa-unbreakable-majesty,.rsa-countercharm,.rsa-guided-strike,[data-rsa-shield],.rsa-sentinel-death,.rsa-modify-magic,.rsa-flash-actions,.rsa-restore-balance,.rsa-bend-luck,.rsa-bastion,.rsa-song-defense,.rsa-projected-ward,.rsa-burning-life,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-warding-flare,.rsa-defensive-duelist,.rsa-lucky,.rsa-mage-slayer,.rsa-deflect,[data-rsa-empowered],[data-rsa-weapon-feat],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling,.rsa-instinctive-charm,.rsa-illusory-self');}
-Hooks.once('init',()=>game.settings.register(ID,'reactiveAutoApply',{name:'Smart Damage and Effect Automation',hint:'Use your enabled auto-apply options, but pause damage and effects when a player or GM can use a supported roll adjustment or reaction, such as Bardic Inspiration, Metamagic, or Shield. After an adjustment, check whether automation can continue. To proceed without an adjustment, the GM can apply damage and effects manually.',scope:'world',config:true,type:Boolean,default:false}));
+
+// Post-damage decisions are scoped to the reacting actor, never the damaged recipient.
+// This keeps another helper's option alive when a defender passes.
+export function damageReactionAllowed(card,actor){return card?.type!=='damage'||!values(flag(card,'damageReactionDeclined')).includes(actor?.uuid??actor);}
+export function damageDecisionActors(card,user=game.user){
+ if(card?.type!=='damage'||card.isContentVisible===false||flag(card,'pendingDamage')||!card.rolls?.length||isRollAdjustmentLocked(card))return [];
+ const entries=[...bastionCandidates(card,user),...chainResistanceCandidates(card,user),...defenseCandidates(card,user),...uncannyCandidates(card,user),...(globalThis.Ugmuls55eAutomationSentinel?.candidates?.(card,user)??[]),...(globalThis.Ugmuls55eAutomationCrown?.candidates?.(card,user)??[]),...cuttingCandidates(card,user),...fieldCandidates(card,user),...deflectCandidates(card,user),...[parryCandidate(card,user)].filter(Boolean),...(globalThis.Ugmuls55eAutomationSongDefense?.candidates?.(card,user)??[]),...(globalThis.Ugmuls55eAutomationProjectedWard?.candidates?.(card,user)??[])];
+ return [...new Map(entries.filter(e=>damageReactionAllowed(card,e.actor)).map(e=>[e.actor.uuid,e.actor])).values()];
+}
+export async function declineDamageReactions(card,user=game.user){
+ if(!authority()||!reactiveEnabled()||!user?.active)throw Error('A connected GM is required to decline damage reactions.');
+ if(flag(card,'parryAdjusting')||flag(card,'superiorHunterDefensePending')||flag(card,'chainResistancePending')||flag(card,'protectiveFieldPending')||flag(card,'deflectPending')||flag(card,'cuttingAdjusting')||flag(card,'beguilingAdjusting')||flag(card,'sentinelPending')||flag(card,'modifyMagicPending'))throw Error('Wait for the damage reduction to finish.');
+ const actors=damageDecisionActors(card,user);if(!actors.length)throw Error('No damage reaction is available to decline.');
+ await card.setFlag(ID,'damageReactionDeclined',[...new Set([...values(flag(card,'damageReactionDeclined')),...actors.map(a=>a.uuid)])]);
+ globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
+ await reactionCompleted(card);
+}
+export function renderDamageDecline(message,html){
+ const root=html?.[0]??html;if(!root?.querySelectorAll)return;
+ const entries=[{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).filter(n=>!n.hidden).map(node=>({card:game.messages.get(node.dataset.messageId),node}))];
+ for(const {card,node}of entries){
+  for(const old of node.querySelectorAll(':scope > .rsa-damage-decline'))old.remove();
+  if(!reactiveEnabled()||!damageDecisionActors(card).length)continue;
+  const row=document.createElement('div');row.className='rsa-attack-actions rsa-damage-decline';
+  const b=document.createElement('button');b.type='button';b.textContent='Decline Reaction';b.dataset.tooltip=game.user.isGM?'Decline all remaining damage reductions and continue automation.':'Decline your remaining damage reductions. Other players can still use theirs.';
+  b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();if(b.disabled)return;b.disabled=true;const gm=game.users.activeGM;
+   if(gm&&gm.id!==game.user.id)game.socket.emit('module.'+ID,{action:'declineDamageReactions',card:card.id,user:game.user.id,gm:gm.id});
+   else declineQueue(()=>declineDamageReactions(card)).catch(error=>ui.notifications.error(error.message)).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));
+  });row.append(b);node.append(row);
+ }
+}
+
+export function isReactiveControl(node){return !!node?.closest?.('.rsa-damage-decline,.rsa-mirror-image,.rsa-unbreakable-majesty,.rsa-countercharm,.rsa-guided-strike,[data-rsa-shield],.rsa-sentinel-death,.rsa-modify-magic,.rsa-flash-actions,.rsa-restore-balance,.rsa-bend-luck,.rsa-bastion,.rsa-song-defense,.rsa-projected-ward,.rsa-burning-life,.rsa-cosmic-omen,.rsa-bardic-actions,.rsa-cutting-actions,[data-rsa-parry],.rsa-deflect-actions,.rsa-protective-field,.rsa-steel-deflect,.rsa-warding-flare,.rsa-defensive-duelist,.rsa-lucky,.rsa-mage-slayer,.rsa-deflect,[data-rsa-empowered],[data-rsa-weapon-feat],[data-rsa-seeking],[data-rsa-precision],.rsa-own-luck-actions,.rsa-focus-actions,.rsa-indomitable,.rsa-disciplinedSurvivor,.rsa-shared-resilience,.rsa-homing-actions,.rsa-peerless-actions,.rsa-valor-actions,.rsa-uncanny-actions,.rsa-chain-resistance,.rsa-superior-defense,.rsa-rebuke-actions,.rsa-beguiling,.rsa-instinctive-charm,.rsa-illusory-self');}
+Hooks.once('init',()=>game.settings.register(ID,'reactiveAutoApply',{name:'Smart Damage and Effect Automation',hint:'Use your enabled auto-apply options, but pause damage and effects when a player or GM can use a supported roll adjustment or reaction, such as Bardic Inspiration, Metamagic, or Shield. After an adjustment, check whether automation can continue. Players can decline post-damage reductions; automation continues once remaining choices are resolved. The GM can decline for everyone or apply manually.',scope:'world',config:true,type:Boolean,default:false}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationReactive={enabled:reactiveEnabled,stop:stopForReactions,completed:reactionCompleted,isControl:isReactiveControl};
+ globalThis.Ugmuls55eAutomationReactive={damageAllowed:damageReactionAllowed,declineDamage:declineDamageReactions,enabled:reactiveEnabled,stop:stopForReactions,completed:reactionCompleted,isControl:isReactiveControl};
  Hooks.on('createChatMessage',card=>{if(!authority()||!reactiveEnabled())return;live.add(card);if(['autoApplyCardDamage','autoApplySavedEffects','autoApplyHitEffects'].some(k=>game.settings.get(ID,k)===true)&&['attack','save','damage'].includes(card.type)){
   // Prime a stop immediately, before the normal short auto-apply scheduling
   // window. Capture Omen once on player-created cards before checking it.
   const probe=async()=>{await globalThis.Ugmuls55eAutomationCountercharm?.capture(card);await captureOmen(card);await captureBalance(card);await globalThis.Ugmuls55eAutomationLucky?.capture(card);await globalThis.Ugmuls55eAutomationDuelist?.capture(card);await globalThis.Ugmuls55eAutomationIllusorySelf?.capture(card);await globalThis.Ugmuls55eAutomationInstinctiveCharm?.capture(card);await stopForReactions(card);};probe().catch(console.error);
  }});
  Hooks.on('updateChatMessage',(card,changes)=>{if(!authority()||!reactiveEnabled())return;if(completedChange(card,changes)){reactionCompleted(card).catch(console.error);return;}if(live.has(card)&&(changed(changes,'bendLuckSnapshot')||changed(changes,'restoreBalanceSnapshot')||changed(changes,'cosmicOmenSnapshot')||Object.hasOwn(changes??{},'rolls'))&&!flag(card,'pendingDamage'))stopForReactions(card).catch(console.error);});
+ Hooks.on('dnd5e.renderChatMessage',renderDamageDecline);
+ game.socket.on('module.'+ID,packet=>{
+  if(packet?.action==='declineDamageError'&&packet.user===game.user.id){ui.notifications.error(packet.error);globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(packet.card));return;}
+  if(packet?.action!=='declineDamageReactions'||!authority()||packet.gm!==game.user.id)return;
+  const card=game.messages.get(packet.card),user=game.users.get(packet.user);if(!card||!user?.active)return;
+  declineQueue(()=>declineDamageReactions(card,user)).catch(error=>game.socket.emit('module.'+ID,{action:'declineDamageError',card:card.id,user:user.id,error:error.message}));
+ });
  Hooks.on('deleteChatMessage',card=>stopped.delete(card.id));
 });

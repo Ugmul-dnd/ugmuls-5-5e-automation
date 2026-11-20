@@ -1,3 +1,5 @@
+// Timing: outcome / damage-visible (connected); after damage reveal, before application.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),wrapped=new WeakSet(),physical=new Set(["bludgeoning","piercing","slashing"]);
@@ -17,11 +19,15 @@ export function chainDamageTypes(process,part){
  }
 }
 export function chainResistanceRecord(card,target){return values(flag(card,"chainResistance")).find(r=>r.target===target);}
-export function chainResistanceCandidates(card,user=game.user){
- if(!enabled()||card?.type!=="damage"||card.isContentVisible===false||isHealingCard(card)||flag(card,"pendingDamage")||isRollAdjustmentLocked(card)||!card.rolls?.some(r=>r.total>0))return [];
+export function chainResistanceCandidates(...args){return chainResistanceCandidatesCore(...args).filter(e=>globalThis.Ugmuls55eAutomationReactive?.damageAllowed?.(args[0],e.actor)!==false);}
+function chainResistanceCandidatesCore(card,user=game.user){
+ if(!enabled()||card?.type!=="damage"||card.isContentVisible===false||isHealingCard(card)||globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card)||flag(card,"chainResistancePending")||flag(card,"pendingDamage")||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||!card.rolls.some(r=>r.total>0))return [];
+ if(!user?.isGM&&(card.blind||card.whisper?.length&&!card.whisper.some(u=>(u.id??u)===user?.id)&&card.author?.id!==user?.id))return [];
  const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
  return values(card.system?.targets).flatMap(t=>{
   const token=globalThis.fromUuidSync?.(t.token,{strict:false}),c=chainMaster(token?.actor);if(!c?.reaction||chainResistanceRecord(card,t.token)||!(user?.isGM||c.actor.testUserPermission?.(user,"OWNER"))||reactionUsed(c.actor)||["incapacitated","unconscious","stunned","paralyzed","petrified","dead"].some(s=>c.actor.statuses?.has(s)))return [];
+  const explicit=flag(card,'damageAttackId'),attack=explicit?game.messages.get(explicit):origin?.type==='attack'?origin:null;
+  if(attack?.system?.evaluatedTargets?.find(e=>e.token===t.token)?.isMiss===true)return [];
   const outcome=origin?.system?.outcomes?.get(t.token);if(card.system.onSave&&(!["success","failure"].includes(outcome)||outcome==="success"&&card.system.onSave==="none"))return [];
   return [{...c,token}];
  });
@@ -30,6 +36,8 @@ export function grantChainResistance(card,targetUuid,user=game.user){return enqu
  const c=chainResistanceCandidates(card,user).find(e=>e.token.uuid===targetUuid);if(!c)throw Error("Investment resistance needs damage to your linked familiar and an available Warlock Reaction. Undo applied damage first.");
  let marker,committed=false;
  try{
+  await card.setFlag(ID,'chainResistancePending',true);
+  if(reactionUsed(c.actor))throw Error('The Warlock’s Reaction was just used.');
   marker=await recordReactionUse(c.reaction,{}, {message:{id:card.id}});
   const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&values(game.combat.combatants).some(e=>e.actor?.uuid===c.actor.uuid);
   if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id)throw Error("Could not reserve the Warlock’s Reaction.");
@@ -37,7 +45,7 @@ export function grantChainResistance(card,targetUuid,user=game.user){return enqu
   const record={actor:c.familiar.uuid,target:c.token.uuid,warlock:c.actor.uuid,name:c.actor.name};
   await card.setFlag(ID,"chainResistance",{...flag(card,"chainResistance"),[c.token.id]:record});committed=true;
   globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return record;
- }catch(error){if(!committed&&marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});throw error;}
+ }catch(error){if(!committed&&marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});throw error;}finally{await card.setFlag(ID,'chainResistancePending',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);if(committed)await globalThis.Ugmuls55eAutomationReactive?.completed(card);}
 });}
 export function installChainResistance(ActorType=CONFIG.Actor?.documentClass,TrayType=globalThis.customElements?.get?.("damage-application")){
  const p=TrayType?.prototype;if(p?.getMergedOptions&&!wrapped.has(p)){wrapped.add(p);const get=p.getMergedOptions;p.getMergedOptions=function(uuid){return {...get.call(this,uuid),rsaChainTarget:uuid};};}
@@ -56,7 +64,7 @@ export function renderChainResistance(message,html){
  const entries=[{card:message,node:root},...values(root.querySelectorAll(".card-summary[data-message-id]")).map(node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
  for(const {card,node}of entries){node.querySelectorAll(":scope > .rsa-chain-resistance").forEach(e=>e.remove());if(card?.type!=="damage"||card.isContentVisible===false)continue;const candidates=chainResistanceCandidates(card),records=values(flag(card,"chainResistance"));if(!candidates.length&&!records.length)continue;
   const row=document.createElement("div");row.className="rsa-attack-actions rsa-chain-resistance";
-  for(const c of candidates){const b=document.createElement("button");b.type="button";b.textContent="Investment — Resist Damage ("+c.actor.name+")";b.dataset.tooltip="Spend the Warlock’s Reaction to grant their familiar Resistance against this damage only.";b.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();b.disabled=true;request(card,c).catch(report);});row.append(b);}
+  for(const c of candidates){const b=document.createElement("button");b.type="button";b.dataset.rsaReactionItemUuid=c.feature.uuid;b.textContent="Investment Resistance — "+c.actor.name+" → "+(c.token.name??c.familiar.name??'Familiar');b.dataset.rsaReactionDescription="Use "+c.actor.name+"’s Reaction to give "+(c.token.name??c.familiar.name??'the familiar')+" Resistance against this damage only.";b.dataset.tooltip=b.dataset.rsaReactionDescription;b.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();b.disabled=true;request(card,c).catch(report).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));});row.append(b);}
   for(const r of records){const text=document.createElement("span");text.textContent="Investment: familiar resists this damage — "+r.name;row.append(text);}node.append(row);
   for(const tray of node.querySelectorAll("damage-application"))tray.refreshMultiplier?.();
  }

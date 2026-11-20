@@ -1,7 +1,12 @@
 import {recentIndexedMessages} from './chat-message-index.js';
+import {linkedHpCards} from './shared-activity-card.js';
 // Only presentation is delayed; resource consumption and effect expiry remain synchronous workflows.
 const ID="ugmuls-5-5e-automation",pending=new Map(),direct=new Map();let timer=null,running=false;
 const rules={
+ projectedWardAttack:{setting:'projectedWardAutomation',types:['attack'],feature:'projected-ward',candidates:'projectedWardSnapshot'},
+ protectiveFieldAttack:{setting:'protectiveFieldAutomation',types:['attack'],feature:'psionic-power',candidates:'protectiveFieldSnapshot'},
+ restoreBalance:{setting:'restoreBalanceAutomation',types:['attack','save'],feature:'restore-balance',candidates:'restoreBalanceSnapshot'},
+ counterspell:{setting:'counterspellAutomation',types:['usage'],feature:'counterspell',candidates:'counterspellSnapshot'},
  potentVitality:{setting:'clericPotentVitalityAutomation',types:['usage','damage'],features:['potent-spellcasting','blessed-strikes-potent-spellcasting','improved-blessed-strikes'],activity:'heal',healingType:'temphp',own:true},
  starryChalice:{setting:'starryFormAutomation',types:['usage','healing'],feature:'starry-form',own:true},
  elementalAttunement:{setting:'elementalStrikesAutomation',types:['usage','attack','damage'],feature:'elemental-attunement',own:true},
@@ -33,13 +38,21 @@ const rules={
  steelDeflect:{setting:"steelDeflectAutomation",types:["attack"],feature:"deflect-attack",all:true},
  chemicalEruption:{setting:"chemicalMasteryAutomation",types:["damage"],feature:"chemical-mastery",own:true},
  ownLuck:{setting:"darkOnesOwnLuckAutomation",types:["check","save"],feature:"dark-ones-own-luck",own:true},
+ mirrorImage:{setting:'mirrorImageAutomation',types:['attack'],candidates:'mirrorImageSnapshot'},
+ cosmicOmen:{setting:'cosmicOmenAutomation',types:['attack','save','check'],feature:'cosmic-omen',candidates:'cosmicOmenSnapshot'},
+ empowered:{setting:'empoweredSpellAutomation',types:['damage'],features:['empowered-spell','metamagic-empowered-spell'],own:true},
+ seeking:{setting:'seekingSpellAutomation',types:['attack'],features:['seeking-spell','metamagic-seeking-spell'],candidates:'seekingTimingSnapshot'},
+ precision:{setting:'precisionAttackAutomation',types:['attack'],feature:'precision-attack',candidates:'precisionSnapshot'},
+ sentinelDeath:{setting:'sentinelDeathAutomation',types:['attack'],feature:'sentinel-at-deaths-door',candidates:'sentinelSnapshot'},
+ beguilingAttack:{setting:"beguilingDefensesAutomation",types:["attack"],feature:"beguiling-defenses",candidates:"beguilingSnapshot"},
  beguilingDefenses:{setting:"beguilingDefensesAutomation",types:["damage"],feature:"beguiling-defenses",incoming:true},
  stalkersFlurry:{setting:"stalkersFlurryAutomation",types:["damage"],feature:"stalkers-flurry",own:true},
  superiorHunterPrey:{setting:"superiorHunterPreyAutomation",types:["damage"],feature:"superior-hunters-prey",own:true},
  superiorHunterDefense:{setting:"superiorHunterDefenseAutomation",types:["damage"],feature:"superior-hunters-defense",incoming:true},
  handOfHarm:{setting:"handOfHarmAutomation",types:["damage"],feature:"hand-of-harm",own:true},
  disciplinedSurvivor:{setting:"disciplinedSurvivorAutomation",types:["save"],feature:"disciplined-survivor",own:true},
- deflect:{setting:"deflectAttacksAutomation",types:["damage"],feature:"deflect-attacks",incoming:true},
+ // Outcome / attack-hit choices and their committed damage controls.
+  deflect:{setting:"deflectAttacksAutomation",types:["attack","damage"],feature:"deflect-attacks",incoming:true},
  wildRage:{setting:"wildRageAutomation",types:["usage"],feature:"rage-of-the-wilds",own:true},
  sharedResilience:{setting:"sharedResilienceAutomation",types:["save"],feature:"shared-resilience",all:true},
  indomitable:{setting:"indomitableAutomation",types:["save"],feature:"indomitable",own:true},
@@ -51,7 +64,7 @@ const rules={
  chilling:{setting:"chillingRetributionAutomation",types:["damage"],feature:"chilling-retribution",incoming:true},
  chainInvestment:{setting:"chainInvestmentAutomation",types:["damage"],feature:"investment-of-the-chain-master",all:true},
  lifedrinker:{setting:"lifedrinkerAutomation",types:["damage"],feature:"lifedrinker",own:true},
- uncanny:{setting:"uncannyDodgeAutomation",types:["damage"],feature:"uncanny-dodge",incoming:true},
+ uncanny:{setting:"uncannyDodgeAutomation",types:["attack","damage"],feature:"uncanny-dodge",incoming:true},
  rebuke:{setting:"elementalRebukeAutomation",types:["attack","damage"],feature:"elemental-rebuke",incoming:true},
  flash:{setting:"flashOfGeniusAutomation",types:["save","check"],feature:"flash-of-genius",all:true},
  bardic:{setting:"bardicInspirationAutomation",types:["attack","save","check"],own:true,effect:/^inspired$/i},
@@ -59,7 +72,7 @@ const rules={
  valor:{setting:"combatInspirationAutomation",types:["attack","damage"],effect:/^inspired$/i,incoming:true},
  focus:{setting:"fanaticalFocusAutomation",types:["save"],feature:"fanatical-focus",own:true},
  peerless:{setting:"peerlessSkillAutomation",types:["attack","check"],feature:"peerless-skill",own:true},
- parry:{setting:"parryAutomation",types:["damage"],feature:"parry",incoming:true},
+ parry:{setting:"parryAutomation",types:["attack","damage"],feature:"parry",incoming:true},
  shield:{setting:"showShieldReaction",types:["attack"],feature:"shield",incoming:true}
 };
 function owner(actor){return !!actor&&(game.user?.isGM||actor.isOwner);}
@@ -79,17 +92,37 @@ export function requestFeatureRefresh(key,doc,changes){
  // Synthetic actor/resource changes still use the normal state-update path.
  if(doc?.documentName==="Token"&&(!changes||!["delta","actorData","actorId"].some(key=>key in changes)))return;
  const actor=actorOf(doc),actors=actor?[actor]:doc?Array.from(doc.combatants??[],c=>c.actor).filter(Boolean):[...Array.from(game.actors??[]),...Array.from(globalThis.canvas?.scene?.tokens??[],token=>token.actor)].filter(Boolean);
- for(const actor of actors)if(relevant(actor,rule,doc))pending.set(key+":"+actor.uuid,{rule,actor});
+ for(const actor of actors)if(relevant(actor,rule,doc))pending.set(key+":"+actor.uuid,{key,rule,actor});
  if(pending.size)schedule();
 }
 export function requestCardRefresh(card){if(card?.id){direct.set(card.id,card);schedule();}}
 function associatedActor(card){return card.getAssociatedActor?.()??card.getAssociatedActivity?.()?.actor;}
 function targetsActor(card,actor){return (card.system?.targets??[]).some(target=>target.actor===actor.uuid||(target.token&&globalThis.fromUuidSync?.(target.token,{strict:false})?.actor?.uuid===actor.uuid));}
+export function stagedRefreshClosed(card,key){
+ if(key==='counterspell')return card.getFlag?.(ID,'counterspellWindow')?.phase!=='pending';
+ const state=card.getFlag?.(ID,'reactionTimingWindow')??card.flags?.[ID]?.reactionTimingWindow;
+ if(state?.status!=='revealed')return false;
+ if(card.type==='save'&&state.feature==='failedSave')return ['flash','indomitable','bardic','bendLuck','cosmicOmen','focus','disciplinedSurvivor','sharedResilience','countercharm','mageSlayer','ownLuck'].includes(key);
+ if(card.type==='attack')return ['mirrorImage','cosmicOmen','bendLuck','guidedStrike','seeking','precision','sentinelDeath','beguilingAttack','projectedWardAttack','protectiveFieldAttack','protectiveField','cutting','bardic','valor','uncanny','restoreBalance','shield','defensiveDuelist','parry','deflect','lucky','steelDeflect','illusorySelf','instinctiveCharm'].includes(key);
+ return card.type==='damage'&&state.feature==='deferredReduction'&&['parry','deflect'].includes(key);
+}
+const preApplicationFeatures=new Set(['cosmicOmen','bendLuck','seeking','precision','sentinelDeath','beguilingAttack','projectedWardAttack','protectiveFieldAttack','restoreBalance','mageSlayer','lucky','defensiveDuelist','countercharm','guidedStrike','illusorySelf','instinctiveCharm','songDefense','spellResistance','projectedWard','cosmicOmen','bendLuck','crownSpellfire','empowered','bastion','steelDeflect','beguilingDefenses','superiorHunterDefense','disciplinedSurvivor','deflect','sharedResilience','indomitable','protectiveField','homing','evasion','chainInvestment','uncanny','rebuke','flash','bardic','cutting','valor','focus','peerless','parry','shield','leadingEvasion']);
+export function settledPresentation(card,key,cache=new Map()){
+ if(!preApplicationFeatures.has(key))return false;
+ if(cache.has(card.id))return cache.get(card.id);
+ const flag=(c,k)=>c?.getFlag?.(ID,k)??c?.flags?.[ID]?.[k];
+ const ref=card.system?.origin,source=card.type==='usage'?card:typeof ref==='string'?game.messages.get(ref.replace(/^ChatMessage\./,'')):ref;
+ const receipt=c=>flag(c,'hpApplicationRecorded')===true||(flag(c,'damageUndoHistory')?.length??0)>0||(flag(c,'automaticDamageTargets')?.length??0)>0;
+ // A settled usage is immutable for pre-application presentation. Keep live
+ // post-damage riders and explicit Undo/correction requests outside this filter.
+ const done=!!(flag(source,'unifiedSaveApplied')||flag(source,'outcomeEffectsApplied')||receipt(card)||(source&&linkedHpCards(card).some(receipt)));
+ cache.set(card.id,done);return done;
+}
 export async function flushChatRefresh(){
  if(running)return;if(timer!==null){clearTimeout(timer);timer=null;}running=true;
  try{
   while(pending.size||direct.size){
-   const requests=Array.from(pending.values()),cards=new Map(direct);pending.clear();direct.clear();
+   const requests=Array.from(pending.values()),cards=new Map(direct),settled=new Map();pending.clear();direct.clear();
    // Feature state is recomputed when history cards are rendered again.
    // Keep explicit result/Undo refreshes even when their cards are unmounted.
    const mountedNodes=requests.length&&globalThis.document?.querySelectorAll?Array.from(document.querySelectorAll('[data-message-id]')):null;
@@ -103,7 +136,7 @@ export async function flushChatRefresh(){
    }
    if(requests.length)for(const card of recentIndexedMessages(100)){
     if(mounted&&!mounted.has(card.id))continue;
-    if(requests.some(({rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor))))){const host=game.messages?.get?.(hosts.get(card.id))??card;cards.set(host.id,host);}
+    if(requests.some(({key,rule,actor})=>rule.types.includes(card.type)&&(rule.all||(rule.candidates&&(card.getFlag?.(ID,rule.candidates)??card.flags?.[ID]?.[rule.candidates])?.entries?.some(e=>e.actor===actor.uuid))||(rule.own&&associatedActor(card)?.uuid===actor.uuid)||(rule.incoming&&targetsActor(card,actor)))&&!stagedRefreshClosed(card,key)&&!settledPresentation(card,key,settled))){const host=game.messages?.get?.(hosts.get(card.id))??card;cards.set(host.id,host);}
    }
    const list=Array.from(cards.values());for(let index=0;index<list.length;index+=8){
     // Resolve again at render time: a queued Controlled Chaos/Undo card may have been deleted.

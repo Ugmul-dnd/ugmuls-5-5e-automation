@@ -1,15 +1,22 @@
+// Timing: outcome / attack-miss (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {finalD20Results} from "./d20-results.js";
-import {createEventQueue} from "./shared-activity-card.js";
+import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {sorceryResource} from "./empowered-spell.js";
 import {animateNewSaveDice} from "./save-roll-controls.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue();
 export const seekingFeature=actor=>Array.from(actor?.items??[]).find(item=>item.type==="feat"&&
     (/^(?:metamagic-)?seeking-spell$/.test(item.identifier??item.system?.identifier??"")||/^(?:metamagic:\s*)?seeking spell$/i.test(item.name??"")));
 const actorFor=card=>card?.getAssociatedActor?.()??card?.getAssociatedActivity?.()?.actor;
-export function canSeek(card,user=game.user) {
+export function seekingTimingSnapshot(card){const actor=actorFor(card),ref=card?.getAssociatedToken?.(),token=(ref?.document??ref)?.uuid;return {entries:token&&card.system?.targets?.length===1&&canSeek(card,game.users.activeGM,{capture:true})?[{actor:actor.uuid,token,feature:seekingFeature(actor).uuid}]:[]};}
+export function seekingCandidates(card,user=game.user){if(!canSeek(card,user))return [];const actor=actorFor(card),feature=seekingFeature(actor);return (card.getFlag?.(ID,'seekingTimingSnapshot')?.entries??[]).filter(e=>e.actor===actor.uuid&&e.feature===feature?.uuid).map(e=>({...e,actor,feature}));}
+export function canSeek(card,user=game.user,{capture=false}={}) {
     const actor=actorFor(card),item=card?.getAssociatedItem?.()??card?.getAssociatedActivity?.()?.item,targets=card?.system?.evaluatedTargets??[];
+    const timing=globalThis.Ugmuls55eAutomationReactionTiming,snapshot=card?.getFlag?.(ID,'seekingTimingSnapshot');
+    if(card?.isContentVisible===false||isRollAdjustmentLocked(card)||!capture&&timing?.closed?.(card,'seeking'))return false;
+    if(!capture&&snapshot){const entry=snapshot.entries?.find(e=>e.actor===actor?.uuid&&e.feature===seekingFeature(actor)?.uuid);if(!entry||timing?.choiceAllowed?.(card,'seeking',actor.uuid,entry.token)===false)return false;}
     return game.settings.get(ID,"seekingSpellAutomation")===true&&card?.type==="attack"&&item?.type==="spell"&&
-        !card.getFlag?.(ID,"seekingSpellUsed")&&targets.length>0&&targets.every(target=>target.isMiss===true)&&
+        !card.getFlag?.(ID,"seekingSpellUsed")&&targets.length>0&&(capture||targets.every(target=>target.isMiss===true))&&
         !!seekingFeature(actor)&&(!!sorceryResource(actor,seekingFeature(actor))||!!globalThis.Ugmuls55eAutomationMetamagic?.freeMetamagic(actor))&&!!(user?.isGM||actor?.testUserPermission?.(user,"OWNER"))&&
         !!card.rolls?.[0]?.d20;
 }
@@ -38,6 +45,13 @@ export async function seekingRoll(roll) {
     adjusted._total=adjusted._evaluateTotal();return {roll:adjusted,results};
 }
 export async function applySeeking(card,user=game.user) {
+    if(!game.user.isGM||game.users.activeGM&&game.users.activeGM.id!==game.user.id)throw Error('A connected GM is required for Seeking Spell.');
+    if(card.getFlag?.(ID,'seekingAdjusting'))throw Error('Seeking Spell is already resolving.');
+    const staged=globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card);await card.setFlag(ID,'seekingAdjusting',true);let committed=false;
+    try{await applySeekingCore(card,user);committed=true;}finally{await card.setFlag(ID,'seekingAdjusting',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}
+    if(committed){await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'seeking');if(!staged){const ref=card.system.origin,origin=typeof ref==='string'?game.messages.get(ref):ref;if(origin&&card.system.evaluatedTargets.some(t=>t.isMiss===false))await globalThis.Ugmuls55eAutomationDamage?.promptDamage?.(card.getAssociatedActivity(),origin,'attack',card);await globalThis.Ugmuls55eAutomationReactive?.completed(card);}}
+}
+async function applySeekingCore(card,user=game.user) {
     if(!canSeek(card,user))throw Error("Seeking Spell requires a missed spell attack and an available Sorcery Point.");
     const original=seekingSnapshot(card),result=await seekingRoll(card.rolls[0]);
     if(!canSeek(card,user)||seekingSnapshot(card)!==original)throw Error("The attack changed. Try Seeking Spell again.");
@@ -46,7 +60,7 @@ export async function applySeeking(card,user=game.user) {
         if(globalThis.Ugmuls55eAutomationMetamagic)charge=await globalThis.Ugmuls55eAutomationMetamagic.chargeMetamagic(actor,card,"seeking");
         else await resource.update({"system.uses.spent":spent+1});charged=true;
         await animateNewSaveDice(card,result.results,user);
-        if(card.getFlag?.(ID,"seekingSpellUsed")||!card.system.evaluatedTargets.every(target=>target.isMiss===true)||seekingSnapshot(card)!==original)throw Error("The attack changed during the reroll. The Sorcery Point was refunded.");
+        if(isRollAdjustmentLocked(card)||card.getFlag?.(ID,"seekingSpellUsed")||!card.system.evaluatedTargets.every(target=>target.isMiss===true)||seekingSnapshot(card)!==original)throw Error("The attack changed during the reroll. The Sorcery Point was refunded.");
         await card.update({rolls:[result.roll,...card.rolls.slice(1)],["flags."+ID+".seekingSpellUsed"]:true});
     } catch(error){if(charged){if(charge)await charge.refund();else await resource.update({"system.uses.spent":spent});}throw error;}
 }
@@ -60,7 +74,7 @@ export function addSeekingButton(message,html) {
         if(!canSeek(entry.card)||!entry.card.isContentVisible){old?.remove();continue;}if(old)continue;
         const face=entry.root.querySelector('.chat-card')??entry.root;let controls=face.querySelector('.rsa-attack-actions');
         if(!controls){controls=document.createElement("div");controls.className="rsa-attack-actions";face.append(controls);}
-        const button=document.createElement("button");button.type="button";button.dataset.rsaSeeking="";
+        const button=document.createElement("button");button.type="button";button.dataset.rsaSeeking="";button.dataset.rsaReactionItemUuid=seekingFeature(actorFor(entry.card)).uuid;
         const img=document.createElement("img");img.src=seekingFeature(actorFor(entry.card)).img??"icons/svg/d20.svg";img.alt="";button.append(img,document.createTextNode("Seeking Spell"));
         button.setAttribute("data-tooltip","Spend 1 Sorcery Point to reroll one d20. You must use the new result.");
         button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();button.disabled=true;
@@ -72,11 +86,13 @@ export function addSeekingButton(message,html) {
 }
 Hooks.once("init",()=>game.settings.register(ID,"seekingSpellAutomation",{name:"Seeking Spell Attack Reroll",hint:"Offer Seeking Spell on missed spell attacks. Spend 1 Sorcery Point to reroll one d20 and use the new result, then refresh the hit and damage workflow.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
+    globalThis.Ugmuls55eAutomationSeekingSpellTiming={snapshot:seekingTimingSnapshot,candidates:seekingCandidates};
+    for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem','updateActor','updateCombat'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('seeking',doc,changes));
     Hooks.on("dnd5e.renderChatMessage",addSeekingButton);
     Hooks.on("updateChatMessage",(card,changes)=>{
         if(!changes.flags?.[ID]?.seekingSpellUsed||card.author?.id!==game.user.id||!card.system.evaluatedTargets?.some(target=>target.isMiss===false))return;
         const origin=typeof card.system.origin==="string"?game.messages.get(card.system.origin):card.system.origin;
-        if(origin)globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);
+        if(origin&&!card.getFlag?.(ID,'seekingAdjusting')&&!globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card))globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);
     });
     game.socket.on("module."+ID,packet=>{
         if(packet?.action==="seekingSpellError"&&packet.userId===game.user.id){ui.notifications.error(packet.error);return;}

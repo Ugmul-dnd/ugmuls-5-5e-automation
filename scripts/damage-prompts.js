@@ -242,6 +242,7 @@ export function configurePromptDialog(kind, dialog = {}) {
                 }).catch(err => console.error("Ugmuls 5.5e Automation | Could not save prompt position:",err));
             }
             async close(options) {
+                if(kind === "damage"&&!options?.dnd5e?.submitted&&globalThis.Ugmuls55eAutomationPendingDamage?.canSubmitDamage(this)!==false){const card=globalThis.Ugmuls55eAutomationPendingDamage?.pendingCard(this);if(card)await globalThis.Ugmuls55eAutomationStagedReductions?.cancel(card);}
                 if(kind === "attack"&&!options?.dnd5e?.submitted)globalThis.Ugmuls55eAutomationBrutal?.releaseBrutal(this);
                 if(kind === "attack")globalThis.Ugmuls55eAutomationMultiShot?.settleFirstShot(this,options);
                 if(kind === "damage") {
@@ -339,6 +340,10 @@ export function turnOnlyAura(activity) {
 }
 
 export async function waitForAttackAnimation(message){
+    // Flag-only outcome changes can leave DSN's native animating flag stale.
+    // An observed completion for this unchanged roll is authoritative evidence;
+    // every real rolls update invalidates it, and tracked bonus visuals wait separately.
+    if(globalThis.Ugmuls55eAutomationAnimationCompletion?.completed(message))return;
     if(!game.dice3d)return;
     let hook;
     try{
@@ -401,6 +406,7 @@ export function recommendAttackCritical(config,dialog,attack){
  }
 }
 export async function rollSpellAttackDamage(activity,usage,attack,event=null){
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.held(attack))throw Error('Resolve or reveal the attack before rolling damage.');
     const scaled=usage.getAssociatedActivity?.({scaled:true})??activity;
     if(scaled?.type!=='attack'||!scaled.item||!attack||(!game.user.isGM&&!scaled.item.isOwner))throw Error('This attack is not yours to roll.');
     // Native chat Damage chooses the last attack under a usage. Beams need
@@ -430,7 +436,13 @@ export function damagePromptRecipient(activity,message,region=false){
  }
  return region?selectSaveUser(activity.actor??activity.item?.actor,game.users,game.users.activeGM):message.author;
 }
-export async function promptDamage(activity, message, kind = "save", attack = null) {
+export async function promptDamage(activity, message, kind = "save", attack = null, {timingContinuation=false} = {}) {
+    // Revealing a staged attack also fires the ordinary published-attack hook.
+    // Its recorded continuation owns the next damage prompt on every client,
+    // including before a pending card exists. Do not race it with a second roll.
+    if(kind==='save'&&(globalThis.Ugmuls55eAutomationReactionTiming?.saveDamageBlocked?.(message)||globalThis.Ugmuls55eAutomationReactionTiming?.saveDamageSkipped?.(message)))return;
+    if(attack?.getFlag?.(MODULE_ID,'reactionTimingWindow')?.continueUser&&!timingContinuation)return;
+    if(attack&&(globalThis.Ugmuls55eAutomationReactionTiming?.held(attack)||globalThis.Ugmuls55eAutomationWardingFlare?.ready(attack)===false))return;
     if(kind === "attack" && globalThis.Ugmuls55eAutomationSteelDeflect?.ready(attack)===false)return;
     const setting = kind === "attack" ? "promptDamageOnHit" : "promptDamageOnSave";
     if (game.settings.get(MODULE_ID, setting) !== true || !activity?.damage?.parts?.length || !message?.id) return;
@@ -459,6 +471,7 @@ export async function promptDamage(activity, message, kind = "save", attack = nu
         if (game.settings.get(MODULE_ID, setting) !== true || !game.messages.get(message.id)) return;
         // A user or another module may already have rolled damage while the
         // attack animation played. Avoid opening a redundant dialog.
+        if(kind==='save'&&globalThis.Ugmuls55eAutomationReactionTiming?.saveDamageBlocked?.(message))return;
         if(damageAlreadyRolled(message,attack))return;
         opened.add(key);
         if(attack&&activity.item?.type&&activity.item.type!=='weapon'){

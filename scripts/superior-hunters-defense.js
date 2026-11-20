@@ -1,3 +1,5 @@
+// Timing: outcome / damage-visible (connected); choose Resistance before application.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),values=c=>Array.from(c?.values?.()??c??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],wrapped=new WeakSet();
@@ -6,12 +8,16 @@ const damageTypes=new Set(["acid","bludgeoning","cold","fire","force","lightning
 export const defenseFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&i.system?.source?.rules!=="2014"&&((i.identifier??i.system?.identifier)==="superior-hunters-defense"||/^superior hunter['’]s defense$/i.test(i.name??"")));
 export function defenseRecord(card,uuid){return values(flag(card,"superiorHunterDefense")).find(r=>r.target===uuid);}
 export function incomingTypes(card){return [...new Set(values(card?.rolls).filter(r=>r.total>0).map(r=>r.options?.type).filter(t=>damageTypes.has(t)))];}
-export function defenseCandidates(card,user=game.user){
- if(!enabled()||card?.type!=="damage"||card.isContentVisible===false||isHealingCard(card)||flag(card,"pendingDamage")||flag(card,"protectiveFieldPending")||flag(card,"deflectPending")||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||!incomingTypes(card).length)return [];
+export function defenseCandidates(...args){return defenseCandidatesCore(...args).filter(e=>globalThis.Ugmuls55eAutomationReactive?.damageAllowed?.(args[0],e.actor)!==false);}
+function defenseCandidatesCore(card,user=game.user){
+ if(!enabled()||card?.type!=="damage"||card.isContentVisible===false||isHealingCard(card)||globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card)||flag(card,"superiorHunterDefensePending")||flag(card,"pendingDamage")||flag(card,"protectiveFieldPending")||flag(card,"deflectPending")||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||!incomingTypes(card).length)return [];
+ if(!user?.isGM&&(card.blind||card.whisper?.length&&!card.whisper.some(u=>(u.id??u)===user?.id)&&card.author?.id!==user?.id))return [];
  const ref=card.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
  return values(card.system?.targets).flatMap(t=>{
   const token=globalThis.fromUuidSync?.(t.token,{strict:false}),actor=token?.actor,feature=defenseFeature(actor);
   if(!feature||defenseRecord(card,t.token)||!(user?.isGM||actor.testUserPermission?.(user,"OWNER"))||reactionUsed(actor)||["incapacitated","unconscious","dead","stunned","paralyzed","petrified"].some(s=>actor.statuses?.has(s)))return [];
+  const explicit=flag(card,'damageAttackId'),attack=explicit?game.messages.get(explicit):origin?.type==='attack'?origin:null;
+  if(attack?.system?.evaluatedTargets?.find(e=>e.token===t.token)?.isMiss===true)return [];
   const onSave=card.system?.onSave,outcome=origin?.system?.outcomes?.get(t.token);if(onSave&&(!["success","failure"].includes(outcome)||outcome==="success"&&onSave==="none"))return [];
   const reaction=values(feature.system?.activities).find(a=>String(a.activation?.type??"").startsWith("reaction"));return reaction?[{actor,token,feature,reaction,types:incomingTypes(card)}]:[];
  });
@@ -23,16 +29,19 @@ export function defenseEffect(feature,actor,token,card,type){
  data.flags={...data.flags,dnd5e:{...data.flags?.dnd5e,isTemporary:true},[ID]:{...data.flags?.[ID],superiorHunterResistance:{actor:actor.uuid,target:token.uuid,type,turn,combat:game.combat?.started?game.combat.id:null,expires:Number(game.time?.worldTime??0)+6}},autoanimations:{version:5,isEnabled:false,isCustomized:false,killAnim:true}};return data;
 }
 export function useSuperiorDefense(card,targetUuid,type,user=game.user){return enqueue(async()=>{
+ if(!authority())throw Error("A connected GM is required for Superior Hunter’s Defense.");
  let entry=defenseCandidates(card,user).find(c=>c.token.uuid===targetUuid);if(!entry||!entry.types.includes(type))throw Error("Superior Hunter's Defense needs incoming unapplied damage and an available Reaction. Undo applied damage first.");
  const {actor,token,feature,reaction}=entry,turn=stamp();let marker,effect,committed=false;
  try{
+  await card.setFlag(ID,'superiorHunterDefensePending',true);
+  if(reactionUsed(actor))throw Error('The Ranger’s Reaction was just used.');
   marker=await recordReactionUse(reaction,{}, {message:{id:card.id}});
   const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&values(game.combat.combatants).some(c=>c.actor?.uuid===actor.uuid);if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id)throw Error("Could not reserve the Ranger's Reaction.");
   if(turn!==stamp()||isRollAdjustmentLocked(card)||defenseRecord(card,targetUuid)||!card.system?.targets?.some(t=>t.token===targetUuid)||!incomingTypes(card).includes(type))throw Error("The damage or turn changed before Superior Hunter's Defense could apply.");
   [effect]=await actor.createEmbeddedDocuments("ActiveEffect",[defenseEffect(feature,actor,token,card,type)]);if(!effect)throw Error("Could not apply the Ranger's resistance.");
   const record={actor:actor.uuid,target:token.uuid,name:actor.name,type,feature:feature.uuid,turn};await card.setFlag(ID,"superiorHunterDefense",[...values(flag(card,"superiorHunterDefense")),record]);committed=true;
   globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return record;
- }catch(error){if(!committed){if(effect&&values(actor.effects).some(e=>e.id===effect.id))await actor.deleteEmbeddedDocuments("ActiveEffect",[effect.id]);if(marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});}throw error;}
+ }catch(error){if(!committed){if(effect&&values(actor.effects).some(e=>e.id===effect.id))await actor.deleteEmbeddedDocuments("ActiveEffect",[effect.id]);if(marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});}throw error;}finally{await card.setFlag(ID,'superiorHunterDefensePending',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);if(committed)await globalThis.Ugmuls55eAutomationReactive?.completed(card);}
 });}
 export function installDefenseDamage(ActorType=CONFIG.Actor?.documentClass,TrayType=globalThis.customElements?.get?.("damage-application")){
  const p=TrayType?.prototype;if(p?.getMergedOptions&&!wrapped.has(p)){wrapped.add(p);const get=p.getMergedOptions;p.getMergedOptions=function(uuid){return {...get.call(this,uuid),rsaSuperiorDefenseTarget:uuid};};}
@@ -78,7 +87,7 @@ export function renderSuperiorDefense(message,html){
  const entries=[{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).map(node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
  for(const{card,node}of entries){node.querySelectorAll(':scope > .rsa-superior-defense').forEach(n=>n.remove());if(card.type!=="damage"||card.isContentVisible===false)continue;const candidates=defenseCandidates(card),records=values(flag(card,"superiorHunterDefense"));if(!candidates.length&&!records.length)continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-superior-defense";
-  for(const entry of candidates){const button=document.createElement("button");button.type="button";button.textContent="Superior Hunter's Defense"+(candidates.length>1?" — "+entry.actor.name:"");button.dataset.rsaReactionIcon=entry.feature.img??"icons/svg/shield.svg";button.dataset.tooltip="Spend your Reaction to resist the selected damage type for this hit and the rest of the current turn.";button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await requestDefense(card,entry,node);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
+  for(const entry of candidates){const button=document.createElement("button");button.type="button";button.dataset.rsaReactionItemUuid=entry.feature.uuid;button.textContent="Superior Hunter's Defense"+(candidates.length>1?" — "+entry.actor.name:"");button.dataset.rsaReactionIcon=entry.feature.img??"icons/svg/shield.svg";button.dataset.rsaReactionDescription="Use "+entry.actor.name+"’s Reaction to resist the chosen damage type against this damage and until the end of the current turn.";button.dataset.tooltip=button.dataset.rsaReactionDescription;button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await requestDefense(card,entry,node);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
   for(const record of records){const info=document.createElement("span");info.textContent="Superior Hunter's Defense: "+record.name+" · "+label(record.type)+" resistance";controls.append(info);}node.append(controls);
  }
 }

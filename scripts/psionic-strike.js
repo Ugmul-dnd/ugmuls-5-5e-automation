@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-rider (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",STRIKE="FxJXB4BPlBnJLF7q",enqueue=createEventQueue();
 const values=c=>Array.from(c?.values?.()??c??[]),key=i=>i?.identifier??i?.system?.identifier;

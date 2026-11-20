@@ -22,6 +22,16 @@ export async function waitForClientRollAnimations(ids,wait,{document:doc=globalT
  })();
  await waitForVisibleAnimation(animation,{document:doc,window:win});
 }
+const completedRolls=new Map();
+function rollSignature(card){
+ const results=list=>(list??[]).map(r=>[r.result,r.active!==false,!!r.discarded,!!r.rerolled]);
+ const term=t=>({number:t.number,faces:t.faces,operator:t.operator,total:t.total,results:results(t.results),rolls:t.rolls?.map(roll),roll:t.roll?roll(t.roll):undefined});
+ const roll=r=>({total:r.total,mode:r.options?.advantageMode??0,terms:(r.terms??[]).map(term),dice:(r.dice??[]).map(d=>({faces:d.faces,results:results(d.results)}))});
+ return JSON.stringify((card?.rolls??[]).map(roll));
+}
+export function recordRollAnimationComplete(ref){const card=typeof ref==='string'?game.messages.get(ref):ref;if(!card?.id||!card.rolls?.length)return;completedRolls.delete(card.id);completedRolls.set(card.id,rollSignature(card));while(completedRolls.size>256)completedRolls.delete(completedRolls.keys().next().value);}
+export function rollAnimationCompleted(card){return !!card?.id&&completedRolls.has(card.id)&&completedRolls.get(card.id)===rollSignature(card);}
+export function invalidateRollAnimation(card,changes){if(changes===undefined||Object.hasOwn(changes??{},'rolls'))completedRolls.delete(card?.id);}
 let syncing;
 export function configureInactiveDice(){
  if(syncing)return syncing;
@@ -34,6 +44,9 @@ export function configureInactiveDice(){
 function configure(){configureInactiveDice().catch(error=>console.warn("Background dice configuration failed",error));}
 Hooks.once("init",()=>game.settings.register(ID,"backgroundAnimationSafety",{name:"Skip Dice in Inactive Tabs",hint:"Enable Dice So Nice’s per-user skip-inactive-tab option on connected clients so hidden dice are not queued for replay. Visible clients still finish dice before automation results. Disabling this stops enforcement; existing Dice So Nice preferences can then be changed manually.",scope:"world",config:true,type:Boolean,default:true,onChange:configure}));
 Hooks.once("ready",()=>{
+ globalThis.Ugmuls55eAutomationAnimationCompletion={completed:rollAnimationCompleted,record:recordRollAnimationComplete};
+ Hooks.on('diceSoNiceRollComplete',recordRollAnimationComplete);
+ Hooks.on('updateChatMessage',invalidateRollAnimation);Hooks.on('deleteChatMessage',card=>invalidateRollAnimation(card));
  globalThis.Ugmuls55eAutomationWaitForAnimation=waitForVisibleAnimation;
  globalThis.Ugmuls55eAutomationClientRollWait=waitForClientRollAnimations;
  configure();Hooks.on("diceSoNiceReady",configure);

@@ -1,6 +1,8 @@
+// Timing: outcome / attack-miss / save-fail (connected); checks retain existing handling.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {seekingSnapshot} from "./seeking-spell.js";
-const ID="ugmuls-5-5e-automation",enqueue=createEventQueue();
+const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),timingJobs=new WeakMap();
 const actorFor=card=>card?.getAssociatedActor?.()??card?.getAssociatedActivity?.()?.actor;
 const enabled=()=>game.settings.get(ID,"bardicInspirationAutomation")===true;
 export const valorSource=actor=>Array.from(actor?.items??[]).some(item=>item.type==="feat"&&((item.identifier??item.system?.identifier)==="combat-inspiration"||/^combat inspiration$/i.test(item.name??"")));
@@ -55,6 +57,7 @@ export function availableInspiration(actor){return Array.from(actor?.appliedEffe
 export function failureState(card,index=0){
     const roll=card?.rolls?.[index];if(!roll?.d20||!roll._evaluated)return "ineligible";
     if(card.type==="attack"){
+        if(card.system?.targets?.some(t=>t.ac===null))return "ineligible";
         const targets=card.system?.evaluatedTargets??[];
         if(targets.length)return targets.every(target=>target.isMiss===true)?"failed":"ineligible";
     }
@@ -62,8 +65,19 @@ export function failureState(card,index=0){
     const target=roll.options?.target;
     return target!==null&&target!==undefined&&target!==""&&Number.isFinite(Number(target))?(roll.isFailure===true?"failed":"ineligible"):"unknown";
 }
+export function bardicTimingSnapshot(card){
+ const actor=actorFor(card),ref=card?.getAssociatedToken?.(),token=(ref?.document??ref)?.uuid,grant=availableInspiration(actor);
+ return {entries:card?.type==='attack'&&card.system?.targets?.length===1&&token&&grant.length===1?[{actor:actor.uuid,token,feature:grant[0].effect.uuid,sourceActor:grant[0].data.sourceActor,sourceItem:grant[0].data.sourceItem}]:[]};
+}
+export function bardicAttackCandidates(card,user=game.user){
+ if(card?.type!=='attack'||!canInspire(card,user))return [];
+ const actor=actorFor(card),grant=availableInspiration(actor)[0];
+ return (card.getFlag?.(ID,'bardicTimingSnapshot')?.entries??[]).filter(e=>e.actor===actor?.uuid&&e.feature===grant?.effect.uuid).map(e=>({...e,actor,feature:{uuid:grant.effect.uuid}}));
+}
 export function canInspire(card,user=game.user,index=0){
-    const actor=actorFor(card);
+    const actor=actorFor(card),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+    if(card?.isContentVisible===false||timing?.closed?.(card,'bardic')||card?.type==='save'&&timing?.declined?.(card,actor))return false;
+    if(card?.type==='attack'&&card.getFlag?.(ID,'bardicTimingSnapshot')){const entry=card.getFlag(ID,'bardicTimingSnapshot').entries?.find(e=>e.actor===actor?.uuid&&availableInspiration(actor).some(g=>g.effect.uuid===e.feature&&(!e.sourceActor||e.sourceActor===g.data.sourceActor)&&(!e.sourceItem||e.sourceItem===g.data.sourceItem)));if(!entry||timing?.choiceAllowed?.(card,'bardic',actor.uuid,entry.token)===false)return false;}
     return enabled()&&["attack","save","check"].includes(card?.type)&&Number.isInteger(index)&&index>=0&&
         !(card.getFlag?.(ID,"bardicUsed")??{})[index]&&!card.getFlag?.(ID,"carefulSpell")&&!card.getFlag?.(ID,"automaticGrappleFailure")&&
         !isRollAdjustmentLocked(card)&&failureState(card,index)!=="ineligible"&&
@@ -76,6 +90,14 @@ export async function inspiredRoll(original,bonus){
 }
 const signature=card=>seekingSnapshot(card)+JSON.stringify(card.rolls.map(roll=>roll.options?.target));
 export async function applyInspiration(card,user=game.user,index=0,confirmedFailure=false){
+ if(timingJobs.has(card))throw Error('Bardic Inspiration is already resolving.');
+ const timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ if(timing?.held?.(card)&&(!game.user?.isGM||game.users.activeGM?.id!==game.user.id))throw Error('A connected GM is required for this Inspiration decision.');
+ const operation=async()=>{await card.setFlag(ID,'bardicAdjusting',true);try{return await applyInspirationRoll(card,user,index,confirmedFailure);}finally{await card.setFlag(ID,'bardicAdjusting',false);}};
+ const job=(async()=>{const result=card.type==='save'?await(timing?.saveAdjustment?.(card,'bardic',operation)??operation()):await operation();if(card.type==='attack')await timing?.complete?.(card,'bardic');globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return result;})();
+ timingJobs.set(card,job);try{return await job;}finally{timingJobs.delete(card);}
+}
+async function applyInspirationRoll(card,user=game.user,index=0,confirmedFailure=false){
     if(!canInspire(card,user,index))throw Error("Bardic Inspiration requires an available Inspired effect and an unresolved failed D20 Test. Undo applied damage or effects first.");
     if(failureState(card,index)==="unknown"&&!confirmedFailure)throw Error("Confirm that this D20 Test failed before using Bardic Inspiration.");
     const actor=actorFor(card),{effect,data}=availableInspiration(actor)[0],before=signature(card);
@@ -137,6 +159,7 @@ export function scrollAppliedInspiration(card){
 function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("bardic",document,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"bardicInspirationAutomation",{name:"Bardic Inspiration Assistance",hint:"Offer the source Bard's Inspiration die on failed attacks, saves and checks. Preserve the original d20 and consume Inspired when the die is rolled.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
+    globalThis.Ugmuls55eAutomationBardic={snapshot:bardicTimingSnapshot,candidates:bardicAttackCandidates,canInspire};
     Hooks.on("preCreateActiveEffect",effect=>{if(!enabled()&&game.settings.get(ID,"combatInspirationAutomation")!==true)return;const data=inspirationData(effect);if(data)effect.updateSource({["flags."+ID+".bardicInspiration"]:data});});
     Hooks.on("preUpdateActiveEffect",(effect,changes,options={})=>{
         if(options.rsaBardicGrantRefresh||options.rsaUndoEffect)return;
@@ -152,6 +175,7 @@ Hooks.once("ready",()=>{
     for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect"])Hooks.on(event,refresh);
     Hooks.on("updateChatMessage",(card,changes)=>{
         if(!changes.flags?.[ID]?.bardicUsed&&!changes["flags."+ID+".bardicUsed"])return;
+        if(globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card))return;
         if(card.type!=="attack"||card.author?.id!==game.user.id||!card.system.evaluatedTargets?.some(target=>target.isMiss===false))return;
         const origin=typeof card.system.origin==="string"?game.messages.get(card.system.origin):card.system.origin;
         if(origin)globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);

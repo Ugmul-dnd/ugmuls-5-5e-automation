@@ -1,7 +1,10 @@
+// Timing: declaring-attack / attack-declared (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,linkedHpCards,describeTarget} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 import {updateSaveMode} from "./save-roll-controls.js";
 import {effectiveCombatant,companionOwner} from "./companion-turns.js";
+import {tokenDistance} from "./shared-distance.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),opened=new Set();
 const values=v=>Array.from(v?.values?.()??v??[]),flag=(d,k)=>d?.getFlag?.(ID,k)??d?.flags?.[ID]?.[k],resolve=r=>typeof r==="string"?globalThis.fromUuidSync?.(r,{strict:false}):r;
 const authority=()=>game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id),enabled=()=>game.settings.get(ID,"steelDeflectAutomation")===true;
@@ -19,7 +22,10 @@ export function deflectRange(defender,attacker){
  if(!defender?.actor||!attacker?.actor||defender.parent?.id!==attacker.parent?.id||attacker.hidden)return false;
  const a=defender.object,b=attacker.object;if(!a?.center||!b?.center)return false;
  const units=String(defender.parent?.grid?.units??'ft').toLowerCase(),limit=/^(m|meters?|metres?)$/.test(units)?1.524:5;
- const distance=canvas.grid.measurePath([a.center,b.center]).distance;
+ // A Large attacker’s center can be more than 5 feet away while its
+ // occupied space is adjacent. Use the shared footprint/elevation measure
+ // on this scene; the GM may be viewing a different canvas.
+ const distance=tokenDistance(defender,attacker);
  return Number.isFinite(distance)&&distance<=limit&&!a.checkCollision?.(b.center,{type:'sight',mode:'any'});
 }
 export function deflectCandidates(card,user=game.user){
@@ -30,7 +36,7 @@ export function deflectCandidates(card,user=game.user){
   const actor=token.actor,owner=companionOwner(actor);if(!actor||!owner||seen.has(actor.uuid)||actor.uuid===attacker.actor.uuid||card.system.targets[0].actor===actor.uuid||resolve(card.system.targets[0].token)?.actor?.uuid===actor.uuid||used[token.id]||!(user.isGM||actor.testUserPermission?.(user,'OWNER'))||unable(actor)||reactionUsed(actor)||!effectiveCombatant(actor)||!deflectRange(token,attacker))return [];
   const feature=values(actor.items).find(i=>i.type==='feat'&&(key(i)==='deflect-attack'||i.name?.trim().toLowerCase()==='deflect attack'));
   const activity=values(feature?.system?.activities).find(a=>String(a.activation?.type).startsWith('reaction'));
-  if(!activity)return [];seen.add(actor.uuid);return [{actor,owner,token,feature,activity,attacker}];
+  if(!activity||globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(card,'steelDeflect',actor.uuid,token.uuid)===false)return [];seen.add(actor.uuid);return [{actor,owner,token,feature,activity,attacker}];
  });
 }
 function attackOf(card){if(card?.type==='attack')return card;const id=flag(card,'damageAttackId');if(id)return game.messages.get(id);const origin=resolve(card?.system?.origin)??game.messages.get(card?.system?.origin);return origin?.type==='attack'?origin:values(origin?.getAssociatedRolls?.('attack')).filter(a=>a.timestamp<=card.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];}
@@ -50,7 +56,7 @@ export function useSteelDeflect(card,tokenId,user=game.user){return enqueue(asyn
   committed=true;
   await card.setFlag(ID,'steelDeflections',{...flag(card,'steelDeflections'),[tokenId]:{actor:entry.actor.uuid,mode,user:user.id}});
   await promptImprovedDeflection(card,entry,user);
- }finally{try{if(!committed&&marker?.getFlag?.(ID,'reactionUsage')===card.id)await marker.update({disabled:true});}finally{await card.setFlag(ID,'steelDeflectAdjusting',false);refresh(card);}}
+ }finally{try{if(!committed&&marker?.getFlag?.(ID,'reactionUsage')===card.id)await marker.update({disabled:true});}finally{await card.setFlag(ID,'steelDeflectAdjusting',false);refresh(card);if(committed)await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'steelDeflect');}}
 });}
 export function improvedDeflection(entry){
  const level=Number(entry.owner.classes?.artificer?.system?.levels??values(entry.owner.items).find(i=>i.type==='class'&&key(i)==='artificer')?.system?.levels??0);
@@ -77,7 +83,7 @@ export function renderSteelDeflect(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;const entries=[{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).map(node=>({card:game.messages.get(node.dataset.messageId),node}))];
  for(const {card,node}of entries){node.querySelectorAll(':scope > .rsa-steel-deflect').forEach(n=>n.remove());if(!card||card.isContentVisible===false||flag(card,'steelDeflectAdjusting'))continue;
   const candidates=deflectCandidates(card);if(!candidates.length)continue;
-  const row=document.createElement('div');row.className='rsa-attack-actions rsa-steel-deflect';for(const entry of candidates){const b=document.createElement('button');b.type='button';b.textContent='Deflect Attack'+(candidates.length>1?' — '+entry.actor.name:'');b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();b.disabled=true;requestDeflect(card,entry.token.id);});row.append(b);}node.append(row);
+  const row=document.createElement('div');row.className='rsa-attack-actions rsa-steel-deflect';for(const entry of candidates){const b=document.createElement('button');b.type='button';b.dataset.rsaReactionItemUuid=entry.feature.uuid;b.textContent='Deflect Attack'+(candidates.length>1?' — '+entry.actor.name:'');b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();b.disabled=true;requestDeflect(card,entry.token.id);});row.append(b);}node.append(row);
  }
 }
 export function installDeflectDamage(Type){
@@ -91,7 +97,7 @@ export function installDeflectDamage(Type){
 }
 Hooks.once('init',()=>game.settings.register(ID,'steelDeflectAutomation',{name:'Steel Defender: Deflect Attack',hint:'Offer the Defender’s Reaction on a nearby visible attacker, preserve existing attack dice while applying Disadvantage, and prompt native Improved Deflection damage at level 15. Single-target attacks only; Undo applied HP before adjusting.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationSteelDeflect={ready:deflectReady};
+ globalThis.Ugmuls55eAutomationSteelDeflect={ready:deflectReady,candidates:deflectCandidates,snapshot:card=>({entries:deflectCandidates(card,game.users.activeGM).map(e=>({actor:e.actor.uuid,token:e.token.uuid,feature:e.feature.uuid}))})};
  installDeflectDamage(globalThis.customElements?.get?.('damage-application'));
  for(const event of ['createChatMessage','updateChatMessage'])Hooks.on(event,card=>{showImprovedDamage(card).catch(report);});
  Hooks.on('dnd5e.renderChatMessage',renderSteelDeflect);

@@ -1,53 +1,46 @@
-import {describeTarget,isRollAdjustmentLocked} from "./shared-activity-card.js";
-import {reactionUsed} from "./reaction-tracker.js";
+// Timing: outcome / attack-hit.
+import {describeTarget,isRollAdjustmentLocked,linkedHpCards} from "./shared-activity-card.js";
+import {reactionSpellAvailable,reactionSpellCastPlan,useReactionSpellPlan} from "./reaction-spell-resources.js";
 const MODULE_ID="ugmuls-5-5e-automation";
 const busy=new Set();
 
 export function shieldReactionAvailable(actor) {
-    return !!actor&&!reactionUsed(actor)&&!["incapacitated","dead","unconscious","stunned","paralyzed","petrified"].some(status=>actor.statuses?.has(status));
+    return reactionSpellAvailable(actor);
 }
 
-const remaining=uses=>Math.max(0,Number(uses?.value??(Number(uses?.max)-Number(uses?.spent??0)))||0);
 export function shieldCastPlan(actor) {
-    if(!shieldReactionAvailable(actor))return null;
-    const candidates=[];
-    for(const item of actor.items??[]) {
-        if(item.type!=="spell"||(item.identifier??item.system?.identifier??item.name?.toLowerCase())!=="shield")continue;
-        if(item.system.canPrepare&&!item.system.prepared)continue;
-        const activities=Array.from(item.system.activities?.values?.()??item.system.activities??[]);
-        const activity=activities.find(entry=>entry.activation?.type==="reaction"&&entry.type==="utility");
-        if(!activity)continue;
-        const base={item,activity};
-        if(item.system.method==="atwill")return {...base,kind:"atwill"};
-        // Dedicated activity uses take priority, then the spell's own limited-use pool.
-        const freeActivity=activities.find(entry=>remaining(entry.uses??entry.system?.uses)>0&&
-            entry.activation?.type==="reaction"&&entry.type==="utility");
-        if(freeActivity)return {...base,activity:freeActivity,kind:"free",target:{type:"activityUses",target:"",value:"1"}};
-        if(remaining(item.system.uses)>0)return {...base,kind:"free",target:{type:"itemUses",target:"",value:"1"}};
-        if(item.system.method==="innate"&&!Number(item.system.uses?.max))return {...base,kind:"atwill"};
-        candidates.push(base);
-    }
-    if(!candidates.length||globalThis.Ugmuls55eAutomationResources?.hasCastWithSlot(actor))return null;
-    const slots=Object.entries(actor.system?.spells??{}).filter(([key,slot])=>(/^spell[1-9]$/.test(key)||key==="pact")&&Number(slot.value)>0)
-        .map(([key,slot])=>({slot:key,level:key==="pact"?Number(slot.level):Number(key.slice(5))}))
-        .filter(entry=>entry.level>=1).sort((a,b)=>a.level-b.level||Number(a.slot==="pact")-Number(b.slot==="pact"));
-    return slots.length?{...candidates[0],kind:"slot",...slots[0]}:null;
+    return reactionSpellCastPlan(actor,'shield',{activityType:'utility'});
 }
 export function shieldActivity(actor){return shieldCastPlan(actor)?.activity??null;}
-export async function castShield(actor,attack) {
+export async function castShield(actor,attack,{timingWindow=null}={}) {
+    // Shield cannot change a critical hit. Enforce this on stale buttons too.
+    if(attack?.rolls?.some(roll=>roll.isCritical===true))return;
     const plan=shieldCastPlan(actor);if(!plan)return;
-    // Modify only an ephemeral native Item clone: sheet configuration remains reusable.
-    const item=plan.item.clone({}, {keepId:true}),activityId=plan.activity.id??plan.activity._id;
-    const path="system.activities."+activityId;
-    item.updateSource({
-        "system.method":plan.kind==="slot"?"spell":plan.item.system.method,
-        [path+".consumption.spellSlot"]:plan.kind==="slot",
-        [path+".consumption.targets"]:plan.kind==="free"?[plan.target]:[]
-    });
-    const activity=item.system.activities.get(activityId);
-    const usage={consume:{resources:plan.kind==="free"?[0]:[],spellSlot:plan.kind==="slot"},scaling:plan.kind==="slot"?Math.max(0,plan.level-Number(item.system.level??1)):0};
-    if(plan.kind==="slot")usage.spell={slot:plan.slot};
-    return activity.use(usage,{configure:false},{data:{flags:{[MODULE_ID]:{shieldReactionAttack:attack.id}}}});
+    const message={data:{flags:{[MODULE_ID]:{shieldReactionAttack:attack.id,...(timingWindow?{reactionTimingShieldWindow:timingWindow}:{})}}}};
+    return useReactionSpellPlan(plan,{message});
+}
+
+// Reaction Shield is a self buff. Native copied/granted effects can retain an
+// explicit origin.actor or a generic turnStart expiry from their base effect.
+// Normalize only a fresh application from this reaction's exact usage card;
+// expiry/Undo updates and existing world effects are never rewritten.
+export function shieldExpiryChanges(effect,data){
+    const reference=data?.['system.origin.message']??data?.system?.origin?.message;
+    if(typeof reference!=='string')return null;
+    const cast=game.messages.get(reference.replace(/^ChatMessage\./,''));
+    if(!cast?.getFlag?.(MODULE_ID,'shieldReactionAttack'))return null;
+    const caster=cast.getAssociatedActor?.(),recipient=effect.actor??effect.parent;
+    if(!caster?.uuid||recipient?.uuid!==caster.uuid)return null;
+    return {'duration.expiry':'sourceStart','system.origin.actor':caster.uuid};
+}
+export function prepareShieldExpiry(effect,data){
+    const updates=shieldExpiryChanges(effect,data);if(updates)effect.updateSource(updates);
+}
+export function refreshShieldExpiry(effect,changes){
+    const updates=shieldExpiryChanges(effect,changes);if(!updates)return;
+    Object.assign(changes,updates);
+    if(changes.duration)changes.duration.expiry=updates['duration.expiry'];
+    if(changes.system?.origin)changes.system.origin.actor=updates['system.origin.actor'];
 }
 
 export async function refreshShieldAttack(attack,{settledSource=null}={}) {
@@ -56,12 +49,14 @@ export async function refreshShieldAttack(attack,{settledSource=null}={}) {
     for (const descriptor of attack.system.targets ?? []) {
         const token=descriptor.token ? await fromUuid(descriptor.token) : null;
         const target=token?.actor?describeTarget(token):{...descriptor};
-        const valor=attack.getFlag?.(MODULE_ID,"valorDefense")?.[target.token];
+        const records=attack.getFlag?.(MODULE_ID,"valorDefense");
+        const valor=globalThis.Ugmuls55eAutomationValor?.defenseRecord?.(attack,target.token)??records?.[target.token?.split('.').at(-1)]??records?.[target.token]??target.token?.split('.').reduce((node,key)=>node?.[key],records);
         if(valor&&Number.isFinite(target.ac))target.ac+=Number(valor.bonus)||0;
         targets.push(target);
     }
     const settled=settledSource&&game.user.isGM&&(!game.users.activeGM||game.users.activeGM.id===game.user.id);
     await attack.update({"system.targets":targets, [`flags.${MODULE_ID}.shieldRechecked`]:true,...(settled?{[`flags.${MODULE_ID}.shieldReactionSettled`]:settledSource}:{})},{rsaRetarget:true});
+    if(settled)await globalThis.Ugmuls55eAutomationReactionTiming?.shieldSettled(attack,settledSource);
 }
 
 export function damageMissedAfterAttack(damage) {
@@ -116,13 +111,14 @@ export function addShieldButtons(message, html) {
     for (const entry of entries) {
         entry.root.querySelectorAll('[data-rsa-shield]').forEach(button=>button.remove());
         entry.root.querySelectorAll(':scope > .rsa-shield-actions').forEach(controls=>controls.remove());
-        if (!entry.message.isContentVisible || isRollAdjustmentLocked(entry.message)) continue;
+        if (!entry.message.isContentVisible || isRollAdjustmentLocked(entry.message)||entry.message.rolls?.some(roll=>roll.isCritical===true)) continue;
         const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-shield-actions";
         const recipients=new Set();
         for (const pill of entry.root.querySelectorAll("target-pill")) {
             if (pill.hasAttribute("data-miss")) continue;
             const uuid=pill.querySelector("datalist option")?.value;
             if(!uuid||recipients.has(uuid))continue;
+            if(globalThis.Ugmuls55eAutomationReactionTiming?.defenseAllowed?.(entry.message,'shield',uuid)===false)continue;
             const token=fromUuidSync(uuid,{strict:false}),actor=token?.actor;
             if (!actor || (!game.user.isGM && !actor.isOwner)) continue;
             const activity=shieldActivity(actor);
@@ -139,6 +135,7 @@ export function addShieldButtons(message, html) {
                 if (busy.has(key)) return;
                 busy.add(key);button.disabled=true;
                 try {
+                    if(globalThis.Ugmuls55eAutomationReactionTiming?.defenseWindow(entry.message)){await globalThis.Ugmuls55eAutomationReactionTiming.shield(entry.message,uuid);return;}
                     const current=shieldActivity(actor);
                     if (!current || isRollAdjustmentLocked(entry.message)) return;
                     const results=await castShield(actor,entry.message);
@@ -159,6 +156,8 @@ Hooks.once("init",()=>game.settings.register(MODULE_ID,"showShieldReaction",{
     scope:"world",config:true,type:Boolean,default:true
 }));
 Hooks.once("ready",()=>{
+    Hooks.on("preCreateActiveEffect",prepareShieldExpiry);
+    Hooks.on("preUpdateActiveEffect",refreshShieldExpiry);
     Hooks.on("dnd5e.renderChatMessage",(message,html)=>{
         hideShieldMissDamage(message,html);
         try {addShieldButtons(message,html);} catch(err) {console.error("Ugmuls 5.5e Automation | Shield controls failed:",err);}
@@ -170,13 +169,11 @@ Hooks.once("ready",()=>{
         if (!Object.hasOwn(changes,"system.targets") && !changes.system?.targets && !changes.rolls) return;
         const origin=message.system.origin;
         const card=typeof origin === "string" ? game.messages.get(origin) : origin;
-        const damages=new Set(card?.getAssociatedRolls?.("damage")??[]);
-        for(const damage of game.messages??[])if(damage.type==="damage"&&(damage.getFlag?.(MODULE_ID,"damageAttackId")===message.id||(typeof damage.system?.origin==="string"?damage.system.origin:damage.system?.origin?.id)===message.id))damages.add(damage);
-        for (const damage of damages) ui.chat?.updateMessage(damage);
-        if (card) ui.chat?.updateMessage(card);
+        for (const damage of linkedHpCards(message)) globalThis.Ugmuls55eAutomationChatRefresh?.card(damage);
+        if (card) globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
     });
     const refreshReactions=document=>globalThis.Ugmuls55eAutomationChatRefresh?.request("shield",document);
-    for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateCombat","deleteCombat","updateActor","updateItem"])Hooks.on(event,refreshReactions);
+    for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateCombat","deleteCombat","updateActor","createItem","updateItem","deleteItem"])Hooks.on(event,refreshReactions);
     Hooks.on("ugmuls55eAutomation.buffEffectsApplied",(cast)=>{
         const id=cast.getFlag(MODULE_ID,"shieldReactionAttack");
         if (id) refreshShieldAttack(game.messages.get(id),{settledSource:cast.id}).catch(console.error);

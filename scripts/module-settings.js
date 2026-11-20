@@ -232,14 +232,15 @@ export const AUTOMATION_GROUPS=[
     {id:"masteries",name:"Weapon Masteries",icon:"fa-sword",parent:"weaponMasteryAutomation",keys:["weaponMasteryAutomation","masteryGraze","masterySap","masterySlow","masteryTopple","masteryVex","masteryCleave"]},
     {id:"feats",name:"Feats",icon:"fa-star",keys:["tavernBrawlerAutomation","elementalAdeptAutomation","mageSlayerAutomation","luckyAutomation","defensiveDuelistAutomation","crusherAutomation","slasherAutomation","piercerAutomation","savageAttackerAutomation","grapplerAutomation","greatWeaponFightingAutomation","greatWeaponMasterAutomation"]},
     {id:"common",name:"Common",icon:"fa-gears",keys:["legendaryActionAutomation","cleanupInactiveCombatEffects","hillsTumbleAutomation","summonCombatAutomation","regenerationAutomation","skipAutomaticHealingPrompts","backgroundAnimationSafety","reactionTracker","bonusActionTracker","spellSlotTurnTracker","grappleAutomation","evasionAutomation","magicResistanceSaves","showConcentrationHud"]},
-    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["fountMoonlightAutomation","commandedMarkerAutomation","mirrorImageAutomation","showShieldReaction","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
+    {id:"spells",name:"Spells",icon:"fa-book-open",keys:["fountMoonlightAutomation","commandedMarkerAutomation","mirrorImageAutomation","guidingBoltAutomation","hexAbilityChoice","riderHex","riderHuntersMark","riderMinorElementals","multiShotAttacks","autoApplyBuffEffects"]}
 ];
 export const SETTINGS_GROUPS=[
     {id:"automations",name:"Automations",icon:"fa-wand-magic-sparkles",children:AUTOMATION_GROUPS},
+    {id:"reactions",name:"Reaction Triggers",icon:"fa-hand",hint:"Control reaction pauses here. Individual class and feat automations keep their own switches under Automations. Disabling a feature also removes its reaction offers; existing pending decisions can still be declined.",keys:["reactionTimingPilot","counterspellAutomation","showShieldReaction","reactiveAutoApply"]},
     {id:"regions",name:"Regions",icon:"fa-draw-polygon",keys:["promptForSaveOnRegionTriggers","regionPlacementControls","autoAttachSelfEmanations","cleanupTargetingRegions"]},
     {id:"targeting",name:"Targeting",icon:"fa-bullseye",keys:["confirmAreaTargets","retargetActivityCards","previewRegionTargets"]},
     {id:"rolls",name:"Rolls & Damage / Healing",icon:"fa-dice",keys:["overrideInitiativePrompt","promptForSaveOnSpellCasts","promptConcentrationChecks","autoBreakConcentration","promptDamageOnSave","promptDamageOnHit","adjustSavingThrowAdvantage","adjustAttackRollAdvantage","adjustDamageCritical"]},
-    {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["reactiveAutoApply","autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
+    {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
     {id:"chat",name:"Chat & Sheets",icon:"fa-comments",keys:["simplifyAttackCards","simplifySaveCards","simplifyHealingCards","scrollChatOnOpen","sheetAddCompendiumBrowser","sheetLoadUnpreparedSpells"]}
 ];
 const settingPages=()=>SETTINGS_GROUPS.flatMap(group=>group.children??[group]);
@@ -312,6 +313,7 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
                 <h2>${group.name}</h2>
                 ${group.children?`<nav class="rsa-automation-tabs" role="tablist" aria-label="Automation categories">${group.children.map(tab=>`<button type="button" role="tab" data-rsa-automation-tab="${tab.id}" aria-selected="${tab.id===page.id}" aria-controls="rsa-automation-panel"><i class="fa-solid ${tab.icon}" aria-hidden="true"></i> ${tab.name}</button>`).join("")}</nav>${page.id==="classes"?`<div class="rsa-class-filter"><label for="rsa-class-filter">Class</label><select id="rsa-class-filter" data-rsa-class-filter aria-controls="rsa-automation-panel"><option value="all" ${activeClass==="all"?"selected":""}>All</option>${classes.map(section=>`<option value="${escape(section.name)}" ${activeClass===section.name?"selected":""}>${escape(section.name)}</option>`).join("")}</select></div>`:""}<section id="rsa-automation-panel" role="tabpanel"><h3 class="rsa-automation-heading">${page.name}</h3>`:""}
                 ${page.hint?`<p>${escape(page.hint)}</p>`:""}
+                ${page.id==="reactions"?'<p><button type="button" data-rsa-reaction-features="classes">Class Reaction Settings</button> <button type="button" data-rsa-reaction-features="feats">Feat Reaction Settings</button></p>':""}
                 ${group.id==="regions"&&(!searching||page.regionManager)?'<p>Configure individual spell and feature Regions in the manager.</p><button type="button" data-rsa-manager '+(game.user.isGM?'':'disabled')+'>Open Region Effect Management</button>':""}
                 ${page.id==="spells"&&(!searching||page.triggerLibrary)?'<p><button type="button" data-rsa-trigger-library '+(game.user.isGM?'':'disabled')+'>Automated Effects</button></p>':""}
                 ${!game.user.isGM?'<p>World options are managed by the GM. Client options apply to this browser.</p>':""}
@@ -340,6 +342,7 @@ export class ModuleSettingsApp extends foundry.applications.api.ApplicationV2 {
             if(settingPages().some(page=>page.parent===input.dataset.rsaSetting))this.render({force:true});
         });
         for(const tab of this.element.querySelectorAll("[data-rsa-automation-tab]"))tab.addEventListener("click",()=>{this.activeAutomationTab=tab.dataset.rsaAutomationTab;this.render({force:true});});
+        for(const link of this.element.querySelectorAll("[data-rsa-reaction-features]"))link.addEventListener("click",()=>{this.activeTab="automations";this.activeAutomationTab=link.dataset.rsaReactionFeatures;this.activeClass="all";this.searchQuery="";this.render({force:true});});
         for(const tab of this.element.querySelectorAll("[data-rsa-tab]"))tab.addEventListener("click",()=>{this.activeTab=tab.dataset.rsaTab;this.render({force:true});});
         this.element.querySelector("[data-rsa-cancel]").addEventListener("click",()=>this.close());
         this.element.querySelector("[data-rsa-manager]")?.addEventListener("click",()=>{

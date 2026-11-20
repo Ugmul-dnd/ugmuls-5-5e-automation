@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {finalD20Results,d20ResultValue} from "./d20-results.js";
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {failureState,inspiredRoll} from "./bardic-inspiration.js";
@@ -20,7 +22,8 @@ export function rageSaveBonus(actor){
     return level>=16?4:level>=9?3:level>0?2:null;
 }
 export function canFocus(card,user=game.user,index=0){
-    const actor=actorFor(card),rage=focusRage(actor),session=focusSession(rage),recorded=card?.getFlag?.(ID,"focusSaveRage");
+    const actor=actorFor(card),rage=focusRage(actor),session=focusSession(rage),recorded=card?.getFlag?.(ID,"focusSaveRage"),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+    if(card?.isContentVisible===false||timing?.closed?.(card,'fanaticalFocus')||timing?.declined?.(card,actor))return false;
     return game.settings.get(ID,"fanaticalFocusAutomation")===true&&card?.type==="save"&&Number.isInteger(index)&&index>=0&&
         !!card.rolls?.[index]?.d20&&card.rolls[index]._evaluated&&!card.getFlag?.(ID,"automaticGrappleFailure")&&
         !card.getFlag?.(ID,"carefulSpell")&&!card.system?.forceSuccess&&!card.system?.concentrationBroken&&!isRollAdjustmentLocked(card)&&
@@ -48,6 +51,11 @@ export async function rerollFocus(original,bonus){
 }
 const signature=card=>seekingSnapshot(card)+JSON.stringify(card.rolls.map(roll=>roll.options?.target));
 export async function applyFocus(card,index=0,user=game.user,confirmedFailure=false){
+    const timing=globalThis.Ugmuls55eAutomationReactionTiming;
+    if(timing?.saveAdjustment)return timing.saveAdjustment(card,'fanaticalFocus',()=>applyFocusCore(card,index,user,confirmedFailure));
+    return applyFocusCore(card,index,user,confirmedFailure);
+}
+async function applyFocusCore(card,index=0,user=game.user,confirmedFailure=false){
     if(!canFocus(card,user,index))throw Error("Fanatical Focus needs a failed saving throw, active Rage and an unused reroll for this Rage. Undo applied damage/effects first.");
     if(failureState(card,index)==="unknown"&&!confirmedFailure)throw Error("Confirm that this saving throw failed first.");
     const actor=actorFor(card),rage=focusRage(actor),session=focusSession(rage),before=signature(card),bonus=rageSaveBonus(actor);
@@ -95,7 +103,7 @@ export function renderFocus(message,html){
         const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-focus-actions";
         for(const[index,roll]of (entry.card.rolls??[]).entries()){
             if(!canFocus(entry.card,game.user,index))continue;
-            const actor=actorFor(entry.card),button=document.createElement("button"),img=document.createElement("img");button.type="button";img.src=focusFeature(actor).img??"icons/svg/d20.svg";img.alt="";
+            const actor=actorFor(entry.card),button=document.createElement("button"),img=document.createElement("img");button.type="button";button.dataset.rsaReactionItemUuid=focusFeature(actor)?.uuid;img.src=focusFeature(actor).img??"icons/svg/d20.svg";img.alt="";
             button.append(img,document.createTextNode("Fanatical Focus (+"+rageSaveBonus(actor)+")"+(entry.card.rolls.length>1?" — Roll "+(index+1):"")));
             button.dataset.tooltip="Once per Rage: roll one new d20 without advantage/disadvantage and add your Rage Damage bonus. Keep the new result, even if lower.";
             button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{
@@ -113,6 +121,7 @@ export function renderFocus(message,html){
 function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("focus",document,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"fanaticalFocusAutomation",{name:"Fanatical Focus Assistance",hint:"Once per active Rage, offer a failed-save reroll with the current Rage Damage bonus. Preserve other bonuses, reroll exactly one d20 without advantage/disadvantage, and require the new result. Extending the same Rage does not refresh this use.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
+    globalThis.Ugmuls55eAutomationFanaticalFocus={canFocus};
     Hooks.on("preCreateChatMessage",card=>{if(card.type!=="save")return;const rage=focusRage(actorFor(card));if(rage)card.updateSource({["flags."+ID+".focusSaveRage"]:focusSession(rage)});});
     Hooks.on("preUpdateActiveEffect",(effect,changes)=>{
         if(changes.disabled!==false||!effect.disabled||!effect.getFlag?.(ID,"fanaticalFocusUsed"))return;

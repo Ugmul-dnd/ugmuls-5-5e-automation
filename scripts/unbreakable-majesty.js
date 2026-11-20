@@ -1,3 +1,5 @@
+// Timing: outcome / attack-hit (connected, mandatory before optional defenses).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,linkedHpCards,describeTarget} from './shared-activity-card.js';
 import {sendSavePrompt} from './save-prompts.js';
 const ID='ugmuls-5-5e-automation',NATIVE='KN7yYmUNAlfO4onh',enqueue=createEventQueue(),created=new WeakSet(),capturing=new WeakMap(),creationTurns=new WeakMap();
@@ -27,10 +29,10 @@ export function unbreakableReady(card){
  return !(created.has(attack)&&snapshot===undefined&&!!incoming(attack));
 }
 function refresh(card){if(!card)return;globalThis.Ugmuls55eAutomationChatRefresh?.card(card);const origin=resolve(card.system?.origin);if(origin)globalThis.Ugmuls55eAutomationChatRefresh?.card(origin);for(const hp of linkedHpCards(card))globalThis.Ugmuls55eAutomationChatRefresh?.card(hp);}
-export function recoilSnapshot(card){const e=incoming(card),entry=e?{turn:e.turn,attacker:e.attacker.uuid,attackerActor:e.attacker.actor.uuid,target:e.target.uuid,actor:e.actor.uuid,feature:e.feature.uuid,effect:e.effect.uuid}:null;return {entry,entries:entry?[entry]:[]};}
+export function recoilSnapshot(card){if(!creationTurns.has(card))creationTurns.set(card,currentTurn(card));const e=incoming(card),entry=e?{turn:e.turn,attacker:e.attacker.uuid,attackerActor:e.attacker.actor.uuid,target:e.target.uuid,actor:e.actor.uuid,feature:e.feature.uuid,effect:e.effect.uuid}:null;return {entry,entries:entry?[entry]:[]};}
 async function start(card,user){
  const snapshot=flag(card,'unbreakableSnapshot')?.entry,state=flag(card,'unbreakableRecoil');if(!snapshot||state&&state.phase!=='error')return;
- const e=incoming(card);if(!e||e.turn!==snapshot.turn||e.effect.uuid!==snapshot.effect||e.target.uuid!==snapshot.target||e.attacker.uuid!==snapshot.attacker){await card.setFlag(ID,'unbreakableRecoil',{...snapshot,phase:'skipped'});refresh(card);await globalThis.Ugmuls55eAutomationReactive?.completed(card);return;}
+ const e=incoming(card);if(!e||e.turn!==snapshot.turn||e.effect.uuid!==snapshot.effect||e.target.uuid!==snapshot.target||e.attacker.uuid!==snapshot.attacker){await card.setFlag(ID,'unbreakableRecoil',{...snapshot,phase:'skipped'});refresh(card);await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'unbreakableMajesty');await globalThis.Ugmuls55eAutomationReactive?.completed(card);return;}
  if(!owns(e.actor,user)&&!owns(e.attacker.actor,user))throw Error('Only the Bard, attacker or GM can request the Recoil save.');
  const previous=flag(e.effect,'unbreakableChecks'),request=foundry.utils.randomID();let reserved=false,saveCreated=false;
  await card.setFlag(ID,'unbreakableRecoil',{...snapshot,request,phase:'starting'});
@@ -49,12 +51,16 @@ async function start(card,user){
 }
 export function beginRecoil(card,user=game.user){return enqueue(async()=>{if(!authority())throw Error('A connected GM is required for Unbreakable Majesty.');const s=flag(card,'unbreakableRecoil');if(s?.phase==='save'){if(!owns(resolve(s.actor),user)&&!owns(resolve(s.attackerActor),user))throw Error('You do not own this Recoil save.');const usage=game.messages.get(s.save),attacker=resolve(s.attacker);if(usage&&attacker)await sendSavePrompt(usage,attacker,'region');return;}return start(card,user);});}
 export function captureRecoil(card){
- if(capturing.has(card))return capturing.get(card);const job=enqueue(async()=>{if(!authority()||card?.type!=='attack'||!created.has(card))return;if(flag(card,'unbreakableSnapshot')===undefined)await card.setFlag(ID,'unbreakableSnapshot',recoilSnapshot(card));if(flag(card,'unbreakableSnapshot')?.entry)await start(card,game.user);});capturing.set(card,job);return job;
+ // Declaration adjustments may change whether this attack hits. Defer capture
+ // until they finish; do not memoize that deferred attempt.
+ const timing=flag(card,'reactionTimingWindow');if(timing?.status==='pending'&&timing.feature==='wardingFlare')return Promise.resolve();
+ if(capturing.has(card))return capturing.get(card);const job=enqueue(async()=>{if(!authority()||card?.type!=='attack'||!created.has(card)&&flag(card,'reactionTimingWindow')?.feature!=='unbreakableMajesty')return;if(flag(card,'unbreakableSnapshot')===undefined)await card.setFlag(ID,'unbreakableSnapshot',recoilSnapshot(card));if(flag(card,'unbreakableSnapshot')?.entry){await globalThis.Ugmuls55eAutomationReactionTiming?.animateAttack?.(card);await start(card,game.user);}});capturing.set(card,job);return job;
 }
 function recoilUsage(message){if(flag(message,'unbreakableRecoilSave'))return message;return resolve(message?.system?.origin);}
 export function resolveRecoil(message){return enqueue(async()=>{
  if(!authority())return;const usage=recoilUsage(message),link=flag(usage,'unbreakableRecoilSave'),card=game.messages.get(link?.attack),state=flag(card,'unbreakableRecoil');if(!state||state.request!==link.request||!['save','passed','failed'].includes(state.phase))return;
- const outcome=usage.system?.outcomes?.get(state.attacker);if(!['success','failure'].includes(outcome)||isRollAdjustmentLocked(card))return;const phase=outcome==='failure'?'failed':'passed';if(state.phase===phase)return;
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.saveDamageBlocked?.(usage))return;
+ const outcome=usage.system?.outcomes?.get(state.attacker);if(!['success','failure'].includes(outcome)||isRollAdjustmentLocked(card))return;await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(usage);if(globalThis.Ugmuls55eAutomationReactionTiming?.saveDamageBlocked?.(usage)||usage.system?.outcomes?.get(state.attacker)!==outcome)return;const phase=outcome==='failure'?'failed':'passed';if(state.phase===phase)return;
  const attacker=resolve(state.attacker),bard=resolve(state.actor);if(!attacker?.actor||!bard||attacker.actor.uuid!==state.attackerActor||!card.system?.targets?.some(t=>t.token===state.target))return;
  const originalAC=state.originalAC??card.system.targets.find(t=>t.token===state.target)?.ac;
  const targets=card.system.targets.map(t=>t.token===state.target?{...t,ac:phase==='failed'?null:originalAC}:t);
@@ -63,7 +69,7 @@ export function resolveRecoil(message){return enqueue(async()=>{
  // source-effect ledger reserves the check before prompting, so simultaneous
  // later attacks cannot create a second save while the first is pending.
  if(!values(attacker.actor.effects).some(e=>flag(e,'unbreakableChecked')?.request===state.request))await attacker.actor.createEmbeddedDocuments('ActiveEffect',[{name:'Recoil checked — '+bard.name,img:'icons/magic/control/silhouette-hold-beam-blue.webp',type:'base',disabled:false,transfer:false,duration:{value:6,units:'seconds',expiry:'turnEnd',expired:false},system:{changes:[],origin:{actor:bard.uuid,message:usage.uuid}},flags:{[ID]:{unbreakableChecked:{request:state.request,turn:state.turn,sourceEffect:state.effect}}}}]);
- refresh(card);await globalThis.Ugmuls55eAutomationReactive?.completed(card);
+ refresh(card);await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'unbreakableMajesty');await globalThis.Ugmuls55eAutomationReactive?.completed(card);
 });}
 export function preserveRecoilMiss(card,changes){const nextState=changes['flags.'+ID+'.unbreakableRecoil']??changes.flags?.[ID]?.unbreakableRecoil;if(nextState?.phase==='passed')return;const s=flag(card,'unbreakableRecoil'),targets=changes['system.targets']??changes.system?.targets;if(s?.phase!=='failed'||!Array.isArray(targets))return;const next=targets.map(t=>t.token===s.target?{...t,ac:null}:t);if(Object.hasOwn(changes,'system.targets'))changes['system.targets']=next;else changes.system.targets=next;}
 async function clearMarkers(combat,change){if(!authority()||!['turn','round'].some(k=>Object.hasOwn(change??{},k)))return;const current=[combat.id,combat.round,combat.turn].join(':'),actors=new Map(values(combat.combatants).filter(c=>c.actor).map(c=>[c.actor.uuid,c.actor]));for(const actor of actors.values()){const ids=values(actor.effects).filter(e=>flag(e,'unbreakableChecked')&&flag(e,'unbreakableChecked').turn!==current).map(e=>e.id);if(ids.length)await actor.deleteEmbeddedDocuments('ActiveEffect',ids);}}
@@ -73,8 +79,8 @@ export function renderUnbreakable(message,html){const root=html?.[0]??html;if(!r
 function report(error){console.error('Unbreakable Majesty',error);ui.notifications.error(error.message);}
 Hooks.once('init',()=>game.settings.register(ID,'unbreakableMajestyAutomation',{name:'Glamour Bard: Unbreakable Majesty',hint:'While Majestic Presence is active, prompt each attacker’s native Charisma Recoil Save on its first hit each turn. Hold incoming damage/effects; failure makes that attack miss. Mark checked attackers until the turn changes. No extra use or Reaction.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationUnbreakable={ready:unbreakableReady,capture:captureRecoil};
- Hooks.on('createChatMessage',card=>{if(card.type==='attack'){created.add(card);creationTurns.set(card,currentTurn(card));captureRecoil(card).catch(report);}resolveRecoil(card).catch(report);});Hooks.on('updateChatMessage',card=>resolveRecoil(card).catch(report));Hooks.on('preUpdateChatMessage',preserveRecoilMiss);Hooks.on('updateCombat',(combat,change)=>clearMarkers(combat,change).catch(report));Hooks.on('dnd5e.renderChatMessage',renderUnbreakable);
+ globalThis.Ugmuls55eAutomationUnbreakable={ready:unbreakableReady,capture:captureRecoil,snapshot:recoilSnapshot,begin:beginRecoil};
+ Hooks.on('createChatMessage',card=>{if(card.type==='attack'){created.add(card);if(!creationTurns.has(card))creationTurns.set(card,currentTurn(card));captureRecoil(card).catch(report);}resolveRecoil(card).catch(report);});Hooks.on('updateChatMessage',card=>resolveRecoil(card).catch(report));Hooks.on('preUpdateChatMessage',preserveRecoilMiss);Hooks.on('updateCombat',(combat,change)=>clearMarkers(combat,change).catch(report));Hooks.on('dnd5e.renderChatMessage',renderUnbreakable);
  Hooks.on('dnd5e.preApplyDamage',(actor,amount,updates,options)=>{if(options?.rsaUndoDamage)return;const card=resolve(options?.originatingMessage??options?.origin);if(card&&!unbreakableReady(card)){ui.notifications.warn('Resolve the Recoil Save before applying this attack’s damage.');return false;}});
  for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem'])Hooks.on(event,(doc,change)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('unbreakableMajesty',doc,change));
  game.socket.on('module.'+ID,p=>{if(p?.action==='unbreakableRecoilError'&&p.user===game.user.id){ui.notifications.error(p.error);refresh(game.messages.get(p.card));return;}if(p?.action!=='unbreakableRecoil'||!authority()||p.gm!==game.user.id)return;const user=game.users.get(p.user),card=game.messages.get(p.card);if(!user?.active||!card)return;beginRecoil(card,user).catch(error=>game.socket.emit('module.'+ID,{action:'unbreakableRecoilError',user:user.id,card:card.id,error:error.message}));});

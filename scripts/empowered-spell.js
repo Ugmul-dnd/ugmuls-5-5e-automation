@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-roll (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),open=new Set();
 const enabled=()=>game.settings.get(ID,"empoweredSpellAutomation")===true;
@@ -38,6 +40,8 @@ export function damageDice(rolls) {
 const signature=message=>JSON.stringify(message.rolls.map(roll=>roll.toJSON()));
 export function canEmpower(message,user=game.user) {
     const actor=actorFor(message),origin=originOf(message);
+    if(message?.isContentVisible===false||message?.getFlag?.(ID,'pendingDamage')||globalThis.Ugmuls55eAutomationReactionTiming?.held?.(message)||!message?.rolls?.length||message.rolls.some(r=>!r._evaluated))return false;
+    if(!user?.isGM&&(message.blind||message.whisper?.length&&!message.whisper.some(u=>(u.id??u)===user?.id)&&message.author?.id!==user?.id))return false;
     return enabled()&&spellDamage(message)&&!!empoweredFeature(actor)&&(!!sorceryResource(actor)||!!globalThis.Ugmuls55eAutomationMetamagic?.freeMetamagic(actor))&&!isRollAdjustmentLocked(message)&&
         !message.getFlag?.(ID,"empoweredSpellUsed")&&!origin?.getFlag?.(ID,"empoweredSpellUsed")&&
         !!(user?.isGM||actor?.testUserPermission?.(user,"OWNER"))&&damageDice(message.rolls??[]).length>0;
@@ -92,7 +96,10 @@ export async function applyEmpowered(message,keys,expected,user=game.user) {
             catch(error){console.error("Ugmuls 5.5e Automation | Empowered origin refresh failed:",error);}
         }
     } catch(error){if(charged&&!committed){if(charge)await charge.refund();else await resource.update({"system.uses.spent":spent});}throw error;}
-    if(committed&&globalThis.Ugmuls55eAutomationReactive?.enabled())await message.setFlag(ID,"empoweredSpellSettled",true);
+    if(committed){
+        globalThis.Ugmuls55eAutomationChatRefresh?.card(message);if(originOf(message))globalThis.Ugmuls55eAutomationChatRefresh?.card(originOf(message));
+        if(globalThis.Ugmuls55eAutomationReactive?.enabled()){await message.setFlag(ID,"empoweredSpellSettled",true);await globalThis.Ugmuls55eAutomationReactive?.completed?.(message);}
+    }
 }
 async function pauseAutomation(message) {
     if(globalThis.Ugmuls55eAutomationReactive?.enabled())return;
@@ -125,18 +132,17 @@ export async function chooseEmpoweredDice(message) {
 }
 function report(error){console.error("Ugmuls 5.5e Automation | Empowered Spell failed:",error);ui.notifications.error(error.message);}
 export function addEmpoweredButton(message,html) {
-    if(!enabled())return;
     const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;
     const entries=message.type==="damage"?[{message,root}]:[];
     for(const summary of root.querySelectorAll('.card-summary[data-message-id]')) {
         const card=game.messages.get(summary.dataset.messageId);if(card?.type==="damage"&&!summary.hidden)entries.push({message:card,root:summary});
     }
     for(const entry of entries) {
-        const card=entry.message,actor=actorFor(card);if(!spellDamage(card)||!empoweredFeature(actor)||!card.isContentVisible||(!sorceryResource(actor)&&!globalThis.Ugmuls55eAutomationMetamagic?.freeMetamagic(actor))||!(game.user.isGM||actor.testUserPermission?.(game.user,"OWNER")))continue;
-        const old=entry.root.querySelector('[data-rsa-empowered]');if(old){old.disabled=!canEmpower(card);continue;}
+        const card=entry.message,actor=actorFor(card),old=entry.root.querySelector('[data-rsa-empowered]');
+        if(!canEmpower(card)){old?.remove();continue;}if(old){old.disabled=false;continue;}
         const face=entry.root.querySelector('.chat-card')??entry.root;let controls=face.querySelector('.rsa-damage-actions');
         if(!controls){controls=document.createElement("div");controls.className="rsa-attack-actions rsa-damage-actions";face.append(controls);}
-        const button=document.createElement("button");button.type="button";button.dataset.rsaEmpowered="";button.disabled=!canEmpower(card);
+        const button=document.createElement("button");button.type="button";button.dataset.rsaEmpowered="";button.dataset.rsaReactionItemUuid=empoweredFeature(actor)?.uuid;button.disabled=!canEmpower(card);
         const img=document.createElement("img");img.src=empoweredFeature(actor).img??"icons/svg/dice-target.svg";img.alt="";button.append(img,document.createTextNode("Empowered Spell"));
         button.setAttribute("data-tooltip",isRollAdjustmentLocked(card)?"Undo damage before using Empowered Spell":"Reroll selected damage dice for 1 Sorcery Point. Use the new results.");
         button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();chooseEmpoweredDice(card).catch(report);});controls.append(button);
@@ -145,15 +151,7 @@ export function addEmpoweredButton(message,html) {
 Hooks.once("init",()=>game.settings.register(ID,"empoweredSpellAutomation",{name:"Empowered Spell Dice Rerolls",hint:"Show an Empowered Spell action on spell damage cards. Select up to your Charisma modifier (minimum 1) dice, spend 1 Sorcery Point, and replace those results. Undo applied damage first. One Empowered use per casting.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
     Hooks.on("dnd5e.renderChatMessage",addEmpoweredButton);
-    Hooks.on("updateItem",item=>{
-        const actor=item.actor,feature=empoweredFeature(actor);if(!actor||!feature)return;
-        const referenced=Array.from(feature.system?.activities??[]).some(activity=>Array.from(activity.consumption?.targets??[]).some(target=>
-            target.type==="itemUses"&&[item.id,item.uuid,item.identifier??item.system?.identifier].includes(target.target)));
-        if(!referenced&&!["sorcery-points","font-of-magic"].includes(item.identifier??item.system?.identifier)&&! /^(sorcery points|font of magic)$/i.test(item.name??""))return;
-        const chat=ui.chat?.element,root=chat instanceof HTMLElement?chat:chat?.[0];
-        const ids=new Set(Array.from(root?.querySelectorAll?.('[data-message-id]')??[],node=>node.dataset.messageId));
-        for(const id of ids) {const card=game.messages.get(id);if(card&&actorFor(card)?.uuid===actor.uuid)ui.chat?.updateMessage?.(card);}
-    });
+    for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem','updateActor'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('empowered',doc,changes));
     game.socket.on("module."+ID,packet=>{
         if(packet?.action==="empoweredSpellError"&&packet.userId===game.user.id){ui.notifications.error(packet.error);return;}
         if(!["pauseEmpoweredSpell","applyEmpoweredSpell"].includes(packet?.action)||!game.user.isGM||packet.gmId!==game.user.id||game.users.activeGM?.id!==game.user.id)return;

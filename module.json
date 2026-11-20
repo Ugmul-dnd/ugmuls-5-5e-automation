@@ -31,7 +31,7 @@
         "compatibility": {
           "minimum": "6.1.0",
           "verified": "6.1.0",
-          "maximum": "6.1.0"
+          "maximum": "6.1.1"
         }
       }
     ],
@@ -166,7 +166,9 @@
     "scripts/weird-conditions.js",
     "scripts/unified-attack-card.js",
     "scripts/unified-save-card.js",
-    "scripts/reaction-button-presentation.js"
+    "scripts/reaction-button-presentation.js",
+    "scripts/reaction-timing.js",
+    "scripts/counterspell.js"
   ],
   "styles": [
     "styles/save-roll-controls.css",

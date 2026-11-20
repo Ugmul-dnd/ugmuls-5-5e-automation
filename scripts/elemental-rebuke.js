@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-received (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {indexedMessages} from './chat-message-index.js';
 import {createEventQueue,isRollAdjustmentLocked,describeTarget,linkedHpCards} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";

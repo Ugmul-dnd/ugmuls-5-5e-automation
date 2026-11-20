@@ -1,6 +1,7 @@
 // Presentation only: keep the existing buttons, listeners, source identities,
 // disabled states and eligibility. No resource or reaction mutation here.
 const rules=[
+ ['[data-rsa-counterspell]','counterspell','Use your Reaction and native casting resource to force the caster’s Constitution save. On failure, stop the spell.'],
  ['.rsa-mirror-image','mirror-image','Roll for your remaining duplicates to see whether one intercepts this attack.'],
  ['.rsa-unbreakable-majesty','unbreakable-majesty','Resolve the attacker’s Charisma save to determine whether this attack can proceed.'],
  ['.rsa-countercharm','countercharm','Use your Reaction to let the creature reroll its failed charm or fear save with Advantage.'],
@@ -17,8 +18,12 @@ const rules=[
  ['.rsa-burning-life','crown-of-spellfire','Spend Hit Point Dice to reduce the incoming damage by the roll’s total.'],
  ['.rsa-cosmic-omen','cosmic-omen','Spend a use and your Reaction to add Weal or subtract Woe from this D20 Test.'],
  ['.rsa-bardic-actions','bardic-inspiration','Roll and spend the granted Bardic Inspiration die, adding it to this failed D20 Test.'],
+ ['[data-rsa-staged-ward]','projected-ward','Reserve your Reaction to protect this ally with your existing Arcane Ward. Ward HP absorbs damage after the recipient’s mitigation; excess reaches their HP.'],
+ ['[data-rsa-staged-sentinel]','sentinel-at-deaths-door','Use your Reaction and one feature use to halve this Bloodied target’s attack damage before Resistance.'],
+ ['[data-rsa-staged-field]','psionic-power','Reserve your Reaction to reduce this recipient’s damage using your native Psionic Energy Die plus Intelligence before damage is revealed.'],
  ['.rsa-cutting-actions','cutting-words','Use your Reaction and a Bardic Inspiration use to subtract your Bardic die from this roll.'],
  ['[data-rsa-parry]','parry','Use your Reaction and a Superiority Die to reduce this melee damage by the die plus your higher Strength or Dexterity modifier.'],
+ ['[data-rsa-staged-deflect]','deflect-attacks','Use your Reaction now to reduce the damage when it is rolled.'],
  ['.rsa-deflect-actions','deflect-attacks','Use your Reaction to reduce this incoming attack’s damage.'],
  ['.rsa-protective-field','protective-field','Use your Reaction and a Psionic Energy Die to reduce damage to the selected creature by the die plus your Intelligence modifier.'],
  ['.rsa-steel-deflect','steel-defender','Use the defender’s Reaction to impose Disadvantage on this attack against another creature.'],
@@ -36,9 +41,9 @@ const rules=[
  ['.rsa-indomitable','indomitable','Spend a use to reroll this failed saving throw with your Fighter level added.'],
  ['.rsa-disciplinedSurvivor','disciplined-survivor','Spend a Focus Point to reroll this failed saving throw and use the new result.'],
  ['.rsa-shared-resilience','shared-resilience','Use your Reaction and a Focus Point to let the creature reroll its failed saving throw.'],
- ['.rsa-homing-actions','homing-strikes','Spend a Psionic Energy Die and add it to this missed attack. Spend the die only if the attack hits.'],
+ ['.rsa-homing-actions','soul-blades','Spend a Psionic Energy Die and add it to this missed attack. Spend the die only if the attack hits.'],
  ['.rsa-peerless-actions','peerless-skill','Add your Bardic die to this failed attack or ability check, spending the use only if it succeeds.'],
- ['.rsa-valor-actions','combat-inspiration','Spend the granted Bardic die for the selected Combat Inspiration benefit.'],
+ ['.rsa-valor-actions','combat-inspiration','Spend the granted Bardic die for the selected Combat Inspiration benefit. No Reaction required.'],
  ['.rsa-uncanny-actions','uncanny-dodge','Use your Reaction to halve this attack’s damage against you, if you can see the attacker.'],
  ['.rsa-chain-resistance','investment-of-the-chain-master','Spend your Reaction to grant your familiar Resistance against this damage.'],
  ['.rsa-superior-defense','superior-hunters-defense','Spend your Reaction to resist the selected damage type for this hit and the rest of the current turn.'],
@@ -104,7 +109,11 @@ export function presentReactionButtons(root){
         let icon=button.querySelector('img');
         if(!icon){
             const messageId=button.closest('[data-message-id]')?.dataset.messageId;
-            const img=button.dataset.rsaReactionIcon??sourceIcon(game.messages.get(messageId),id,label);
+            const itemUuid=button.dataset.rsaReactionItemUuid;
+            // An explicit source identity takes precedence over activity artwork
+            // and fuzzy name matches. Read the live item's base image each render.
+            const img=itemUuid?globalThis.fromUuidSync?.(itemUuid,{strict:false})?.img
+                :button.dataset.rsaReactionIcon??sourceIcon(game.messages.get(messageId),id,label);
             icon=img?null:button.querySelector('i,svg,dnd5e-icon');
             if(!icon){icon=document.createElement('img');icon.src=img??'icons/svg/d20.svg';}
         }

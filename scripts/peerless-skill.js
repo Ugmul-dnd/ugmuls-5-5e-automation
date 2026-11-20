@@ -1,3 +1,5 @@
+// Timing: outcome / attack-miss / check-fail (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {bardicFormula,inspiredRoll,failureState} from "./bardic-inspiration.js";
 import {cuttingResource} from "./cutting-words.js";

@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {failureState} from "./bardic-inspiration.js";
 import {queueIndomitable,indomitableFeature,fighterSaveBonus} from "./indomitable.js";
@@ -20,6 +22,7 @@ export function resilienceRange(source,target){
 function visible(card,user){return user?.isGM||!card.blind&&(!card.whisper?.length||card.author?.id===user?.id||card.whisper.some(id=>(id?.id??id)===user?.id));}
 export function sharedResilienceCandidates(card,user=game.user,index=0,reservation=null){
  const roll=card?.rolls?.[index];
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed?.(card,'sharedResilience'))return [];
  if(game.settings.get(ID,'sharedResilienceAutomation')!==true||card?.type!=='save'||!Number.isInteger(index)||index<0||!roll?.d20||!roll._evaluated||!visible(card,user)||card.isContentVisible===false||card.getFlag?.(ID,'indomitable')?.[index]||card.getFlag?.(ID,'sharedResilience')?.[index]||card.getFlag?.(ID,'automaticGrappleFailure')||card.getFlag?.(ID,'carefulSpell')||card.system?.forceSuccess||card.system?.concentrationBroken||isRollAdjustmentLocked(card)||failureState(card,index)!=='failed')return [];
  const recipient=actorFor(card);if(!recipient)return [];
  let target=doc(card.getAssociatedToken?.());
@@ -28,7 +31,7 @@ export function sharedResilienceCandidates(card,user=game.user,index=0,reservati
  const candidates=[],seen=new Set();
  for(const source of values(globalThis.canvas?.scene?.tokens)){
   const actor=source.actor;
-  if(!actor||seen.has(actor.uuid)||!(user?.isGM||actor.testUserPermission?.(user,'OWNER'))||['incapacitated','unconscious','dead','stunned','paralyzed','petrified','blinded'].some(s=>actor.statuses?.has(s))||!resilienceRange(source,target))continue;
+  if(!actor||seen.has(actor.uuid)||globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actor)||!(user?.isGM||actor.testUserPermission?.(user,'OWNER'))||['incapacitated','unconscious','dead','stunned','paralyzed','petrified','blinded'].some(s=>actor.statuses?.has(s))||!resilienceRange(source,target))continue;
   const feature=values(actor.items).find(i=>i.type==='feat'&&(i.identifier??i.system?.identifier)==='shared-resilience'),resource=indomitableFeature(actor),bonus=fighterSaveBonus(actor),activity=values(feature?.system?.activities).find(a=>a.id==='odvr99wLYvE8pPWI'||String(a.activation?.type??'').startsWith('reaction'));
   const reserved=reservation?.actor===actor.uuid;
   if(!feature||!resource||!bonus||!activity||!reserved&&remaining(resource)<1||!reserved&&reactionUsed(actor))continue;
@@ -37,7 +40,11 @@ export function sharedResilienceCandidates(card,user=game.user,index=0,reservati
  return candidates;
 }
 const signature=card=>seekingSnapshot(card)+JSON.stringify(card.rolls.map(roll=>roll.options?.target));
-export function applySharedResilience(card,actorUuid,index=0,user=game.user){return queueIndomitable(async()=>{
+export function applySharedResilience(card,actorUuid,index=0,user=game.user){
+ const operation=()=>applySharedResilienceCore(card,actorUuid,index,user),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ return timing?.saveAdjustment?timing.saveAdjustment(card,'sharedResilience',operation):operation();
+}
+function applySharedResilienceCore(card,actorUuid,index=0,user=game.user){return queueIndomitable(async()=>{
  let entry=sharedResilienceCandidates(card,user,index).find(e=>e.actor.uuid===actorUuid);
  if(!entry)throw Error('Shared Resilience needs a failed ally save, a visible ally within 60 feet, an Indomitable use and an available Reaction. Undo applied damage/effects first.');
  const before=signature(card);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
@@ -71,7 +78,7 @@ export function renderSharedResilience(message,html){
   node.querySelectorAll(':scope > .rsa-shared-resilience').forEach(n=>n.remove());if(card.isContentVisible===false)continue;
   const controls=document.createElement('div');controls.className='rsa-attack-actions rsa-shared-resilience';
   for(const[index]of(card.rolls??[]).entries())for(const candidate of sharedResilienceCandidates(card,game.user,index)){
-   const button=document.createElement('button');button.type='button';button.textContent='Shared Resilience +'+candidate.bonus+' — '+candidate.actor.name+(card.rolls.length>1?' · Roll '+(index+1):'');button.dataset.tooltip='Spend this Banneret’s Reaction and one Indomitable use. Reroll this ally’s save with the Banneret’s Fighter-level bonus; keep the new result.';
+   const button=document.createElement('button');button.type='button';button.dataset.rsaReactionItemUuid=candidate.feature.uuid;button.dataset.rsaReactionDescription='Use '+candidate.actor.name+'’s Reaction and one Indomitable use to reroll '+(actorFor(card)?.name??'this ally')+'’s failed save, adding the Banneret’s Fighter-level bonus. Keep the new result.';button.textContent='Shared Resilience +'+candidate.bonus+' — '+candidate.actor.name+(card.rolls.length>1?' · Roll '+(index+1):'');button.dataset.tooltip='Spend this Banneret’s Reaction and one Indomitable use. Reroll this ally’s save with the Banneret’s Fighter-level bonus; keep the new result.';
    button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();request(card,candidate.actor,index,button);});controls.append(button);
   }
   for(const record of Object.values(card.getFlag?.(ID,'sharedResilience')??{})){const label=document.createElement('span');label.textContent='Shared Resilience: rerolled +'+record.bonus+' ('+record.name+')';controls.append(label);}if(controls.childNodes.length)node.append(controls);

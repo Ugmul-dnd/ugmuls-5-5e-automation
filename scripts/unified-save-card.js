@@ -62,6 +62,7 @@ export const saveApplicationSource=card=>{
 export const saveApplicationPending=card=>{const source=saveApplicationSource(card);return operations.has(source?.id)||globalThis.Ugmuls55eAutomationUndoSaveApplication?.pending(source)===true;};
 export const settleSaveApplication=card=>operations.get(saveApplicationSource(card)?.id)??Promise.resolve();
 export function saveOutcomesReady(card){
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.blocked?.(card))return false;
     return !flag(card,'targetsConfirmationPending')&&!flag(card,'targetsConfirmationCanceled')&&card.system?.targets?.length>0&&
         (['damage','heal'].includes(card.getAssociatedActivity?.()?.type)||card.system.targets.every(t=>['success','failure'].includes(card.system.outcomes?.get(t.token))));
 }
@@ -226,6 +227,14 @@ function restoreSaveChildren(card){
         if(!node.dataset.rsaUnifiedSaveChild)continue;delete node.dataset.rsaUnifiedSaveChild;node.hidden=game.settings.get('dnd5e','chatCardSummary')===true;
     }
 }
+export function hasSaveCardEffects(activity,tray){
+    // Region effects (e.g. Spirit Guardians' Half Speed) are not card outcomes.
+    const effects=tray?.effects??Array.from(activity?.effects??[],profile=>{
+        if(profile.uuid){const effect=globalThis.fromUuidSync?.(profile.uuid,{strict:false});if(effect)return effect;}
+        return activity?.item?.effects?.get?.(profile._id)??profile;
+    });
+    return Array.from(effects).some(effect=>!regionManagesCardEffect(activity,effect));
+}
 export function finishUnifiedSave(card,root){
     const home=root.querySelector('.rsa-unified-save');if(!home){restoreSaveChildren(card);return;}
     const scope=unifiedSaveScope(card);if(!scope||home.dataset.rsaSaveFinished)return;home.dataset.rsaSaveFinished='true';root.classList.add('rsa-unified-action','rsa-unified-save-action');
@@ -268,7 +277,7 @@ export function finishUnifiedSave(card,root){
     const damageTrays=new Map();for(const summary of home.querySelectorAll('.card-summary[data-message-id]')){
         const tray=summary.querySelector('damage-application');if(tray)damageTrays.set(summary.dataset.messageId,tray);
     }
-    const hasEffects=(scope.activity.effects?.length??0)>0||!!effectTray||['stunningStrike','grappleStrike','maneuverStrike'].some(k=>flag(card,k));
+    const hasEffects=hasSaveCardEffects(scope.activity,effectTray)||['stunningStrike','grappleStrike','maneuverStrike'].some(k=>flag(card,k));
     const requiresDamage=saveNeedsDamage(card,scope);
     const hpDone=scope.damage.length>0&&scope.damage.every(c=>(c.system.targets??[]).every(t=>saveDamageReceipts(c).has(t.token)));
     if(scope.healing&&hpDone)home.dataset.rsaHealingHpApplied='true';

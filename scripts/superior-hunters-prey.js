@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-follow-up (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,describeTarget,isEligibleTarget} from "./shared-activity-card.js";
 import {riderConcentration,hunterMarkDie} from "./bonus-damage-riders.js";
 import {weaponDamageApplied} from "./psionic-strike.js";

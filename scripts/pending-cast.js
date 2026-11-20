@@ -13,13 +13,34 @@ export async function publishPendingCast(state,activity,message){
 }
 export function preparePendingCast(activity,usage,dialog,message){
  const state=stateFor(message?.data);if(!state)return;
- state.activity=activity;state.initialEffects=new Set(Array.from(activity.actor.effects??[],effect=>effect.id));
- state.ready=publishPendingCast(state,activity,message);
+ state.activity=activity;state.initialEffects??=new Set(Array.from(activity.actor.effects??[],effect=>effect.id));
+ state.ready??=publishPendingCast(state,activity,message);
  state.ready.catch(error=>console.error("Pending cast",error));
  // Await publication before opening the native usage dialog or spending resources.
  const Dialog=dialog.applicationClass;
  if(Dialog){dialog.applicationClass=class extends Dialog{static async create(...args){await state.ready;return super.create(...args);}};}
  wirePendingActivity(state,activity);
+}
+// Declaration interrupts reuse the native usage card, before templates or costs.
+export async function declarePendingCast(activity,message){
+ const state=stateFor(message?.data);if(!state)throw Error('No pending casting session.');
+ state.initialEffects??=new Set(Array.from(activity.actor.effects??[],effect=>effect.id));
+ state.ready??=publishPendingCast(state,activity,message);await state.ready;
+ return state.card;
+}
+export async function stopDeclaredCast(activity,usage,message){
+ const state=stateFor(message?.data);if(!state?.card)return;
+ // A countered spell wastes its action economy, retaining all casting
+ // resources: slots, limited item/activity uses and the granting source pool.
+ const config=await activity._prepareUsageConfig({...usage,consume:{action:true,resources:false,spellSlot:false},cause:{...usage.cause,resources:false},concentration:{begin:false,end:false},subsequentActions:false});
+ // Native preparation auto-links granted spells. Do not recurse into the
+ // source Cast/Forward activity: only this spell's activation is consumed.
+ config.cause=false;
+ if(await activity.consume(config,message)===false)throw Error('Could not consume the interrupted spell costs.');
+ await globalThis.Ugmuls55eAutomationCounterspell?.spendInterruptedReaction(activity,state.card,message);
+ state.committed=true;
+ await state.card.update({['flags.'+ID+'.pendingCast']:false,['flags.'+ID+'.targetsConfirmationPending']:false,['flags.'+ID+'.targetsConfirmationCanceled']:true,['flags.'+ID+'.counterspellStopped']:true,'system.buttons':[]});
+ sessions.delete(state.id);
 }
 export function rebindPendingActivity(activity,message){const state=stateFor(message?.data);if(state)wirePendingActivity(state,activity);}
 function wirePendingActivity(state,activity){
@@ -81,6 +102,7 @@ export function installPendingCast(Type){
   const state={id:foundry.utils.randomID(),tasks:[],activity:this,committed:false};sessions.set(state.id,state);
   const config={...message,data:{...data,flags:foundry.utils.mergeObject(data.flags??{},{[ID]:{castSession:state.id}},{inplace:false})}};
   try{
+   if(await globalThis.Ugmuls55eAutomationReactionTiming?.declareSpell?.(this,usage,dialog,config)===false){await stopDeclaredCast(this,usage,config);return;}
    const result=await original.call(this,usage,dialog,config);state.results=result;
    if(!result?.message){if(state.ready){await state.ready;await cancelPendingCast(state.card);}else sessions.delete(state.id);}
    return result;
@@ -95,14 +117,14 @@ export function pendingRollDialog(config,dialog,message){
  dialog.applicationClass=class extends Base{async close(options){const result=await super.close(options);if(!options?.dnd5e?.submitted&&!state.committed)await cancelPendingCast(card);return result;}};
 }
 export function renderPendingCast(card,html){
- if(!card.getFlag?.(ID,"pendingCast"))return;
+ if(!card.getFlag?.(ID,"pendingCast")||card.getFlag?.(ID,"counterspellWindow")?.phase)return;
  const root=html?.querySelector?html:html?.[0];if(!root)return;
  root.querySelectorAll('.card-buttons').forEach(node=>node.hidden=true);
  if(root.querySelector('.rsa-unified-attack,.rsa-unified-save'))return; // Unified cards own their continuous setup/rolling status.
  if(!root.querySelector('.rsa-pending-cast')){const label=document.createElement('p');label.className='rsa-pending-cast';label.textContent='Pending — choosing targets or preparing the roll';(root.querySelector('.chat-card')??root).append(label);}
 }
 Hooks.once("ready",()=>{
- globalThis.Ugmuls55eAutomationPendingCast={cancel:cancelPendingCast,rebind:rebindPendingActivity,commit:card=>castState(card)?.canceling?undefined:settlePendingCast(card),track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
+ globalThis.Ugmuls55eAutomationPendingCast={declare:declarePendingCast,cancel:cancelPendingCast,rebind:rebindPendingActivity,commit:card=>castState(card)?.canceling?undefined:settlePendingCast(card),track:trackCastTask,onCancel:(card,refund)=>{const state=castState(card);if(state) (state.refunds??=[]).push(refund);return !!state;}};
  for(const type of Object.values(CONFIG.DND5E.activityTypes))installPendingCast(type.documentClass);
  Hooks.on("dnd5e.preUseActivity",preparePendingCast);
  Hooks.on("dnd5e.postActivityConsumption",(activity,usage,message)=>{const state=stateFor(message.data);if(state)state.deltas=foundry.utils.deepClone(message.data?.system?.deltas);});
