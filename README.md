@@ -12,9 +12,9 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 1.1.0
+## Version 1.2.0
 
-Version 1.1.0 brings grouped attack, saving throw and healing cards, compact reaction controls, and compatibility fixes for the official Player’s Handbook (2024) 3.0.0. It requires **D&D5e 6.1.0 exactly**; earlier versions are incompatible. See [1.1.0 release notes](RELEASE-NOTES-1.1.0.md) for changes, verification and updating instructions.
+Version 1.2.0 adds staged reaction decisions to grouped combat cards, Counterspell chains, and a Reaction Triggers settings page. See [1.2.0 release notes](RELEASE-NOTES-1.2.0.md) for changes, compatibility, and updating instructions.
 
 ## Main features
 
@@ -59,7 +59,7 @@ Aura emanations default to **Grid Shaped**. Match scene grid spacing and distanc
 | Component | Support |
 | --- | --- |
 | Foundry Virtual Tabletop | v14; verified on build 14.370 |
-| Dungeons & Dragons Fifth Edition system | 6.1.0 only (minimum, verified and maximum) |
+| Dungeons & Dragons Fifth Edition system | 6.1.0 through 6.1.1 (verified on 6.1.0) |
 | Official Player's Handbook (2024) | Class compatibility targets version 3.0.0; update owned items as needed |
 | Official Monster Manual | Content used to develop and test the corresponding automations |
 | D&D Beyond Importer content | May work, but has not been tested |

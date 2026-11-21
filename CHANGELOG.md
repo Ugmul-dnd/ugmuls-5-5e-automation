@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased — reaction timing development
+## v1.2.0 — Reaction Timing & Counterspell (2026-11-20)
+
+- Allow D&D5e 6.1.1 in the manifest. The minimum and verified versions remain 6.1.0.
 
 - Limit target names on save rows to half the row width and wrap long names to keep the die result visible.
 
