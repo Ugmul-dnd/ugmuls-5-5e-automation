@@ -16,7 +16,7 @@ See the changelog in the repository for the full list of feature changes.
 ## Requirements and updating
 
 - **Foundry VTT 14**, verified build **14.370**.
-- **D&D5e 6.1.0 through 6.1.1**. The manifest lists 6.1.0 as minimum and verified, and 6.1.1 as maximum.
+- **D&D5e 6.1.0 or later** (verified on 6.1.0).
 - **Automated Conditions 5e** and **Dice So Nice!** must be installed and enabled. Keep an active GM connected for shared resource, effect, and HP operations.
 - Official **Player’s Handbook (2024) 3.0.0** remains the target for PHB class automation. Updating the book leaves existing character items in place. Review owned features through your usual character-content workflow if they still use older item layouts.
 - Back up your world, refresh GM and player clients after updating, and review **Reaction Triggers** and **Smart Automation** settings. Use fresh rolls when checking reaction options.

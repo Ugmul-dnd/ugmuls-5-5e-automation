@@ -2,7 +2,7 @@
 
 Prepared release: **v1.2.0**. Changes are in CHANGELOG.md and RELEASE-NOTES-1.2.0.md. Local preparation does not publish a GitHub release.
 
-Compatibility: Foundry VTT 14 (verified build 14.370) and **D&D5e 6.1.0 through 6.1.1** (minimum and verified 6.1.0, maximum 6.1.1). PHB class compatibility targets the official **Player’s Handbook (2024) 3.0.0**. Updating the book does not replace owned character items; see the release notes before updating. Verification results are recorded in RELEASE-NOTES-1.2.0.md.
+Compatibility: Foundry VTT 14 (verified build 14.370) and **D&D5e 6.1.0 or later** (verified on 6.1.0). PHB class compatibility targets the official **Player’s Handbook (2024) 3.0.0**. Updating the book does not replace owned character items; see the release notes before updating. Verification results are recorded in RELEASE-NOTES-1.2.0.md.
 
 The archive includes module.json, LICENSE, RELEASE-NOTES-1.2.0.md, runtime JavaScript, and styles. Guides, changelog, repository instructions, tests, tools, state, and Git data are excluded. Tests and build tools are local-only and Git-ignored; restore the local tooling backup if absent.
 

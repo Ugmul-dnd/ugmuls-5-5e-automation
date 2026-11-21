@@ -59,7 +59,7 @@ Aura emanations default to **Grid Shaped**. Match scene grid spacing and distanc
 | Component | Support |
 | --- | --- |
 | Foundry Virtual Tabletop | v14; verified on build 14.370 |
-| Dungeons & Dragons Fifth Edition system | 6.1.0 through 6.1.1 (verified on 6.1.0) |
+| Dungeons & Dragons Fifth Edition system | 6.1.0 or later (verified on 6.1.0) |
 | Official Player's Handbook (2024) | Class compatibility targets version 3.0.0; update owned items as needed |
 | Official Monster Manual | Content used to develop and test the corresponding automations |
 | D&D Beyond Importer content | May work, but has not been tested |
