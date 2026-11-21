@@ -1,3 +1,5 @@
+// Timing: outcome / attack-result (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from './shared-activity-card.js';
 import {inspiredRoll} from './bardic-inspiration.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
@@ -10,16 +12,16 @@ const enabled=()=>game.settings.get(ID,'guidedStrikeAutomation')===true,authorit
 const unable=a=>['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(s=>a?.statuses?.has(s)),remaining=i=>Number(i?.system?.uses?.value??Number(i?.system?.uses?.max)-Number(i?.system?.uses?.spent??0));
 export const guidedFeature=a=>values(a?.items).find(i=>i.type==='feat'&&key(i)==='guided-strike'&&i.system?.source?.rules!=='2014');
 function visible(c,u){return !!c&&c.isContentVisible!==false&&(u?.isGM||!c.blind&&(!c.whisper?.length||c.author?.id===u?.id||c.whisper.some(w=>(w.id??w)===u?.id)));}
-function context(card){
+function context(card,{capture=false}={}){
  if(!enabled()||card?.type!=='attack'||card.system?.targets?.length!==1||card.rolls?.length!==1||!card.rolls[0]._evaluated||!card.rolls[0].d20||flag(card,'guidedStrikeUsed')||isRollAdjustmentLocked(card))return null;
  const target=resolve(card.system.targets[0].token),outcome=values(card.system?.evaluatedTargets).find(t=>t.token===target?.uuid);
- if(!target?.actor||outcome?.isMiss!==true)return null;
+ if(!target?.actor||!capture&&outcome?.isMiss!==true)return null;
  const associated=card.getAssociatedToken?.(),attacker=associated?.document??associated;
  if(!attacker?.actor||attacker.parent?.id!==target.parent?.id)return null;
  return {target,attacker};
 }
-function candidate(card,source,{reserved=false}={}){
- const c=context(card),actor=source?.actor,feature=guidedFeature(actor),self=actor?.uuid===c?.attacker.actor.uuid,activity=values(feature?.system?.activities).find(a=>(a.id??a._id)===(self?'dnd5eactivity000':'cbPOFxxAeQuYIJpn'));
+function candidate(card,source,{reserved=false,capture=false}={}){
+ const c=context(card,{capture}),actor=source?.actor,feature=guidedFeature(actor),self=actor?.uuid===c?.attacker.actor.uuid,activity=values(feature?.system?.activities).find(a=>(a.id??a._id)===(self?'dnd5eactivity000':'cbPOFxxAeQuYIJpn'));
  const resource=values(actor?.items).find(i=>key(i)==='channel-divinity'&&i.system?.source?.rules!=='2014');
  if(!c||!actor||!feature||!resource||!reserved&&remaining(resource)<1||!activity||unable(actor)||!self&&(!reserved&&reactionUsed(actor)||!flashFriendly(source,c.attacker))||source.parent?.id!==c.target.parent?.id)return null;
  const limit=/^(m|meters?|metres?)$/i.test(String(source.parent.grid?.units))?9.144:30;
@@ -27,14 +29,14 @@ function candidate(card,source,{reserved=false}={}){
  return {...c,actor,feature,resource,activity,source,self};
 }
 export function guidedSnapshot(card){
- const c=context(card);if(!c)return {entries:[]};const entries=[],seen=new Set();
- for(const source of values(c.target.parent.tokens)){const e=candidate(card,source);if(!e||seen.has(e.actor.uuid))continue;seen.add(e.actor.uuid);entries.push({actor:e.actor.uuid,feature:e.feature.uuid,resource:e.resource.uuid,source:source.uuid,target:c.target.uuid,attacker:c.attacker.uuid});}
+ const c=context(card,{capture:true});if(!c)return {entries:[]};const entries=[],seen=new Set();
+ for(const source of values(c.target.parent.tokens)){const e=candidate(card,source,{capture:true});if(!e||seen.has(e.actor.uuid))continue;seen.add(e.actor.uuid);entries.push({actor:e.actor.uuid,feature:e.feature.uuid,resource:e.resource.uuid,source:source.uuid,target:c.target.uuid,attacker:c.attacker.uuid});}
  return {entries};
 }
 export function guidedCandidates(card,user=game.user){
- if(!visible(card,user))return [];
+ if(!visible(card,user)||globalThis.Ugmuls55eAutomationReactionTiming?.closed?.(card,'guidedStrike'))return [];
  return (flag(card,'guidedStrikeSnapshot')?.entries??[]).map(s=>{
-  const e=candidate(card,resolve(s.source));if(!e||!(user?.isGM||e.actor.testUserPermission?.(user,'OWNER'))||e.actor.uuid!==s.actor||e.feature.uuid!==s.feature||e.resource.uuid!==s.resource||e.target.uuid!==s.target||e.attacker.uuid!==s.attacker)return null;return e;
+  const e=candidate(card,resolve(s.source));if(!e||!(user?.isGM||e.actor.testUserPermission?.(user,'OWNER'))||e.actor.uuid!==s.actor||e.feature.uuid!==s.feature||e.resource.uuid!==s.resource||e.target.uuid!==s.target||e.attacker.uuid!==s.attacker)return null;if(globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(card,'guidedStrike',e.actor.uuid,e.source.uuid)===false)return null;return {...e,token:e.source.uuid};
  }).filter(Boolean);
 }
 export async function captureGuided(card){
@@ -43,7 +45,14 @@ export async function captureGuided(card){
  if(card.author?.isGM&&flag(card,'guidedStrikeSnapshot')!==undefined)return;
  await card.setFlag(ID,'guidedStrikeSnapshot',guidedSnapshot(card));globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
 }
-export function applyGuidedStrike(card,actorUuid,user=game.user){return enqueue(async()=>{
+export async function applyGuidedStrike(card,actorUuid,user=game.user){
+ if(!authority()||!user?.active)throw Error('A connected GM is required for Guided Strike.');
+ if(flag(card,'guidedStrikeAdjusting'))throw Error('Guided Strike is already resolving.');
+ const staged=globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card);await card.setFlag(ID,'guidedStrikeAdjusting',true);let committed=false;
+ try{await applyGuidedStrikeCore(card,actorUuid,user);committed=true;}finally{await card.setFlag(ID,'guidedStrikeAdjusting',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}
+ if(committed){await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'guidedStrike');if(!staged)await globalThis.Ugmuls55eAutomationReactive?.completed(card);}
+}
+function applyGuidedStrikeCore(card,actorUuid,user=game.user){return enqueue(async()=>{
  if(!authority()||!user?.active)throw Error('A connected GM is required for Guided Strike.');
  let e=guidedCandidates(card,user).find(e=>e.actor.uuid===actorUuid);if(!e)throw Error('Guided Strike requires a missed attack, Channel Divinity and a Cleric within 30 feet of its target. Undo applied damage/effects first.');
  const before=seekingSnapshot(card);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
@@ -72,14 +81,14 @@ export function renderGuidedStrike(message,html){
  const entries=[{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).filter(n=>!n.hidden).map(node=>({card:game.messages.get(node.dataset.messageId),node}))];
  for(const {card,node}of entries){for(const old of node.querySelectorAll(':scope > .rsa-guided-strike'))old.remove();if(!visible(card,game.user))continue;
   const row=document.createElement('div');row.className='rsa-attack-actions rsa-guided-strike';
-  for(const e of guidedCandidates(card)){const b=document.createElement('button');b.type='button';b.textContent='Guided Strike';b.title=e.actor.name+' · +10'+(e.self?'':' · Reaction');b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();request(card,e,b);});row.append(b);}
+  for(const e of guidedCandidates(card)){const b=document.createElement('button');b.type='button';b.dataset.rsaReactionItemUuid=e.feature.uuid;b.dataset.rsaReactionDescription='Spend Channel Divinity to add +10 to '+e.attacker.actor.name+'’s missed attack.'+(e.self?' No Reaction required.':' Uses '+e.actor.name+'’s Reaction.');b.textContent='Guided Strike';b.title=e.actor.name+' · +10'+(e.self?'':' · Reaction');b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();request(card,e,b);});row.append(b);}
   const used=flag(card,'guidedStrikeUsed');if(used){const label=document.createElement('span');label.textContent='Guided Strike: +10 ('+used.name+')';row.append(label);}if(row.childNodes.length)node.append(row);
  }
 }
 function refresh(doc,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request('guidedStrike',doc,changes);}
 Hooks.once('init',()=>game.settings.register(ID,'guidedStrikeAutomation',{name:'War Cleric: Guided Strike',hint:'Offer +10 on a missed self/allied attack when the Cleric is within 30 feet of its target. Spend Channel Divinity; allied attacks also consume a Reaction. Snapshot offers on creation and preserve original attack dice.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationGuidedStrike={candidates:guidedCandidates,capture:captureGuided};
+ globalThis.Ugmuls55eAutomationGuidedStrike={snapshot:guidedSnapshot,candidates:guidedCandidates,capture:captureGuided};
  Hooks.on('preCreateChatMessage',card=>{if(card.type==='attack'&&game.user.isGM)card.updateSource({['flags.'+ID+'.guidedStrikeSnapshot']:guidedSnapshot(card)});});
  Hooks.on('createChatMessage',card=>captureGuided(card).catch(report));Hooks.on('dnd5e.renderChatMessage',renderGuidedStrike);
  for(const event of ['createItem','updateItem','deleteItem','createActiveEffect','updateActiveEffect','deleteActiveEffect','updateActor','updateCombat'])Hooks.on(event,refresh);

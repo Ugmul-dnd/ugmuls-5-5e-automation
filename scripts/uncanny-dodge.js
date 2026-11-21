@@ -1,3 +1,5 @@
+// Timing: outcome / attack-hit (connected); select before damage reveal.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 import {rebukeAttack as dodgeAttack,refreshRebukeDamage as refreshDodgeDamage} from "./elemental-rebuke.js";
@@ -5,7 +7,12 @@ const ID='ugmuls-5-5e-automation',enqueue=createEventQueue(),reservations=new Se
 const values=x=>Array.from(x?.values?.()??x??[]),key=x=>x?.identifier??x?.system?.identifier;
 export const uncannyFeature=actor=>values(actor?.items).find(i=>i.type==='feat'&&(key(i)==='uncanny-dodge'||/^uncanny dodge$/i.test(i.name?.trim()??'')));
 export function dodgeRecord(card,uuid){return dodgeAttack(card)?.getFlag?.(ID,'uncannyDodges')?.[uuid?.split('.').at(-1)]??null;}
-export function uncannyCandidates(card,user=game.user){
+export function uncannySnapshot(card){
+ if(card?.type!=='attack'||card.system?.targets?.length!==1)return {entries:[]};
+ return {entries:uncannyCandidates(card,game.users.activeGM).map(e=>({actor:e.actor.uuid,token:e.token.uuid,feature:e.feature.uuid}))};
+}
+export function uncannyCandidates(...args){return uncannyCandidatesCore(...args).filter(e=>globalThis.Ugmuls55eAutomationReactive?.damageAllowed?.(args[0],e.actor)!==false);}
+function uncannyCandidatesCore(card,user=game.user){
  if(game.settings.get(ID,'uncannyDodgeAutomation')!==true||!['attack','damage'].includes(card?.type)||card.getFlag?.(ID,'pendingDamage')||isHealingCard(card)||isRollAdjustmentLocked(card))return [];
  const attack=dodgeAttack(card);if(!attack||isRollAdjustmentLocked(attack))return [];
  const source=attack.getAssociatedToken?.(),attacker=source?.document??source;if(!attacker?.actor)return [];
@@ -14,27 +21,32 @@ export function uncannyCandidates(card,user=game.user){
   if(dodgeRecord(attack,hit.token)||card.type==='damage'&&!(card.system?.targets??[]).some(t=>t.token===hit.token))return [];
   const token=globalThis.fromUuidSync?.(hit.token,{strict:false}),actor=token?.actor;
   if(!actor||actor.uuid===attacker.actor.uuid||!(user?.isGM||actor.testUserPermission?.(user,'OWNER'))||reactionUsed(actor)||['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(s=>actor.statuses?.has(s)))return [];
-  const feature=uncannyFeature(actor),reaction=values(feature?.system?.activities).find(a=>String(a.activation?.type??'').startsWith('reaction'));
+  if(globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(attack,'uncanny',actor.uuid,hit.token)===false)return [];
+ const snapshot=attack.getFlag?.(ID,'uncannySnapshot');if(snapshot&&!snapshot.entries?.some(e=>e.actor===actor.uuid&&e.token===hit.token&&e.feature===uncannyFeature(actor)?.uuid))return [];
+ const feature=uncannyFeature(actor),reaction=values(feature?.system?.activities).find(a=>String(a.activation?.type??'').startsWith('reaction'));
   return feature&&reaction?[{actor,token,feature,reaction,attack}]:[];
  });
 }
 const stamp=()=>game.combat?.started?[game.combat.id,game.combat.round,game.combat.turn].join(':'):null;
 export async function applyUncannyDodge(card,tokenUuid,user=game.user){
+ if(!game.user?.isGM||game.users.activeGM?.id!==game.user.id)throw Error('A connected GM is required for Uncanny Dodge.');
  const entry=uncannyCandidates(card,user).find(e=>e.token.uuid===tokenUuid);if(!entry)throw Error('Uncanny Dodge needs a confirmed incoming hit and an available Reaction. Undo applied damage first.');
- const {actor,token,feature,reaction,attack}=entry,turn=stamp();if(reservations.has(actor.uuid))throw Error('Another Reaction is being completed for this Rogue.');reservations.add(actor.uuid);let marker,committed=false;
+ const {actor,token,feature,reaction,attack}=entry,turn=stamp();if(reservations.has(actor.uuid))throw Error('Another Reaction is being completed for this Rogue.');reservations.add(actor.uuid);let marker,committed=false,record;
  try{
+  await attack.setFlag(ID,'uncannyAdjusting',true);
   if(reactionUsed(actor))throw Error('Your Reaction was just used.');
   marker=await recordReactionUse(reaction,{}, {message:attack});
   const tracked=game.settings.get(ID,'reactionTracker')===true&&game.combat?.started&&values(game.combat.combatants).some(c=>c.actor?.uuid===actor.uuid);
   if(tracked&&(!marker||marker.getFlag?.(ID,'reactionUsage')!==attack.id))throw Error('Could not reserve the Rogue’s Reaction.');
-  if(turn!==stamp()||isRollAdjustmentLocked(card)||isRollAdjustmentLocked(attack)||dodgeRecord(attack,token.uuid)||uncannyFeature(actor)!==feature)throw Error('The attack or Reaction changed. Reopen the card after undoing any applied damage.');
-  const record={actor:actor.uuid,token:token.uuid,name:actor.name,feature:feature.uuid,user:user.id};
+  if(turn!==stamp()||isRollAdjustmentLocked(card)||isRollAdjustmentLocked(attack)||dodgeRecord(attack,token.uuid)||uncannyFeature(actor)!==feature||!(user?.isGM||actor.testUserPermission?.(user,'OWNER'))||!values(attack.system?.evaluatedTargets).some(t=>t.token===token.uuid&&t.isMiss===false)||globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(attack,'uncanny',actor.uuid,token.uuid)===false)throw Error('The attack or Reaction changed. Reopen the card after undoing any applied damage.');
+  record={actor:actor.uuid,token:token.uuid,name:actor.name,feature:feature.uuid,user:user.id};
   await attack.setFlag(ID,'uncannyDodges',{...attack.getFlag(ID,'uncannyDodges'),[token.id??token.uuid.split('.').at(-1)]:record});committed=true;
   globalThis.Ugmuls55eAutomationChatRefresh?.card(attack);
   // Reuse the existing action-driven linked-damage refresh, including its bounded fallback.
   refreshDodgeDamage(attack);if(card.type==='damage')globalThis.Ugmuls55eAutomationChatRefresh?.card(card);
-  return record;
- }catch(error){if(!committed&&marker?.getFlag?.(ID,'reactionUsage')===attack.id)await marker.update({disabled:true});throw error;}finally{reservations.delete(actor.uuid);}
+ }catch(error){if(!committed&&marker?.getFlag?.(ID,'reactionUsage')===attack.id)await marker.update({disabled:true});throw error;}finally{try{await attack.setFlag(ID,'uncannyAdjusting',false);}finally{reservations.delete(actor.uuid);}}
+ if(committed)await globalThis.Ugmuls55eAutomationReactionTiming?.complete(attack,'uncanny');
+ return record;
 }
 export function installUncannyDamage(Type=customElements.get('damage-application')){
  const p=Type?.prototype;if(!p?.getMergedOptions||p.rsaUncannyDodge)return;
@@ -52,19 +64,20 @@ export function renderUncannyDodge(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;
  const entries=[{card:message,root},...Array.from(root.querySelectorAll('.card-summary[data-message-id]'),node=>({card:game.messages.get(node.dataset.messageId),root:node})).filter(e=>e.card&&!e.root.hidden)];
  for(const {card,root:node} of entries){
-  node.querySelectorAll(':scope > .rsa-uncanny-actions').forEach(el=>el.remove());if(card.isContentVisible===false||card.type!=='damage')continue;
+  node.querySelectorAll(':scope > .rsa-uncanny-actions').forEach(el=>el.remove());if(card.isContentVisible===false||!['attack','damage'].includes(card.type))continue;
   const attack=dodgeAttack(card),records=values(attack?.system?.evaluatedTargets).map(t=>dodgeRecord(attack,t.token)).filter(Boolean),candidates=uncannyCandidates(card);
   if(records.length)for(const tray of node.querySelectorAll('damage-application'))tray.refreshMultiplier?.();
   if(!candidates.length&&!records.length||!['attack','damage'].includes(card.type))continue;
   const controls=document.createElement('div');controls.className='rsa-attack-actions rsa-uncanny-actions';
-  for(const entry of candidates){const button=document.createElement('button');button.type='button';button.textContent='Uncanny Dodge — '+entry.actor.name;button.dataset.tooltip='Use a Reaction to halve this attack’s damage against you. Click only if you can see the attacker. Use before applying damage.';
+  for(const entry of candidates){const button=document.createElement('button');button.type='button';button.dataset.rsaReactionItemUuid=entry.feature.uuid;button.textContent='Uncanny Dodge — '+entry.actor.name;button.dataset.tooltip='Use a Reaction to halve this attack’s damage against you. Click only if you can see the attacker. Use before applying damage.';
    button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await requestDodge(card,entry);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
   for(const record of records){const label=document.createElement('span');label.textContent='Uncanny Dodge: half damage to '+record.name;controls.append(label);}node.append(controls);
  }
 }
 function report(error){console.error('Uncanny Dodge',error);ui.notifications.error(error.message);}
-Hooks.once('init',()=>game.settings.register(ID,'uncannyDodgeAutomation',{name:'Uncanny Dodge Assistance',hint:'Offer Uncanny Dodge on confirmed incoming damage cards. Spend the tracked Reaction and set only that Rogue’s damage selector to half. Clicking confirms the Rogue can see the attacker. Undo applied damage first.',scope:'world',config:true,type:Boolean,default:true}));
+Hooks.once('init',()=>game.settings.register(ID,'uncannyDodgeAutomation',{name:'Uncanny Dodge Assistance',hint:'Offer Uncanny Dodge on a confirmed hit before damage is revealed. Spend the tracked Reaction and set only that Rogue’s damage selector to half. Clicking confirms the Rogue can see the attacker. Undo applied damage first.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
+ globalThis.Ugmuls55eAutomationUncanny={snapshot:uncannySnapshot,candidates:uncannyCandidates};
  installUncannyDamage();Hooks.on('dnd5e.renderChatMessage',renderUncannyDodge);
  Hooks.on('updateChatMessage',(card,changes)=>{if(changes.flags?.[ID]?.uncannyDodges||Object.keys(changes).some(k=>k.startsWith('flags.'+ID+'.uncannyDodges'))){globalThis.Ugmuls55eAutomationChatRefresh?.card(card);refreshDodgeDamage(card);}});
  for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateCombat','updateItem','deleteItem'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('uncanny',doc,changes));

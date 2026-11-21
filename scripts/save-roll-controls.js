@@ -92,7 +92,7 @@ export async function updateSaveMode(message, mode, index, user = game.user, {up
 }
 
 export async function animateNewSaveDice(message, results, user = game.user) {
-    if (!results?.length || !game.dice3d?.showForRoll) return;
+    if (message?.type!=='save'&&globalThis.Ugmuls55eAutomationReactionTiming?.held(message)||!results?.length || !game.dice3d?.showForRoll) return;
     try {
         const Die = CONFIG.Dice.terms?.d ?? foundry.dice.terms.Die;
         const die = new Die({ faces: 20, number: results.length,

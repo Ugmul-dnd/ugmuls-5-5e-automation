@@ -24,7 +24,9 @@ export async function damageOperation(action,card,payload,user){
         const next={...state,session:nonce(),userId:user.id};await card.setFlag(ID,"pendingDamage",next);return next;
     }
     if(action!=="finish"||state.session!==payload.session||state.userId!==user.id)throw Error("This damage prompt was replaced. Use the current pending card.");
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.damageBlocked?.({system:card.system,flags:card.flags}))throw Error("Complete the pending saving throws and reaction decisions before publishing damage.");
     const data=payload.data;
+    globalThis.Ugmuls55eAutomationReactionTiming?.prepareDamage(card,data);
     if(data.type!==card.type||data.system?.origin!==card.system?.origin?.id&&data.system?.origin!==card.system?.origin)
         throw Error("The damage request's source changed.");
     if(!Array.isArray(data.rolls)||!data.rolls.length)throw Error("No damage roll was supplied.");
@@ -71,6 +73,7 @@ export function pendingDamageCurrent(context){
     return !!state&&state.session===context.session&&state.userId===game.user.id;
 }
 export function startPendingDamage(config,dialog,message){
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.damageBlocked?.(message?.data))return false;
     if(dialog.configure===false||message.create===false||config.evaluate===false||!config.subject?.item||contexts.has(message))return;
     const session=nonce(),context={session,dialogId:"rsa-pending-damage-"+session};contexts.set(message,context);
     dialog.options??={};dialog.options.id=context.dialogId;
@@ -108,7 +111,11 @@ export function startPendingDamage(config,dialog,message){
     context.ready.catch(report);
 }
 export async function prepareDamageDialog(app){await contexts.get(app.message)?.ready;}
-export function canSubmitDamage(app){const context=contexts.get(app.message);return !context||pendingDamageCurrent(context);}
+export function canSubmitDamage(app){
+    const context=contexts.get(app.message),card=game.messages.get(context?.cardId);
+    if(card&&globalThis.Ugmuls55eAutomationReactionTiming?.damageBlocked?.({system:card.system,flags:card.flags}))return false;
+    return !context||pendingDamageCurrent(context);
+}
 export async function cancelDamageDialog(cardId){
     const apps=foundry.applications.instances?Array.from(foundry.applications.instances.values()):Object.values(ui.windows??{});
     for(const app of apps){const context=contexts.get(app.message);if(context?.cardId===cardId&&!pendingDamageCurrent(context))await app.close();}
@@ -133,6 +140,7 @@ export function installPendingDamagePublication(RollClass=CONFIG.Dice.DamageRoll
         await context.ready;
         if(!rolls?.length)return;
         if(!pendingDamageCurrent(context)){rolls.splice(0);return;}
+        if(globalThis.Ugmuls55eAutomationReactionTiming?.damageBlocked?.(message.data))throw Error("Complete the pending saving throws and reaction decisions before rolling damage.");
         // Prepare native typed message data without creating a second chat card.
         const create=message.create;message.create=false;
         // A native follow-up Heal can retain the click on a turn reminder.
@@ -142,7 +150,8 @@ export function installPendingDamagePublication(RollClass=CONFIG.Dice.DamageRoll
         const publicationConfig=message.data?.system?.origin?{...config,event:undefined}:config;
         try{await original.call(this,rolls,publicationConfig,message);}finally{message.create=create;}
         const card=game.messages.get(context.cardId);
-        if(game.dice3d?.showForRoll){
+        const timingHeld=globalThis.Ugmuls55eAutomationReactionTiming?.prepareDamage(card,message.data);
+        if(!timingHeld&&game.dice3d?.showForRoll){
             // One evaluated pool keeps weapon and rider dice in the same throw.
             const roll=rolls.length===1?rolls[0]:Roll.fromTerms([foundry.dice.terms.PoolTerm.fromRolls(rolls)]);
             const animation=game.dice3d.showForRoll(roll,game.user,true,message.data.whisper?.length?message.data.whisper:null,message.data.blind??false,card.id,message.data.speaker);

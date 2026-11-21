@@ -1,3 +1,4 @@
+// Timing: outcome / attack-hit.
 import {createEventQueue,isRollAdjustmentLocked,linkedHpCards} from './shared-activity-card.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {shieldReactionAvailable,refreshShieldAttack} from './shield-reaction.js';
@@ -43,12 +44,17 @@ export function captureDuelist(card){
  const job=attack.setFlag(ID,'duelistSnapshot',snapshot).then(()=>{if(snapshot.entries.length)refresh(attack);}).finally(()=>capturing.delete(attack.id));capturing.set(attack.id,job);return job;
 }
 export function duelistCandidates(card,user=game.user){
+ // An AC bonus cannot prevent a critical hit; never offer or spend it here.
+ if(card?.rolls?.[0]?.isCritical===true)return [];
+ if(flag(card,'shieldTimingPending'))return [];
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed(card,'defensiveDuelist'))return [];
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.held(card)&&!globalThis.Ugmuls55eAutomationReactionTiming?.defenseWindow(card))return [];
  if(!enabled()||!game.users.activeGM||!user?.active||!meleeAttack(card)||!visible(card,user)||flag(card,'duelistAdjusting'))return [];
  const snapshot=flag(card,'duelistSnapshot');if(!snapshot||snapshot.turn!==turn()||isRollAdjustmentLocked(card))return [];
  return snapshot.entries.flatMap(e=>{
   const target=resolve(e.token),actor=target?.actor,feature=duelistFeature(actor),weapon=values(actor?.items).find(i=>i.uuid===e.weapon);
   if(card.getAssociatedActor?.()?.uuid===actor?.uuid)return [];
-  if(!actor||!owns(actor,user)||feature?.uuid!==e.feature||!reaction(feature)||!weapon||weapon.type!=='weapon'||!weapon.system?.equipped||!values(weapon.system.properties).includes('fin')||Number(weapon.system.quantity??1)<=0||!shieldReactionAvailable(actor)||activeEffect(actor)||flag(card,'duelistUsed')?.[e.token]||!card.system?.targets?.some(t=>t.token===e.token)||!values(card.system?.evaluatedTargets).some(t=>t.token===e.token&&t.isMiss===false))return [];
+  if(!actor||globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actor)||!owns(actor,user)||feature?.uuid!==e.feature||!reaction(feature)||!weapon||weapon.type!=='weapon'||!weapon.system?.equipped||!values(weapon.system.properties).includes('fin')||Number(weapon.system.quantity??1)<=0||!shieldReactionAvailable(actor)||activeEffect(actor)||flag(card,'duelistUsed')?.[e.token]||!card.system?.targets?.some(t=>t.token===e.token)||!values(card.system?.evaluatedTargets).some(t=>t.token===e.token&&t.isMiss===false))return [];
   return [{...e,actor,feature,activity:reaction(feature),target}];
  });
 }
@@ -94,6 +100,7 @@ export function useDuelist(card,token,user=game.user){return enqueue(async()=>{
  const oldHistory=values(flag(card,'effectUndoHistory')),oldUsed=flag(card,'duelistUsed'),beforeEffects=new Map(values(e.actor.effects).map(effect=>[effect.uuid,effect.toObject()])),expected=JSON.stringify(card.rolls.map(r=>r.toJSON?.()??r));let marker,effect,committed=false;
  await card.setFlag(ID,'duelistAdjusting',true);
  try{
+  if(flag(card,'shieldTimingPending'))throw Error('Shield is already resolving on this attack.');
   marker=await recordReactionUse(e.activity,{}, {message:card});
   if(game.settings.get(ID,'reactionTracker')===true&&game.combat?.started&&values(game.combat.combatants).some(c=>c.actor?.uuid===e.actor.uuid)&&marker?.getFlag?.(ID,'reactionUsage')!==card.id)throw Error('Could not reserve the defender’s Reaction.');
   if(reactionUsed(e.actor)&&reactionUsed(e.actor)!==marker)throw Error('The defender’s Reaction is no longer available.');
@@ -115,7 +122,7 @@ export function useDuelist(card,token,user=game.user){return enqueue(async()=>{
    }finally{if(marker?.getFlag?.(ID,'reactionUsage')===card.id)await marker.update({disabled:true});}
   }}finally{await card.setFlag(ID,'duelistAdjusting',false);refresh(card);}
  }
- if(committed)await globalThis.Ugmuls55eAutomationReactive?.completed(card);
+ if(committed){await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'defensiveDuelist');await globalThis.Ugmuls55eAutomationReactive?.completed(card);}
 });}
 function weaponStillEquipped(e){const weapon=values(e.actor.items).find(i=>i.uuid===e.weapon);return weapon?.type==='weapon'&&weapon.system?.equipped===true&&Number(weapon.system.quantity??1)>0&&values(weapon.system.properties).includes('fin')&&shieldReactionAvailableIgnoringReservation(e.actor);}
 function shieldReactionAvailableIgnoringReservation(actor){return !['incapacitated','dead','unconscious','stunned','paralyzed','petrified'].some(s=>actor.statuses?.has(s));}

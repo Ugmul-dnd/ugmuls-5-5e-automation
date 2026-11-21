@@ -1,5 +1,165 @@
 # Changelog
 
+## v1.2.0 — Reaction Timing & Counterspell (2026-11-20)
+
+- Remove the D&D5e maximum version from the manifest. The minimum and verified versions remain 6.1.0.
+
+- Limit target names on save rows to half the row width and wrap long names to keep the die result visible.
+
+- Connect Dark One’s Own Luck to failed-save decisions. Add its native bonus without rerolling, spend one native use with no Reaction, and continue once remaining choices resolve. Successful saves do not offer the action; ability-check handling is unchanged.
+
+- Follow newly appearing attack/save decisions and pending damage to the bottom of chat, including late grouped-card expansion. Ignore unchanged resource refreshes and stop following when the user scrolls.
+
+- Reuse confirmed dice-animation completion for unchanged saves after Guarded Mind and other flag-only outcome changes. Actual rerolls invalidate the confirmation. Animation timeout errors identify the clients that did not acknowledge completion.
+
+- Have the active GM validate new save-decision pauses once after creation, so Guarded Mind and other save choices always get continuation/decline controls even when the rolling client omitted the pause. Existing cards are not backfilled.
+
+- Connect Guarded Mind to visible failed mental-save decisions. Spend the native Mage Slayer use to succeed without rerolling or spending a Reaction; preserve the original dice and DC.
+
+- Connect Countercharm to shared failed charm/fear save decisions. Use the Bard’s Reaction for the native Advantage reroll, retaining normal cancellation and remaining save choices.
+
+- Connect Shared Resilience to visible failed ally saves. Spend the Banneret’s Reaction and Indomitable use for the native reroll and Fighter-level bonus; retain other eligible save choices before continuing.
+
+- Connect Disciplined Survivor to visible failed-save decisions. Spend 1 Focus Point for the native reroll, keep the new result and original modifiers, and wait for remaining choices before damage or effects apply.
+
+- Keep automatic Shield and other spell effects enabled when declining a Counterspell prompt. Counterspell controls no longer mark the interrupted spell as a manual workflow.
+
+- Mirror Image applies all three native duplicates without selecting individual effects when its automation is enabled. Ignore cosmetic attack-roll metadata changes during duplicate dice animations while retaining actual roll/target/effect change checks.
+
+- Put Mirror Image in the shared on-hit action area. Click to roll duplicate d6s and remove one image on interception, or use another defense first. No automatic duplicate roll or Reaction cost.
+
+- Connect Fanatical Focus to visible failed-save decisions while Raging. Use its native reroll and Rage Damage bonus once per Rage, with no Reaction cost; wait for remaining choices before continuing.
+
+- Use the character’s Soul Blades item artwork for Homing Strikes.
+
+- Move Parry after melee damage is shown and before application, with shared Decline Reaction support. Preserve its Superiority Die, Reaction cost and existing pending reservations.
+
+- Delay Graze until miss adjustments are resolved or declined. Weal and other corrections can turn the attack into a hit before any Graze damage card appears.
+
+- Connect Cosmic Omen’s Weal and Woe to attack and save decisions. Use the active omen’s native die, charge and Druid Reaction; recheck defender/save options before continuing, while keeping long-rest and initiative handling.
+
+- Keep Precision Attack in its own bottom action group alongside other choices, separate from Bend Luck and other result text.
+
+- Connect Bend Luck to attack and saving-throw decisions, including enemy successes. Preserve original dice, spend the Sorcerer’s Reaction and native point cost, and continue only after remaining choices resolve.
+
+- Connect Guided Strike to missed attacks. Spend Channel Divinity for +10 without rerolling; allied assistance also spends the Cleric’s Reaction. A corrected hit checks defender options before damage.
+
+- Hide Empowered Spell until damage is rolled, remove its action once used, and resume Smart Automation after its reroll and cast-wide use are recorded.
+
+- Connect Seeking Spell to missed spell attacks before damage. Keep its native Sorcery Point/free Metamagic handling, accept the new d20, and check defender options if the reroll hits.
+
+- Fix normal damage dialogs failing after connecting Precision Attack; keep its timing API separate from Guided Precision’s damage helpers.
+
+- Connect Precision Attack at the miss decision. Add the current Superiority Die or available Relentless d8 without rerolling the attack or spending a Reaction; a corrected hit checks defender options before damage.
+
+- Fix Sentinel’s hit-stage action disappearing when Foundry assigns the attack ID after eligibility is captured.
+- Offer Sentinel at Death’s Door on a hit against a Bloodied friendly target within 60 feet, before damage rolls. Reserve the Cleric’s Reaction and halve the linked attack damage before Resistance, preserving the original dice.
+
+- Connect Superior Hunter’s Defense after visible damage and before application. Use the Ranger’s Reaction to choose Resistance, or decline to continue automation.
+
+- Offer Investment of the Chain Master’s familiar Resistance after damage is revealed, before application. Spend the Warlock’s Reaction or decline to continue; show which familiar is protected.
+
+- Fix Beguiling Defenses failing to appear when Beguiling Twist is loaded.
+- Beguiling Defenses now prompts on a hit before damage, with its half damage and retaliation tied to that attack.
+- Players can decline post-damage reduction choices; Smart Automation continues when no choices remain. The GM can pass for everyone.
+
+- Allow additional Bastion of Law dice rolls on the same damage card while ward dice and damage remain. Add each batch to the recipient’s running reduction total, retaining the individual dice breakdown and preventing duplicate spending.
+
+- Set Bastion of Law’s ward-dice choice after damage is visible and before HP application. Show the recipient and damage in its picker, prevent use on concealed damage, and retain native ward dice with no Reaction cost. Canceling spends nothing.
+
+- Offer Song of Defense after damage is rolled and visible, before HP application. Choose the spell slot with the damage amount known; confirm spends the slot and Reaction, while cancellation spends nothing. Preserve existing pending reservations and recipient-only mitigation.
+
+- Identify the helper and recipient in Protective Field and Projected Ward reaction tooltips, including area damage choices. Use the actual Psionic Power and Projected Ward source-item artwork for their icons.
+
+- Connect Projected Ward to the hit decision before damage reveal. Reserve the Abjurer’s Reaction and protect the exact linked ally with the existing ward pool. Preserve automatic Arcane Ward creation/recharge, mitigation order, overflow and Undo.
+
+- Remove damage-reduction pauses from missed attacks. Keep other helpers’ eligible decisions open after Shield or a selected reduction; allow different helpers to reserve reductions on the same single-target hit without spending any helper’s Reaction twice.
+
+- Show Cutting Words damage reduction in a separate tooltip section with the original damage subtotal. Preserve the evaluated reduction die for both Cutting Words and Protective Field, showing its result and modifier alongside the capped applied reduction.
+
+- Connect Psi Warrior Protective Field to the hit decision before damage reveal. Reserve the helper’s Reaction, then spend the native Energy Die on the exact linked recipient’s damage. Preserve original rolls and Undo, and animate damage and reduction dice together.
+
+- Show Cutting Words’ reserved damage dice and native reduction die together in Dice So Nice. Preserve the original animation preference through pending-card publication and prevent a second throw on reveal.
+
+- Fix Cutting Words damage reservations: remove that Bard’s competing attack-reduction option and recognize the reserved Reaction on the exact linked damage card.
+
+- Offer Cutting Words attack reduction at the hit decision, and damage reduction after the damage roll is visible but before HP application. Preserve native resources, original dice, tooltip breakdowns and Undo; existing pre-damage reservations remain finishable.
+
+- Correct Combat Inspiration’s AC result label and tooltip to show the recipient and rolled bonus. Keep prior records readable and preserve that bonus when Shield refreshes AC.
+
+- Combat Inspiration’s defensive AC option spends only the granted Inspiration die. Preserve the recipient’s Reaction so Uncanny Dodge or another eligible defense remains available if the attack still hits.
+
+- Connect Bardic Inspiration to failed-attack and failed-save decisions, and Combat Inspiration to the hit-stage AC defense. Preserve the granted die, original rolls and remaining participants’ choices. Misses corrected to hits continue through defender reactions; Combat Inspiration’s damage option remains in its initial damage roll configuration.
+
+- Remove Shield offers from critical hits in both staged and legacy automation. Critical damage continues without a stale Shield button holding application; stale controls cannot spend casting resources.
+
+- Play attack dice animations after declaration choices and before hit-stage defenses. Keep the card’s totals and dice details concealed until reactions finish, then reveal them without replaying the animation. Preserve existing roll privacy and animation skips.
+
+- Offer Uncanny Dodge at the hit decision before revealing damage, including critical hits. Spend the defender’s Reaction and carry its half-damage setting into the linked damage card, preserving original dice and Undo.
+
+- Resolve Unbreakable Majesty after a hit and before optional defenses. Its native Recoil save can turn even a critical hit into a miss; a successful save continues to available defenses without spending another use or Reaction.
+
+- Offer Restore Balance during attack declaration when Advantage or Disadvantage applies. Spend its native use and Reaction, preserve the original dice, and continue through remaining defenses.
+
+- Clarify Instinctive Charm’s successful failed-save response: bring the original attack down, show an authorized Redirect Attack prompt, and open a target picker once for the initiating user. Retain Retarget, original dice and resources; finish as a miss when no alternate target exists.
+
+- Fix Steel Defender Deflect Attack range against Large or larger attackers. Measure occupied token spaces and elevation so an adjacent defender is eligible, retaining line-of-sight and self-target restrictions.
+
+- Add a Reaction Triggers settings page with reaction pause controls and shortcuts to class and feat feature switches.
+- Connect Lucky and Steel Defender Deflect Attack to the declaration pause, and Illusory Self and Instinctive Charm to the hit decision. Preserve native resources, original dice, critical handling and redirects; keep other actors’ eligible decisions open.
+
+- Limit automatic Counterspell offers to opposing friendly/hostile token sides. Allies and neutral creatures are not offered as automatic targets.
+- Align Warding Flare’s Decline Reaction control with the shared reaction footer.
+- Resume already-rolled area damage after saving throws and dice animations finish, including Spirit Guardians on player-authored cards. Ignore region-managed effects when determining whether an applied damage card still needs Apply.
+
+- Preserve limited monster spell uses and linked source pools when Counterspell stops a spell. The interrupted spell spends its action, bonus action or Reaction, retaining its slot and casting use for a later opportunity.
+
+- Label pending-reaction continuation buttons “Decline Reaction” consistently for attacks, saves and Counterspell. Tooltips clarify whether the player declines their own choices or the GM continues past all remaining reactions.
+
+- Bring the original action card below its reactions when casting or attack/save resolution resumes, so its next controls stay easy to find. Preserve the existing card, roll links, timestamps and Undo.
+
+- Keep new Shield and Counterspell reaction cards, decision steps and Counterspell saves in view as they expand. Coalesce chain updates and avoid scrolling for unrelated history refreshes.
+
+- Exempt reaction spells, including Shield and Counterspell, from the Consumed Spell Slot turn marker and its casting limit. They still spend their actual slots and Reactions, allowing Counterspell chains without blocking the original action spell.
+
+- Resume Counterspell chains after native save results and dice animations finish, allowing a countered Counterspell to release the original spell. Keep the interrupted Counterspell’s slot while spending its Reaction.
+
+- Fix reaction-cast Shield expiry to use the Shield caster’s next turn, including copied NPC effects and refreshed applications.
+
+- Cast granted Shield spells through their native source activity, consuming shared pools such as Protective Magic instead of treating the generated spell as unlimited. Hide exhausted or disconnected grants and retain native cancellation, scaling and consumption.
+
+- Remove separate Vex/Remove Vex controls. Apply and undo Vex with the damage card, restoring it on reapplication without replacing a newer Vex benefit.
+
+- Recognize Shield on slotless NPCs without requiring player spell preparation or invented spell slots. Respect configured item/activity uses, at-will casting, existing monster slot pools and Reaction availability. Share the resource check for future reaction-spell integrations.
+
+- Restrict Battle Master Parry to the actual melee attack, excluding ranged and thrown uses even when the underlying weapon is a melee weapon.
+
+- Add player Resolve Attack / Resolve Save controls to decline only their own pending choices without spending resources or a Reaction. Keep other players' options available; continue once the last choice resolves. The GM can still continue the entire window at once.
+
+- Stop pre-application feature refreshes from rebuilding already-applied grouped cards through other reaction paths, preventing unnecessary target-list reconstruction on turn/resource changes. Preserve post-damage follow-ups and explicit Undo/correction refreshes.
+
+- Use one GM Resolve Saves continuation for all remaining failed-save decisions on an AOE. Individual reaction controls remain available until that group is continued.
+
+- Keep completed staged reactions closed after turn/resource resets. Skip their automatic resource-driven redraws and ignore unrelated save-card flag updates, while retaining explicit Undo/correction refreshes.
+
+- Place AOE failed-save decisions below all save results and identify each recipient. After using a save reaction, close other decisions on the same ability that lost their available options, allowing shared damage to continue automatically when no decisions remain.
+
+- Add a shared Failed Save decision for Flash of Genius and Indomitable for each player affected by a monster ability. Keep save totals, dice and results visible, but wait for all recorded saves, animations and decisions before prompting damage or applying results; resume damage and effects using the final save. Keep another eligible option available if the first adjustment still fails.
+
+- Add Counterspell at spell declaration for PCs and monsters, with range, visibility, Reaction and native resource checks. Native Constitution saves stop or resume the original spell, and Counterspell chains resolve before templates or damage. Monster spells use their granting feature’s resource pool when linked.
+
+- Prevent Reveal / Roll Damage from also launching the ordinary automatic damage prompt, which could roll and apply damage twice.
+
+- Put staged Parry and Deflect choices in the unified footer as feature icons. Hide Defensive Duelist on critical hits, and show Parry's committed subtraction inside the damage dice popup.
+
+- Group combat decisions into Declaring Attack, Outcome (Attack Hit/Miss or Save Pass/Fail), and Follow-up Actions / Riders. Add a labeled feature connection table for planning the remaining automations; save-stage connections remain planned.
+
+- Offer Parry and Deflect beside Shield and Defensive Duelist at the Hit decision, before damage is shown. Reserve the Reaction, then resolve the selected reduction automatically when damage is rolled. Canceling the damage dialog releases the reservation without spending a Superiority Die. Retain native reductions, critical handling, Deflect redirects, original dice and Apply/Undo.
+
+- Delay attack dice and totals while Warding Flare or an eligible defense is awaiting a decision. Show Hit or Critical Hit during the defense decision. Attacks without an eligible connected reaction keep their normal flow. Reuse native Shield casting and Duelist AC effects and recheck hit/miss before continuing.
+
+- Keep Damage controls separate from Warding Flare so they cannot appear as a duplicate Flare icon. Refresh defense controls through the indexed, bounded chat refresh queue.
+
 ## v1.1.0 — Unified Cards & PHB 3.0.0 (2026-11-14)
 
 - Require D&D5e 6.1.0 exactly; earlier system versions are incompatible. PHB class updates target official Player’s Handbook (2024) 3.0.0 items.

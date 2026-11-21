@@ -1,3 +1,5 @@
+// Timing: outcome / attack-hit (connected); select before damage reveal.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard,describeTarget} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 import {rebukeAttack} from "./elemental-rebuke.js";
@@ -8,16 +10,22 @@ const enabled=()=>game.settings.get(ID,"beguilingDefensesAutomation")===true,aut
 const turn=()=>game.combat?.started?[game.combat.id,game.combat.round,game.combat.turn].join(":"):null;
 const uses=f=>Number(f?.system?.uses?.value??Number(f?.system?.uses?.max??0)-Number(f?.system?.uses?.spent??0));
 export const beguilingFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&(i.identifier??i.system?.identifier)==="beguiling-defenses");
-export function beguilingRecord(card,uuid){return flag(card,"beguilingDefenses")?.[uuid?.split(".").at(-1)]??null;}
-export function beguilingCandidates(card,user=game.user){
- if(!enabled()||card?.type!=="damage"||card.isContentVisible===false||isHealingCard(card)||flag(card,"pendingDamage")||isRollAdjustmentLocked(card)||!card.rolls?.some(r=>r.total>0))return [];
- const attack=rebukeAttack(card);if(!attack||isRollAdjustmentLocked(attack))return [];
+export function beguilingSource(card){return flag(card,"beguilingDefenses")?card:rebukeAttack(card)??card;}
+const receipts=card=>flag(beguilingSource(card),"beguilingDefenses");
+export function beguilingRecord(card,uuid){return receipts(card)?.[uuid?.split(".").at(-1)]??null;}
+export function beguilingSnapshot(card){return {entries:card?.type==='attack'?beguilingCandidates(card,game.users.activeGM,{capture:true}).map(e=>({actor:e.actor.uuid,token:e.token.uuid,feature:e.feature.uuid})):[]};}
+export function beguilingCandidates(card,user=game.user,{capture=false}={}){
+ if(!enabled()||!["attack","damage"].includes(card?.type)||card.isContentVisible===false||isHealingCard(card)||flag(card,"pendingDamage")||isRollAdjustmentLocked(card)||card.type==="damage"&&!card.rolls?.some(r=>r.total>0))return [];
+ const attack=card.type==="attack"?card:rebukeAttack(card);if(!attack||isRollAdjustmentLocked(attack))return [];
  const doc=attack.getAssociatedToken?.(),attacker=doc?.document??doc;if(!attacker?.actor)return [];
+ if(card.type==="damage"&&flag(attack,"beguilingSnapshot"))return [];
  const activity=card.getAssociatedActivity?.();if(activity&&activity.type!=="attack")return [];
- return values(attack.system?.evaluatedTargets).filter(t=>t.isMiss===false).flatMap(hit=>{
-  if(!(card.system?.targets??[]).some(t=>t.token===hit.token)||beguilingRecord(card,hit.token))return [];
+ return values(attack.system?.evaluatedTargets).filter(t=>capture||t.isMiss===false).flatMap(hit=>{
+  if(card.type==="damage"&&!(card.system?.targets??[]).some(t=>t.token===hit.token)||beguilingRecord(card,hit.token))return [];
   const token=resolve(hit.token),actor=token?.actor,feature=beguilingFeature(actor),reaction=values(feature?.system?.activities).find(a=>a.type==="save"&&String(a.activation?.type??"").startsWith("reaction"));
   if(!actor||actor.uuid===attacker.actor.uuid||!reaction||!(user?.isGM||actor.testUserPermission?.(user,"OWNER"))||reactionUsed(actor)||["incapacitated","unconscious","stunned","paralyzed","petrified","dead"].some(s=>actor.statuses?.has(s)))return [];
+  if(!capture&&globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(attack,'beguilingDefenses',actor.uuid,hit.token)===false)return [];
+  const snapshot=flag(attack,'beguilingSnapshot');if(!capture&&snapshot&&!snapshot.entries?.some(e=>e.actor===actor.uuid&&e.token===hit.token&&e.feature===feature.uuid))return [];
   const pact=Number(actor.system?.spells?.pact?.value??0);return uses(feature)>0||pact>0?[{actor,token,feature,reaction,attack,attacker,restore:uses(feature)<=0}]:[];
  });
 }
@@ -29,6 +37,13 @@ export function buildBeguiling(feature,reaction,amount=null){
 }
 async function store(card,token,record){await card.setFlag(ID,"beguilingDefenses",{...flag(card,"beguilingDefenses"),[token.split(".").at(-1)]:record});globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}
 export async function activateBeguiling(card,targetUuid,restore=false,user=game.user){
+ if(!authority())throw Error('A connected GM is required for Beguiling Defenses.');
+ if(flag(card,'beguilingAdjusting'))throw Error('Beguiling Defenses is already resolving.');
+ await card.setFlag(ID,'beguilingAdjusting',true);let result;
+ try{result=await activateBeguilingCore(card,targetUuid,restore,user);}finally{await card.setFlag(ID,'beguilingAdjusting',false);}
+ if(card.type==='attack')await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'beguilingDefenses');return result;
+}
+async function activateBeguilingCore(card,targetUuid,restore=false,user=game.user){
  if(!authority())throw Error("A connected GM is required for Beguiling Defenses.");
  const e=beguilingCandidates(card,user).find(e=>e.token.uuid===targetUuid);if(!e)throw Error("Beguiling Defenses needs an incoming hit and an available Reaction. Undo applied damage first.");
  if(e.restore&&!restore)throw Error("Restore Beguiling Defenses with a Pact Magic slot first.");
@@ -37,7 +52,7 @@ export async function activateBeguiling(card,targetUuid,restore=false,user=game.
   if(e.restore){await e.actor.update({"system.spells.pact.value":pact-1});slot=true;}
   await e.feature.update({"system.uses.spent":e.restore?1:spent+1});charged=true;
   if(reactionUsed(e.actor))throw Error("Your Reaction was just used.");
-  marker=await recordReactionUse(e.reaction,{}, {message:e.attack});
+  marker=await recordReactionUse(e.reaction,{}, {message:{id:e.attack.id}});
   const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&values(game.combat.combatants).some(c=>c.actor?.uuid===e.actor.uuid);
   if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==e.attack.id)throw Error("Could not reserve the Warlock’s Reaction.");
   if(stamp!==turn()||isRollAdjustmentLocked(card)||isRollAdjustmentLocked(e.attack)||beguilingRecord(card,targetUuid))throw Error("The attack changed. Undo damage before reacting.");
@@ -65,22 +80,22 @@ export async function reconcileBeguiling(card,targetUuid){
  const actor=resolve(record.actor),attacker=resolve(record.attacker),feature=beguilingFeature(actor),reaction=values(feature?.system?.activities).find(a=>a.id===record.activity);if(!actor||!attacker?.actor||!reaction)return;
  const {data,id}=buildBeguiling(feature,reaction,record.taken),helper=new CONFIG.Item.documentClass(data,{parent:actor});helper.prepareFinalAttributes?.();
  await store(card,targetUuid,{...record,reflected:true});
- const flags={[ID]:{riderTriggered:true,activityOverrideData:data,beguilingReflection:{card:card.id,target:targetUuid,amount:record.taken}},dnd5e:{item:{data}}};
+ const flags={[ID]:{riderTriggered:true,activityOverrideData:data,beguilingReflection:{card:record.damage??card.id,target:targetUuid,amount:record.taken}},dnd5e:{item:{data}}};
  await helper.system.activities.get(id).rollDamage({isCritical:false},{configure:false},{data:{system:{origin:save.id,targets:[describeTarget(attacker)]},flags}});
 }
 export async function recordBeguilingDamage(card,actorUuid,amount,user=game.user){
- if(!authority()||!enabled()||!card||!user?.active||!(amount>0))return;
- const record=values(flag(card,"beguilingDefenses")).find(r=>r.actor===actorUuid);if(!record||record.taken!==null)return;
+ if(!authority()||!enabled()||card?.type!=="damage"||!user?.active||!(amount>0))return;
+ const record=values(receipts(card)).find(r=>r.actor===actorUuid);if(!record||record.taken!==null)return;
  const actor=resolve(record.actor);if(!actor||!user.isGM&&!actor.testUserPermission(user,"OWNER"))return;
  const raw=values(card.rolls).reduce((n,r)=>n+Math.max(0,Number(r.total)||0),0);if(amount>raw)return;
- await store(card,record.token,{...record,taken:amount});await reconcileBeguiling(card,record.token);
+ const source=beguilingSource(card);await store(source,record.token,{...record,taken:amount,damage:card.id});await reconcileBeguiling(source,record.token);
 }
 export function beguilingSaveLink(card){
  const ref=card?.system?.origin,origin=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;return flag(card,"beguilingSave")??flag(origin,"beguilingSave");
 }
 function appliedBeguiling(actor,amount,options){
  const ref=options.origin??options.originatingMessage,card=typeof ref==="string"?game.messages.get(ref.replace(/^ChatMessage\./,"")):ref;
- if(!enabled()||options.rsaUndoDamage||!(amount>0)||!values(flag(card,"beguilingDefenses")).some(r=>r.actor===actor.uuid))return;
+ if(!enabled()||options.rsaUndoDamage||!(amount>0)||!values(receipts(card)).some(r=>r.actor===actor.uuid))return;
  if(authority())enqueue(()=>recordBeguilingDamage(card,actor.uuid,amount)).catch(report);
  else if(actor.isOwner&&game.users.activeGM)game.socket.emit("module."+ID,{action:"beguilingTaken",card:card.id,actor:actor.uuid,amount,user:game.user.id,gm:game.users.activeGM.id});
 }
@@ -91,19 +106,20 @@ async function request(card,entry){
 export function renderBeguiling(message,html){
  const root=html?.querySelectorAll?html:html?.[0];if(!root)return;
  const entries=[{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).map(node=>({card:game.messages.get(node.dataset.messageId),node})).filter(e=>e.card&&!e.node.hidden)];
- for(const {card,node}of entries){node.querySelectorAll(':scope > .rsa-beguiling').forEach(n=>n.remove());if(card?.type!=="damage"||card.isContentVisible===false)continue;
-  const records=values(flag(card,"beguilingDefenses"));if(records.length)for(const tray of node.querySelectorAll("damage-application"))tray.refreshMultiplier?.();const candidates=beguilingCandidates(card);if(!records.length&&!candidates.length)continue;
+ for(const {card,node}of entries){node.querySelectorAll(':scope > .rsa-beguiling').forEach(n=>n.remove());if(!["attack","damage"].includes(card?.type)||card.isContentVisible===false)continue;
+  const records=values(receipts(card));if(records.length)for(const tray of node.querySelectorAll("damage-application"))tray.refreshMultiplier?.();const candidates=beguilingCandidates(card);if(!records.length&&!candidates.length)continue;
   const row=document.createElement("div");row.className="rsa-attack-actions rsa-beguiling";
-  for(const e of candidates){const b=document.createElement("button");b.type="button";b.textContent="Beguiling Defenses — "+e.actor.name;b.dataset.tooltip="Use a Reaction to halve this hit and force a Wisdom save. Only use if you can see the attacker. Failed save returns Psychic damage equal to damage taken.";b.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();b.disabled=true;request(card,e).catch(report).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));});row.append(b);}
+  for(const e of candidates){const b=document.createElement("button");b.type="button";b.dataset.rsaReactionItemUuid=e.feature.uuid;b.textContent="Beguiling Defenses — "+e.actor.name;b.dataset.tooltip="Use a Reaction to halve this hit and force a Wisdom save. Only use if you can see the attacker. Failed save returns Psychic damage equal to damage taken.";b.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();b.disabled=true;request(card,e).catch(report).finally(()=>globalThis.Ugmuls55eAutomationChatRefresh?.card(card));});row.append(b);}
   for(const r of records){const label=document.createElement("span");label.textContent="Beguiling Defenses: half damage to "+r.name;row.append(label);}node.append(row);
  }
 }
 function report(error){console.error("Beguiling Defenses",error);ui.notifications.error(error.message);}
-Hooks.once("init",()=>game.settings.register(ID,"beguilingDefensesAutomation",{name:"Archfey: Beguiling Defenses",hint:"On incoming attack damage, offer a Reaction to halve damage, spend a feature use and prompt the attacker’s native Wisdom save. A failed save returns Psychic damage equal to damage actually applied. Offer Pact Magic slot restoration when the free use is spent.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"beguilingDefensesAutomation",{name:"Archfey: Beguiling Defenses",hint:"On an incoming hit before damage is revealed, offer a Reaction to halve damage, spend a feature use and prompt the attacker’s native Wisdom save. A failed save returns Psychic damage equal to damage actually applied. Offer Pact Magic slot restoration when the free use is spent.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
+ globalThis.Ugmuls55eAutomationBeguilingDefenses={snapshot:beguilingSnapshot,candidates:beguilingCandidates};
  installBeguilingDamage();Hooks.on("dnd5e.renderChatMessage",renderBeguiling);Hooks.on("dnd5e.applyDamage",appliedBeguiling);
- for(const event of ["createChatMessage","updateChatMessage","renderChatMessageHTML"])Hooks.on(event,card=>{const link=beguilingSaveLink(card);if(link&&authority())enqueue(()=>reconcileBeguiling(game.messages.get(link.card),link.target)).catch(report);});
- for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateItem","deleteItem","updateActor","updateCombat"])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request("beguilingDefenses",doc,changes));
+ for(const event of ["createChatMessage","updateChatMessage","diceSoNiceRollComplete"])Hooks.on(event,ref=>{const card=typeof ref==="string"?game.messages.get(ref):ref,link=beguilingSaveLink(card);if(link&&authority())setTimeout(()=>enqueue(()=>reconcileBeguiling(game.messages.get(link.card),link.target)).catch(report),0);});
+ for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateItem","deleteItem","updateActor","updateCombat"])Hooks.on(event,(doc,changes)=>{globalThis.Ugmuls55eAutomationChatRefresh?.request("beguilingDefenses",doc,changes);globalThis.Ugmuls55eAutomationChatRefresh?.request("beguilingAttack",doc,changes);});
  game.socket.on("module."+ID,packet=>{
   if(packet?.action==="beguilingError"&&packet.user===game.user.id){ui.notifications.error(packet.error);return;}
   if(!["beguilingUse","beguilingTaken"].includes(packet?.action)||!authority()||packet.gm!==game.user.id)return;

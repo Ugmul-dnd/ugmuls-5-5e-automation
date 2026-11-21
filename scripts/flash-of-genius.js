@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail / check-fail (connected for single-target NPC saves; checks retain native behavior).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {failureState,inspiredRoll} from "./bardic-inspiration.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
@@ -9,6 +11,7 @@ const remaining=item=>Number(item?.system?.uses?.value??(Number(item?.system?.us
 const combatant=actor=>game.combat?.started&&Array.from(game.combat.combatants??[]).some(c=>c.actor?.uuid===actor.uuid);
 function visible(card,user){if(user?.isGM)return true;if(card.blind)return false;return !card.whisper?.length||card.author?.id===user?.id||card.whisper.some(entry=>(entry?.id??entry)===user?.id);}
 export function flashEligible(card,index=0,user=game.user){
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed(card,"flashOfGenius"))return false;
  return game.settings.get(ID,"flashOfGeniusAutomation")===true&&["save","check"].includes(card?.type)&&!(card.type==="check"&&card.system?.type==="initiative")&&Number.isInteger(index)&&index>=0&&visible(card,user)&&card.isContentVisible!==false&&!(card.getFlag?.(ID,"flashOfGenius")??{})[index]&&!card.getFlag?.(ID,"automaticGrappleFailure")&&!isRollAdjustmentLocked(card)&&failureState(card,index)!=="ineligible";
 }
 export function flashRange(source,target){
@@ -29,7 +32,7 @@ export function flashCandidates(card,user=game.user,index=0){
  // Self-use also works without a placed token outside combat.
  if(recipient&&!tokens.some(t=>t.actor?.uuid===recipient.uuid))tokens.push({actor:recipient});
  for(const token of tokens){const actor=token.actor;if(!actor||seen.has(actor.uuid)||!(user?.isGM||actor.testUserPermission?.(user,"OWNER")))continue;
-  if(reactionUsed(actor)||["incapacitated","unconscious","dead","stunned","paralyzed","petrified"].some(s=>actor.statuses?.has(s)))continue;
+  if(globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actor)||reactionUsed(actor)||["incapacitated","unconscious","dead","stunned","paralyzed","petrified"].some(s=>actor.statuses?.has(s)))continue;
   const feature=featureFor(actor),bonus=Math.max(1,Number(actor.system?.abilities?.int?.mod)||0),activity=Array.from(feature?.system?.activities?.values?.()??feature?.system?.activities??[]).find(a=>String(a.activation?.type??"").startsWith("reaction"));
   if(!feature||!activity||remaining(feature)<1||actor.uuid!==recipient?.uuid&&(!flashFriendly(token,target)||!flashRange(token,target)))continue;
   seen.add(actor.uuid);entries.push({actor,token,feature,activity,bonus});
@@ -37,7 +40,11 @@ export function flashCandidates(card,user=game.user,index=0){
  return entries;
 }
 const signature=card=>seekingSnapshot(card)+JSON.stringify((card.rolls??[]).map(r=>r.options?.target));
-export function applyFlashOfGenius(card,actorUuid,index=0,user=game.user,confirmedFailure=false){return enqueue(async()=>{
+export function applyFlashOfGenius(card,actorUuid,index=0,user=game.user,confirmedFailure=false){
+ const operation=()=>resolveapplyFlashOfGenius(card,actorUuid,index,user,confirmedFailure);
+ return globalThis.Ugmuls55eAutomationReactionTiming?.saveAdjustment?.(card,"flashOfGenius",operation)??operation();
+}
+function resolveapplyFlashOfGenius(card,actorUuid,index=0,user=game.user,confirmedFailure=false){return enqueue(async()=>{
  let entry=flashCandidates(card,user,index).find(e=>e.actor.uuid===actorUuid);if(!entry)throw Error("Flash of Genius needs an available feature use, a failed check/save, and an eligible Artificer within 30 feet. Undo applied damage or effects first.");
  if(failureState(card,index)==="unknown"&&!confirmedFailure)throw Error("Confirm that this check or saving throw failed before using Flash of Genius.");
  if(!game.users.activeGM&&!user.isGM&&card.isOwner===false)throw Error("A connected GM is required to adjust another user’s roll.");
@@ -65,6 +72,7 @@ async function request(card,actor,index,button){button.disabled=true;try{
 export function renderFlashOfGenius(message,html){
  const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;const entries=[{card:message,root}];for(const node of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(node.dataset.messageId);if(card&&!node.hidden)entries.push({card,root:node});}
  for(const entry of entries){
+  entry.root.querySelectorAll(':scope > .rsa-flash-actions').forEach(control=>control.remove());
 
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-flash-actions";
   for(const [index]of(entry.card.rolls??[]).entries())for(const candidate of flashCandidates(entry.card,game.user,index)){

@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from './shared-activity-card.js';
 import {failureState} from './bardic-inspiration.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
@@ -36,9 +38,9 @@ export function countercharmSnapshot(card){
  const entries=[],seen=new Set();for(const source of values(target.parent?.tokens)){const e=entry(card,source);if(!e||seen.has(e.actor.uuid))continue;seen.add(e.actor.uuid);entries.push({actor:e.actor.uuid,feature:e.feature.uuid,source:source.uuid,target:target.uuid});}return {entries};
 }
 export function countercharmCandidates(card,user=game.user,index=0,{reserved=false}={}){
- if(!visible(card,user)||!eligible(card,index))return [];
+ if(!visible(card,user)||!eligible(card,index)||globalThis.Ugmuls55eAutomationReactionTiming?.closed?.(card,'countercharm'))return [];
  return (flag(card,'countercharmSnapshot')?.entries??[]).map(s=>{
-  const e=entry(card,resolve(s.source),{reserved});return e&&(user?.isGM||e.actor.testUserPermission?.(user,'OWNER'))&&e.actor.uuid===s.actor&&e.feature.uuid===s.feature&&e.target.uuid===s.target?e:null;
+  const e=entry(card,resolve(s.source),{reserved});return e&&(user?.isGM||e.actor.testUserPermission?.(user,'OWNER'))&&e.actor.uuid===s.actor&&e.feature.uuid===s.feature&&e.target.uuid===s.target&&!globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,e.actor)?e:null;
  }).filter(Boolean);
 }
 export function captureCountercharm(card){
@@ -59,7 +61,11 @@ export async function rerollCountercharm(original){
  adjusted.d20.results.push(...results.map((r,i)=>({...r,active:i===index,discarded:i!==index})));adjusted.options.rsaSaveDicePool=results;adjusted.resetFormula();adjusted._total=adjusted._evaluateTotal();return {roll:adjusted,results};
 }
 const signature=c=>seekingSnapshot(c)+JSON.stringify(c.rolls.map(r=>r.options?.target));
-export function applyCountercharm(card,actorUuid,index=0,user=game.user){return enqueue(async()=>{
+export function applyCountercharm(card,actorUuid,index=0,user=game.user){
+ const operation=()=>applyCountercharmCore(card,actorUuid,index,user),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ return timing?.saveAdjustment?timing.saveAdjustment(card,'countercharm',operation):operation();
+}
+function applyCountercharmCore(card,actorUuid,index=0,user=game.user){return enqueue(async()=>{
  if(!authority()||!user?.active)throw Error('A connected GM is required for Countercharm.');
  let e=countercharmCandidates(card,user,index).find(e=>e.actor.uuid===actorUuid);if(!e)throw Error('Countercharm requires a failed Charmed/Frightened save, an available Reaction and a Bard within 30 feet. Undo applied damage/effects first.');
  const before=signature(card);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
@@ -81,14 +87,14 @@ async function request(card,e,index,b){b.disabled=true;try{const gm=game.users.a
 export function renderCountercharm(message,html){const root=html?.[0]??html;if(!root?.querySelectorAll)return;
  for(const {card,node}of [{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).filter(n=>!n.hidden).map(node=>({card:game.messages.get(node.dataset.messageId),node}))]){
   for(const old of node.querySelectorAll(':scope > .rsa-countercharm'))old.remove();if(!visible(card,game.user))continue;const row=document.createElement('div');row.className='rsa-attack-actions rsa-countercharm';
-  for(const [index]of(card.rolls??[]).entries())for(const e of countercharmCandidates(card,game.user,index)){const b=document.createElement('button');b.type='button';b.textContent='Countercharm';b.title=e.actor.name+' · Reaction · reroll with Advantage';b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();request(card,e,index,b);});row.append(b);}
+  for(const [index]of(card.rolls??[]).entries())for(const e of countercharmCandidates(card,game.user,index)){const b=document.createElement('button');b.type='button';b.dataset.rsaReactionItemUuid=e.feature.uuid;b.dataset.rsaReactionDescription='Use '+e.actor.name+'’s Reaction to let '+(e.target.name??e.target.actor.name??'this creature')+' reroll this failed charm/fear save with Advantage. Keep the new result.';b.textContent='Countercharm';b.title=e.actor.name+' · Reaction · reroll with Advantage';b.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();request(card,e,index,b);});row.append(b);}
   for(const e of Object.values(flag(card,'countercharmUsed')??{})){const label=document.createElement('span');label.textContent='Countercharm ('+e.name+')';row.append(label);}if(row.childNodes.length)node.append(row);
  }
 }
 Hooks.once('init',()=>game.settings.register(ID,'countercharmAutomation',{name:'Bard: Countercharm',hint:'Offer a Reaction on failed saves against configured Charmed/Frightened effects for self or a friendly creature within 30 feet. Reroll with Advantage, retain other modifiers and normal disadvantage cancellation, and keep the new result.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
  globalThis.Ugmuls55eAutomationCountercharm={candidates:countercharmCandidates,capture:captureCountercharm};
- Hooks.on('preCreateChatMessage',card=>{if(card.type==='save'&&game.user.isGM)card.updateSource({['flags.'+ID+'.countercharmSnapshot']:countercharmSnapshot(card)});});Hooks.on('createChatMessage',card=>captureCountercharm(card).catch(report));Hooks.on('dnd5e.renderChatMessage',renderCountercharm);
+ Hooks.on('preCreateChatMessage',card=>{if(card.type==='save')card.updateSource({['flags.'+ID+'.countercharmSnapshot']:countercharmSnapshot(card)});});Hooks.on('createChatMessage',card=>captureCountercharm(card).catch(report));Hooks.on('dnd5e.renderChatMessage',renderCountercharm);
  for(const event of ['createItem','updateItem','deleteItem','createActiveEffect','updateActiveEffect','deleteActiveEffect','updateActor','updateCombat'])Hooks.on(event,(doc,change)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('countercharm',doc,change));
  game.socket.on('module.'+ID,p=>{if(p?.action==='countercharmError'&&p.user===game.user.id){ui.notifications.error(p.error);globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(p.card));return;}if(p?.action!=='countercharm'||!authority()||p.gm!==game.user.id)return;const user=game.users.get(p.user),card=game.messages.get(p.card);if(!user?.active||!card)return;applyCountercharm(card,p.actor,p.index,user).catch(error=>{report(error);game.socket.emit('module.'+ID,{action:'countercharmError',user:user.id,card:card.id,error:error.message});});});
 });

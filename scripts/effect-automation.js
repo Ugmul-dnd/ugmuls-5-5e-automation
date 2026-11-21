@@ -19,6 +19,8 @@ export function isBardicInspireActivity(activity) {
 }
 export function isMirrorImageActivity(activity){return activity?.type==='utility'&&activity.item?.type==='spell'&&(activity.item.identifier??activity.item.system?.identifier)==='mirror-image'&&activity.id==='dnd5eactivity000'&&activity.roll?.prompt!==true;}
 
+function automaticBuffEnabled(activity){return hillsTumbleActivity(activity)||isMirrorImageActivity(activity)&&game.settings.get(MODULE_ID,'mirrorImageAutomation')===true||game.settings.get(MODULE_ID,'autoApplyBuffEffects')===true;}
+
 export function teamTacticsActivity(activity){return activity?.type==="heal"&&activity.item?.type==="feat"&&(activity.item.identifier??activity.item.system?.identifier)==="team-tactics"&&activity.id==="prA3XGTjuTOdIxOe";}
 export function healingBuffActivity(activity){if(teamTacticsActivity(activity))return true;const spirit=activity?.item?.getFlag?.(MODULE_ID,'spiritUnleash')??activity?.item?.flags?.[MODULE_ID]?.spiritUnleash;if(activity?.type==='heal'&&activity.item?.name==='Wayfarer Spirit'&&spirit?.effect)return true;return activity?.type==="heal"&&activity.item?.type==="spell"&&["heroism","regenerate"].includes(activity.item.identifier??activity.item.system?.identifier);}
 export function manualBuffChoice(activity) { return globalThis.Ugmuls55eAutomationUmbral?.isActivation?.(activity) || globalThis.Ugmuls55eAutomationRevelation?.isActivation?.(activity) || globalThis.Ugmuls55eAutomationHex?.hexChoiceActivity?.(activity) || globalThis.Ugmuls55eAutomationTactics?.isTacticsChoice?.(activity) || globalThis.Ugmuls55eAutomationPrey?.isPreyChoice?.(activity) || globalThis.Ugmuls55eAutomationEpitome?.epitomeResistanceActivity?.(activity) || ["aura-of-elemental-shielding","aspect-of-the-wilds","superior-hunters-defense"].includes(activity?.item?.identifier ?? activity?.item?.system?.identifier) || /^aura of elemental shielding$/i.test(activity?.item?.name ?? ""); }
@@ -35,7 +37,7 @@ export function eligibleBuffActivity(activity) {
 
 export async function applyBuffEffects(message) {
     const tumble=hillsTumbleActivity(message?.getAssociatedActivity?.({scaled:true}));
-    if ((!tumble&&game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true) || !message?.id || completed.has(message.id) || pending.has(message.id)) return;
+    if ((!automaticBuffEnabled(message?.getAssociatedActivity?.({scaled:true}))) || !message?.id || completed.has(message.id) || pending.has(message.id)) return;
     if(message.getFlag?.(MODULE_ID,"manualDamageWorkflow")||message.getFlag?.(MODULE_ID,"manualEffectDecision"))return;
     if (message.getFlag?.(MODULE_ID,"targetsConfirmationPending") || message.getFlag?.(MODULE_ID,"targetsConfirmationCanceled")) return;
     const activity=message.getAssociatedActivity?.({scaled:true});
@@ -120,7 +122,7 @@ function report(err) {
 }
 
 async function requestBuffs(message) {
-    if ((!hillsTumbleActivity(message?.getAssociatedActivity?.({scaled:true}))&&game.settings.get(MODULE_ID,"autoApplyBuffEffects") !== true) || message?.author?.id !== game.user.id) return;
+    if ((!automaticBuffEnabled(message?.getAssociatedActivity?.({scaled:true}))) || message?.author?.id !== game.user.id) return;
     const gm=game.users.activeGM;
     if (gm && gm.id !== game.user.id) {
         game.socket.emit(`module.${MODULE_ID}`,{action:"applyBuffEffects",messageId:message.id,userId:game.user.id,gmId:gm.id});

@@ -1,3 +1,5 @@
+// Timing: declaring-attack / attack-declared (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,linkedHpCards} from './shared-activity-card.js';
 import {updateSaveMode,saveModeLocked} from './save-roll-controls.js';
 import {deflectMode} from './steel-deflect.js';
@@ -34,7 +36,7 @@ export function luckyCandidates(card,user=game.user,{adjusting=false}={}){
  const mode=deflectMode(card.rolls[0]);if(mode===currentMode)return [];
  return snapshot.entries.flatMap(e=>{
   const target=resolve(e.token),actor=target?.actor,feature=luckyFeature(actor);
-  return actor&&owns(actor,user)&&feature?.uuid===e.feature&&luckPoints(feature)>0&&card.system.targets[0].token===e.token&&card.getAssociatedActor?.()?.uuid!==actor.uuid?[{...e,actor,feature,target,mode}]:[];
+  return actor&&globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(card,'lucky',actor.uuid,e.token)!==false&&owns(actor,user)&&feature?.uuid===e.feature&&luckPoints(feature)>0&&card.system.targets[0].token===e.token&&card.getAssociatedActor?.()?.uuid!==actor.uuid?[{...e,actor,feature,target,mode}]:[];
  });
 }
 const downgraded=attack=>flag(attack,'luckyUsed')?.wasCritical===true&&attack.rolls?.[0]?.isCritical!==true;
@@ -65,6 +67,7 @@ export function useLucky(card,token,user=game.user){return enqueue(async()=>{
   try{if(charged&&!committed)await e.feature.update({'system.uses.spent':Math.max(0,Number(e.feature.system.uses.spent??0)-1)});}
   finally{await card.setFlag(ID,'luckyAdjusting',false);refresh(card);}
  }
+ if(committed)await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'lucky');
  if(committed)await globalThis.Ugmuls55eAutomationReactive?.completed(card);
 });}
 function requestLucky(card,token){const gm=game.users.activeGM;if(gm?.id!==game.user.id){game.socket.emit('module.'+ID,{action:'luckyUse',card:card.id,token,user:game.user.id,gm:gm?.id});return;}return useLucky(card,token);}
@@ -80,7 +83,7 @@ export function renderLucky(card,html){
 function report(error){console.error('Lucky',error);ui.notifications.error(error.message);}
 Hooks.once('init',()=>game.settings.register(ID,'luckyAutomation',{name:'Lucky: Incoming Attacks',hint:'Offer Lucky on incoming single-target attacks. Spend one native Luck Point to impose Disadvantage with normal Advantage cancellation. Own-roll Advantage remains manual; hide the control when no points remain.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationLucky={capture:prepareLucky,candidates:luckyCandidates,ready:luckyReady};
+ globalThis.Ugmuls55eAutomationLucky={snapshot:luckySnapshot,capture:prepareLucky,candidates:luckyCandidates,ready:luckyReady};
  Hooks.on('createChatMessage',card=>{prepareLucky(card).catch(report);});
  Hooks.on('updateChatMessage',(card,changes)=>{if(card.type==='damage'&&(Object.hasOwn(changes??{},'rolls')||Object.hasOwn(changes??{},'flags.'+ID+'.pendingDamage')||Object.hasOwn(changes?.flags?.[ID]??{},'pendingDamage')))syncLuckyDamage(card,card).catch(report);});
  Hooks.on('dnd5e.renderChatMessage',renderLucky);

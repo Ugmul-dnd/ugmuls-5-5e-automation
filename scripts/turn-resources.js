@@ -15,6 +15,9 @@ const creating=new Map();
 const definitions={bonus:{name:"Bonus Action - used",flag:"bonusActionUsed",setting:"bonusActionTracker",img:"icons/svg/upgrade.svg"},
     spell:{name:"Consumed Spell Slot",flag:"consumedSpellSlot",setting:"spellSlotTurnTracker",img:"icons/svg/book.svg"}};
 const actorFor=activity=>activity?.actor??activity?.item?.actor;
+// Reaction spells still pay their native slot and Reaction. The turn's
+// Consumed Spell Slot marker applies only to non-reaction spell casting.
+export const reactionSpell=activity=>activity?.item?.type==='spell'&&String(activity.activation?.type??'').startsWith('reaction');
 const stamp=combat=>combat?.started?String(combat.id)+":"+combat.round+":"+combat.turn:null;
 const enabled=kind=>game.settings.get(ID,definitions[kind].setting)===true;
 const inCombat=(actor,combat=game.combat)=>!!effectiveCombatant(actor,combat);
@@ -78,7 +81,7 @@ export function allowTurnResourceUse(activity,usage,message,updates) {
         if(resourceUsed(actor,"bonus")) {ui.notifications.warn("Bonus action already used. Disable or delete Bonus Action - used to override.");return false;}
     }
     // Inspect actual prepared consumption, after the user chooses slots or free casting.
-    if(actor.type==="character"&&enabled("spell")&&activity.item?.type==="spell"&&slotUpdates(activity,updates)&&resourceUsed(actor,"spell")) {
+    if(actor.type==="character"&&enabled("spell")&&activity.item?.type==="spell"&&!reactionSpell(activity)&&slotUpdates(activity,updates)&&resourceUsed(actor,"spell")) {
         ui.notifications.warn("A spell slot has already been used to cast a spell this turn. Disable or delete Consumed Spell Slot to override.");return false;
     }
 }
@@ -87,7 +90,7 @@ export async function recordTurnResources(activity,usage,message) {
     const actor=actorFor(activity);if(!inCombat(actor)||!actor?.isOwner||!manual(activity,message))return;
     const tasks=[];
     if(activity.activation?.type==="bonus")tasks.push(markResource(actor,"bonus",{usage:message?.data?.flags?.[ID]?.castSession??null}));
-    if(activity.item?.type==="spell"&&slotDeltas(message))tasks.push(markResource(actor,"spell",{usage:message?.data?.flags?.[ID]?.castSession??null}));
+    if(activity.item?.type==="spell"&&!reactionSpell(activity)&&slotDeltas(message))tasks.push(markResource(actor,"spell",{usage:message?.data?.flags?.[ID]?.castSession??null}));
     await Promise.all(tasks);
 }
 export async function resetTurnResources(combat,changes={},ending=false) {
@@ -117,7 +120,7 @@ export async function resetTurnResources(combat,changes={},ending=false) {
 }
 Hooks.once("init",()=>{
     game.settings.register(ID,"bonusActionTracker",{name:"Bonus Action Tracker",hint:"Track bonus actions for all participants during active combat, block additional bonus actions until your next turn, and reject off-turn bonus actions. Disable/delete the marker to override.",scope:"world",config:true,type:Boolean,default:true});
-    game.settings.register(ID,"spellSlotTurnTracker",{name:"Spell Slot Casting Tracker",hint:"For player characters in active combat, Consumed Spell Slot tracks a slot spent casting a spell on the current combat turn and blocks another slot-funded spell that turn. Free casts and cantrips remain available. Clears when the turn changes.",scope:"world",config:true,type:Boolean,default:true});
+    game.settings.register(ID,"spellSlotTurnTracker",{name:"Spell Slot Casting Tracker",hint:"For player characters in active combat, track slot-funded action and bonus-action spells and block another that turn. Reaction spells spend their slots and Reactions without using or being blocked by this marker. Free casts and cantrips remain available. Clears when the turn changes.",scope:"world",config:true,type:Boolean,default:true});
 });
 Hooks.once("ready",()=>{
     globalThis.Ugmuls55eAutomationResources={resourceUsed,resourceEffect,markResource,reuseMarker,updateSpellSlot,

@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-rider (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {freeFlurryHarm,mercyHandActivity} from "./mercy-flurry.js";
 import {createEventQueue} from "./shared-activity-card.js";
 import {focusResource} from "./stunning-strike.js";

@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard,linkedHpCards} from './shared-activity-card.js';
 import {failureState} from './bardic-inspiration.js';
 import {restoreFocusTargets} from './fanatical-focus.js';
@@ -13,11 +15,16 @@ export const mageSlayerFeature=actor=>values(actor?.items).find(i=>i.type==='fea
 const remaining=item=>Math.max(0,Number(item?.system?.uses?.value??(Number(item?.system?.uses?.max)-Number(item?.system?.uses?.spent??0)))||0);
 const signature=card=>JSON.stringify({rolls:card.rolls.map(r=>r.toJSON?.()??r),ability:card.system?.ability,origin:typeof card.system?.origin==='string'?card.system.origin:card.system?.origin?.id});
 export function canGuardMind(card,user=game.user,{adjusting=false}={}){
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed?.(card,'mageSlayer')||globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actorOf(card)))return false;
  if(!enabled()||!game.users.activeGM||card?.type!=='save'||card.rolls?.length!==1||!['int','wis','cha'].includes(card.system?.ability??card.rolls[0]?.options?.ability)||!visible(card,user)||flag(card,'mageSlayerUsed')||!adjusting&&flag(card,'mageSlayerAdjusting')||flag(card,'automaticGrappleFailure')||flag(card,'carefulSpell'))return false;
  const actor=actorOf(card);return owns(actor,user)&&remaining(mageSlayerFeature(actor))>0&&failureState(card,0)==='failed'&&!isRollAdjustmentLocked(card);
 }
 function refresh(card){globalThis.Ugmuls55eAutomationChatRefresh?.card(card);const origin=resolve(card?.system?.origin);if(origin)globalThis.Ugmuls55eAutomationChatRefresh?.card(origin);for(const hp of linkedHpCards(card))globalThis.Ugmuls55eAutomationChatRefresh?.card(hp);}
-export function useGuardMind(card,user=game.user){return enqueue(async()=>{
+export function useGuardMind(card,user=game.user){
+ const operation=()=>useGuardMindCore(card,user),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ return timing?.saveAdjustment?timing.saveAdjustment(card,'mageSlayer',operation):operation();
+}
+function useGuardMindCore(card,user=game.user){return enqueue(async()=>{
  if(!authority()||!canGuardMind(card,user))throw Error('Guarded Mind needs a failed Intelligence, Wisdom, or Charisma save and an available Mage Slayer use. Undo applied damage/effects first.');
  const actor=actorOf(card),feature=mageSlayerFeature(actor);let spent,charged=false,committed=false;
  await card.setFlag(ID,'mageSlayerAdjusting',true);
@@ -48,7 +55,7 @@ export function renderMageSlayer(card,html){
   node.querySelectorAll(':scope > .rsa-mage-slayer').forEach(n=>n.remove());
   if(flag(card,'mageSlayerUsed')&&visible(card,game.user)){const note=document.createElement('div');note.className='rsa-attack-actions rsa-mage-slayer';note.textContent='Guarded Mind — Success';node.append(note);continue;}
   if(!canGuardMind(card))continue;
-  const row=document.createElement('div');row.className='rsa-attack-actions rsa-mage-slayer';const button=document.createElement('button');button.type='button';button.textContent='Mage Slayer — Guarded Mind';button.dataset.tooltip='Spend your native Mage Slayer use to succeed instead. No reroll or Reaction; recovers on a Short or Long Rest.';
+  const row=document.createElement('div');row.className='rsa-attack-actions rsa-mage-slayer';const button=document.createElement('button');button.type='button';button.dataset.rsaReactionItemUuid=mageSlayerFeature(actorOf(card))?.uuid;button.textContent='Mage Slayer — Guarded Mind';button.dataset.tooltip='Spend your native Mage Slayer use to succeed instead. No reroll or Reaction; recovers on a Short or Long Rest.';
   button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();button.disabled=true;Promise.resolve(requestGuard(card)).catch(report);});row.append(button);node.append(row);
  }
 }

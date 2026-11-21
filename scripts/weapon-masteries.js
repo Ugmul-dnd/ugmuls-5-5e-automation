@@ -139,6 +139,7 @@ export async function syncSap(attack) {
     if(mastery==="sap"&&JSON.stringify([...handled])!==JSON.stringify(attack.getFlag(MODULE_ID,'sapHandled')??[]))await attack.setFlag(MODULE_ID,"sapHandled",[...handled]);
     }
 }
+export function grazeDecisionPending(attack){const state=attack?.getFlag?.(MODULE_ID,'reactionTimingWindow');return ['pending','revealing'].includes(state?.status)||globalThis.Ugmuls55eAutomationReactionTiming?.held?.(attack)===true;}
 export async function syncGraze(attack) {
     if(!authoritative()||masteryForAttack(attack)!=="graze")return;
     const hits=new Set((attack.system.evaluatedTargets??[]).filter(t=>t.isMiss===false).map(t=>t.token)),retired=new Set();
@@ -150,6 +151,9 @@ export async function syncGraze(attack) {
         await damage.setFlag(MODULE_ID,"masteryGrazeUndone",true);await damage.delete();retired.add(target);
     }
     const handled=new Set((attack.getFlag(MODULE_ID,"masteryActions")??[]).filter(t=>!retired.has(t)));if(retired.size)await attack.setFlag(MODULE_ID,"masteryActions",[...handled]);
+    // Retire stale miss damage on a corrected hit, but create no Graze until
+    // all attack adjustments have been resolved or declined.
+    if(grazeDecisionPending(attack))return;
     if(!(attack.system.evaluatedTargets??[]).some(target=>target.isMiss===true&&!handled.has(target.token)))return;
     await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(attack);
     // Re-read results after animation/reactions; corrections can turn a miss
@@ -193,24 +197,27 @@ export async function recordDamage(actor,amount,options) {
         }
     }
     if(!(amount>0)||!masteries.some(m=>m!=='sap'))return;
-    const undone=new Set(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]);
-    if(dealt.has(token.uuid)&&!undone.has(token.uuid))return;
+    const undone=new Set(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]),vexUndone=new Set(attack.getFlag(MODULE_ID,'masteryVexUndoneTargets')??[]);
+    if(dealt.has(token.uuid)&&!undone.has(token.uuid)&&!vexUndone.has(token.uuid))return;
     for(const selected of masteries){
         if(selected==='sap')continue;
-        if(dealt.has(token.uuid)&&(selected!=='slow'||!undone.has(token.uuid)))continue;
+        if(dealt.has(token.uuid)&&!(selected==='slow'&&undone.has(token.uuid)||selected==='vex'&&vexUndone.has(token.uuid)))continue;
         // Restoring an old damage application must not replace a newer card's
         // non-stacking Slow or extend that newer effect's source-turn expiry.
         if(selected==='slow'&&undone.has(token.uuid)&&effectsFor(token.actor,'slow').some(effect=>flag(effect,'masterySource')!==`${attack.id}:${token.uuid}`))continue;
+        if(selected==='vex'&&vexUndone.has(token.uuid)&&effectsFor(attack.getAssociatedActor(),'vex',token.actor).some(effect=>flag(effect,'masterySource')!==`${attack.id}:${token.uuid}`))continue;
         await masteryEffect(attack,token,selected);
     }
     if(undone.delete(token.uuid))await attack.setFlag(MODULE_ID,'masterySlowUndoneTargets',[...undone]);
-    dealt.add(token.uuid);await attack.setFlag(MODULE_ID,"masteryDamageTargets",[...dealt]);
+    if(vexUndone.delete(token.uuid))await attack.setFlag(MODULE_ID,'masteryVexUndoneTargets',[...vexUndone]);
+    if(!dealt.has(token.uuid)){dealt.add(token.uuid);await attack.setFlag(MODULE_ID,"masteryDamageTargets",[...dealt]);}
 }
 export function undoDamageMasteries(damage,actorUuids,{emptyApplication=false}={}){return enqueue(async()=>{
     if(!authoritative()||damage?.type!=='damage')return;
     const attack=attackForDamage(damage);if(!attack)return;
     const dealt=new Set(attack.getFlag(MODULE_ID,'masteryDamageTargets')??[]),undone=new Set(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]),actors=new Set(actorUuids);
     const sapTargets=new Set(damage.getFlag(MODULE_ID,'masterySapTargets')??[]),sapUndone=new Set(attack.getFlag(MODULE_ID,'masterySapUndoneTargets')??[]);
+    const vexUndone=new Set(attack.getFlag(MODULE_ID,'masteryVexUndoneTargets')??[]);
     const coupledSap=globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack);
     for(const target of damage.system?.targets??[]){
         const token=await fromUuid(target.token);if(!token?.actor)continue;
@@ -223,6 +230,12 @@ export function undoDamageMasteries(damage,actorUuids,{emptyApplication=false}={
             }
         }
         if(!dealt.has(target.token)||!actors.has(token.actor.uuid))continue;
+        const source=attack.getAssociatedActor?.(),ownVex=effectsFor(source,'vex',token.actor).filter(effect=>flag(effect,'masterySource')===`${attack.id}:${token.uuid}`);
+        const selectedVex=attack.system?.mastery==='vex'||attack.rolls?.[0]?.options?.mastery==='vex'||globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack)==='vex';
+        if(ownVex.length||selectedVex){
+            if(ownVex.length)await source.deleteEmbeddedDocuments('ActiveEffect',ownVex.map(effect=>effect.id));
+            vexUndone.add(token.uuid);
+        }
         const effects=effectsFor(token.actor,'slow').filter(effect=>flag(effect,'masterySource')===`${attack.id}:${token.uuid}`);
         if(!effects.length&&attack.system?.mastery!=='slow'&&attack.rolls?.[0]?.options?.mastery!=='slow'&&globalThis.Ugmuls55eAutomationRot?.additionalRoots(attack)!=='slow')continue;
         // The ledger supports reapplication even when this attack's Slow has
@@ -233,6 +246,7 @@ export function undoDamageMasteries(damage,actorUuids,{emptyApplication=false}={
     if(JSON.stringify([...undone])!==JSON.stringify(attack.getFlag(MODULE_ID,'masterySlowUndoneTargets')??[]))await attack.setFlag(MODULE_ID,'masterySlowUndoneTargets',[...undone]);
     if(JSON.stringify([...sapUndone])!==JSON.stringify(attack.getFlag(MODULE_ID,'masterySapUndoneTargets')??[]))await attack.setFlag(MODULE_ID,'masterySapUndoneTargets',[...sapUndone]);
     if(JSON.stringify([...sapTargets])!==JSON.stringify(damage.getFlag(MODULE_ID,'masterySapTargets')??[]))await damage.setFlag(MODULE_ID,'masterySapTargets',[...sapTargets]);
+    if(JSON.stringify([...vexUndone])!==JSON.stringify(attack.getFlag(MODULE_ID,'masteryVexUndoneTargets')??[]))await attack.setFlag(MODULE_ID,'masteryVexUndoneTargets',[...vexUndone]);
     globalThis.Ugmuls55eAutomationChatRefresh?.card(attack);
 });}
 // Preserve the previous helper for existing integrations.
@@ -241,10 +255,12 @@ export async function performMastery(attack,tokenUuid,requestUser=game.user) {
     if(!enabled()||!masteryForAttack(attack)||(!requestUser.isGM&&attack.author?.id!==requestUser.id&&
         !attack.getAssociatedActor()?.testUserPermission(requestUser,"OWNER")))return;
     const mastery=masteryForAttack(attack),target=attack.system.evaluatedTargets?.find(target=>target.token===tokenUuid);
+    if(mastery==='graze'&&grazeDecisionPending(attack))return;
+    if(mastery==='vex')return; // Vex is owned by damage Apply/Undo, including stale client requests.
     if(['sap','slow'].includes(mastery)&&globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(attack))return;
     if(!target||((mastery==="graze")!==target.isMiss))return;
     const token=await fromUuid(tokenUuid);if(!token?.actor)return;
-    if(mastery==="graze"&&!isEligibleTarget(token))return;
+    if(mastery==="graze"&&(!isEligibleTarget(token)||grazeDecisionPending(attack)||!attack.system.evaluatedTargets?.some(t=>t.token===tokenUuid&&t.isMiss===true)))return;
     const appliedDamage=(attack.getFlag(MODULE_ID,"masteryDamageTargets")??[]).includes(tokenUuid);
     if(["slow","vex"].includes(mastery)&&!appliedDamage)return;
     if(["sap","slow","vex"].includes(mastery)) {
@@ -258,6 +274,7 @@ export async function performMastery(attack,tokenUuid,requestUser=game.user) {
         const type=Array.from(item.system.damage?.base?.types??[])[0];
         const roll=new CONFIG.Dice.DamageRoll(String(Math.max(0,abilityModifier(attack))),{}, {type,isCritical:false});
         await roll.evaluate();
+        if(grazeDecisionPending(attack)||!attack.system.evaluatedTargets?.some(t=>t.token===tokenUuid&&t.isMiss===true))return;
         const origin=attack.system.origin;
         await roll.toMessage({type:"damage",speaker:attack.speaker,flavor:`${item.name} — Graze Damage`,
             system:{...activity.messageSources,activity:{...activity.messageSources.activity,name:"Graze"},
@@ -343,12 +360,15 @@ export function addMasteryButtons(message,html) {
     }
     if(!enabled())return;
     const root=html instanceof HTMLElement?html:html?.[0];if(!root)return;
+    root.querySelectorAll('[data-rsa-mastery="vex"]').forEach(button=>button.remove());
     const entries=message.type==="attack"?[{message,root}]:[];
     for(const summary of root.querySelectorAll(".card-summary[data-message-id]")) {
         const card=game.messages.get(summary.dataset.messageId);if(card?.type==="attack"&&!summary.hidden)entries.push({message:card,root:summary});
     }
     for(const entry of entries) {
         const mastery=masteryForAttack(entry.message);if(!mastery||!entry.message.isContentVisible||(!game.user.isGM&&!entry.message.isOwner))continue;
+        if(mastery==='vex')continue;
+        if(mastery==='graze'&&grazeDecisionPending(entry.message)){entry.root.querySelectorAll('[data-rsa-mastery="graze"]').forEach(button=>button.remove());continue;}
         if(['sap','slow'].includes(mastery)&&globalThis.Ugmuls55eAutomationUnifiedAttack?.supportsAttack?.(entry.message))continue;
         for(const pill of entry.root.querySelectorAll("target-pill")) {
             const uuid=pill.querySelector("datalist option")?.value;
@@ -421,6 +441,9 @@ Hooks.once("ready",()=>{
         }).catch(report);
     });
     Hooks.on("updateChatMessage",(message,changes)=>{
+        // Release only this attack's deferred Graze; never scan old cards.
+        const timingChanged=Object.hasOwn(changes??{},'flags.'+MODULE_ID+'.reactionTimingWindow')||Object.hasOwn(changes?.flags?.[MODULE_ID]??{},'reactionTimingWindow');
+        if(authoritative()&&enabled()&&message.type==='attack'&&timingChanged&&!grazeDecisionPending(message))enqueue(()=>syncGraze(message)).catch(report);
         if(authoritative()&&enabled()&&message.type==="save"&&toppleSaveContext(message).attackId)enqueue(()=>resolveTopple(message)).catch(report);
         if(authoritative()&&enabled()&&message.type==="attack"&&(changes.rolls||changes["system.targets"]||changes.system?.targets))enqueue(async()=>{await syncSap(message);await syncGraze(message);}).catch(report);
     });

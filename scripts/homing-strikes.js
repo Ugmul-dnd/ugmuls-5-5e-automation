@@ -1,3 +1,5 @@
+// Timing: outcome / attack-miss (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {inspiredRoll} from "./bardic-inspiration.js";
 import {seekingSnapshot} from "./seeking-spell.js";
@@ -60,7 +62,7 @@ export function renderHoming(message,html){
         for(const[index,roll]of (entry.card.rolls??[]).entries()){
             if(!canHoming(entry.card,game.user,index))continue;
             const actor=actorFor(entry.card),formula=homingFormula(actor);
-            const button=document.createElement("button");button.type="button";
+            const button=document.createElement("button");button.type="button";button.dataset.rsaReactionItemUuid=homingFeature(actor)?.uuid;
             
             button.append(document.createTextNode("Homing Strikes ("+formula.replace(/^1/,"")+")"+(entry.card.rolls.length>1?" — Roll "+(index+1):"")));
             button.dataset.tooltip="Add your Psionic Energy Die to this missed Psychic Blade attack. Spend the use only if it turns the failure into success. One attempt per attack. Natural ones remain misses. No reaction is required.";

@@ -1,3 +1,5 @@
+// Timing: follow-up / damage-rider (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {homingResource} from "./homing-strikes.js";
 import {createEventQueue} from "./shared-activity-card.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),FREE="UH1H8gC9X34sXqOI",PAID="VDSPYwhRDcSNkK4t";

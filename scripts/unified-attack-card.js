@@ -105,7 +105,7 @@ export function unifiedAttackScope(card){
     return {attack:attacks[0],damage,groups,spell};
 }
 
-export async function renderAttackSetup(card,activity,{targets=card.system?.targets??[],rolling=false}={}){
+export async function renderAttackSetup(card,activity,{targets=card.system?.targets??[],rolling=false,resultLabel=null}={}){
     const item=activity.item,modes=item.system?.attackModes??[],saved=item.getFlag?.('dnd5e',`last.${activity.id}.attackMode`);
     const mode=modes.find(m=>m.value===saved)?.value??modes[0]?.value;
     const masteryKey=item.getFlag?.('dnd5e',`last.${activity.id}.mastery`),mastery=CONFIG.DND5E?.weaponMasteries?.[masteryKey];
@@ -118,8 +118,8 @@ export async function renderAttackSetup(card,activity,{targets=card.system?.targ
     const row=document.createElement('div');row.className='icon-row rsa-attack-setup-roll';
     const icon=document.createElement('i');icon.className='fa-fw fa-solid fa-dice';icon.setAttribute('aria-hidden','true');
     const label=document.createElement('div');label.className='rsa-unified-pending rsa-attack-setup-dice';label.setAttribute('role','status');
-    label.setAttribute('aria-label',rolling?'Pending — rolling attack':'Pending — roll setup');
-    label.textContent='---PENDING---';row.append(icon,label);
+    label.setAttribute('aria-label',resultLabel??(rolling?'Pending — rolling attack':'Pending — roll setup'));
+    label.textContent=resultLabel??'---PENDING---';row.append(icon,label);
     const template=CONFIG.ChatMessage?.dataModels?.attack?.metadata?.template??'systems/dnd5e/templates/chat/attack-card.hbs';
     return await foundry.applications.handlebars.renderTemplate(template,context)+row.outerHTML;
 }

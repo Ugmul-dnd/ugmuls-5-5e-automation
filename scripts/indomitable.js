@@ -1,3 +1,5 @@
+// Timing: outcome / save-fail (connected for single-target NPC saves; checks retain native behavior).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {failureState} from "./bardic-inspiration.js";
 import {rerollFocus,restoreFocusTargets} from "./fanatical-focus.js";
@@ -9,14 +11,19 @@ export const indomitableFeature=actor=>values(actor?.items).find(i=>i.type==="fe
 export function fighterSaveBonus(actor){const level=Number(actor?.getRollData?.()?.classes?.fighter?.levels??values(actor?.items).find(i=>i.type==="class"&&(i.identifier??i.system?.identifier)==="fighter")?.system?.levels);return Number.isInteger(level)&&level>0?level:null;}
 const remaining=i=>Number(i?.system?.uses?.value??Number(i?.system?.uses?.max)-Number(i?.system?.uses?.spent??0))||0;
 export function canIndomitable(card,user=game.user,index=0){
- const actor=actorFor(card),roll=card?.rolls?.[index],feature=indomitableFeature(actor);
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed(card,"indomitable"))return false;
+ const actor=actorFor(card);if(globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actor))return false;const roll=card?.rolls?.[index],feature=indomitableFeature(actor);
  return game.settings.get(ID,"indomitableAutomation")===true&&card?.type==="save"&&Number.isInteger(index)&&index>=0&&!!roll?.d20&&roll._evaluated&&card.isContentVisible!==false&&
  !card.getFlag?.(ID,"indomitable")?.[index]&&!card.getFlag?.(ID,"automaticGrappleFailure")&&!card.getFlag?.(ID,"carefulSpell")&&!card.system?.forceSuccess&&!card.system?.concentrationBroken&&!isRollAdjustmentLocked(card)&&
  failureState(card,index)==="failed"&&!!feature&&remaining(feature)>0&&!!fighterSaveBonus(actor)&&!!(user?.isGM||actor?.testUserPermission?.(user,"OWNER"));
 }
 const snapshot=card=>seekingSnapshot(card)+JSON.stringify(card.rolls.map(r=>r.options?.target));
 export function queueIndomitable(task){return enqueue(task);}
-export function applyIndomitable(card,index=0,user=game.user){return queueIndomitable(async()=>{
+export function applyIndomitable(card,index=0,user=game.user){
+ const operation=()=>resolveapplyIndomitable(card,index,user);
+ return globalThis.Ugmuls55eAutomationReactionTiming?.saveAdjustment?.(card,"indomitable",operation)??operation();
+}
+function resolveapplyIndomitable(card,index=0,user=game.user){return queueIndomitable(async()=>{
  if(!canIndomitable(card,user,index))throw Error("Indomitable needs a failed saving throw and an available feature use. Undo applied damage/effects first.");
  const actor=actorFor(card),feature=indomitableFeature(actor),bonus=fighterSaveBonus(actor),before=snapshot(card),spent=Number(feature.system.uses.spent??0),result=await rerollFocus(card.rolls[index],bonus);
  if(!canIndomitable(card,user,index)||snapshot(card)!==before||indomitableFeature(actor)!==feature||fighterSaveBonus(actor)!==bonus||Number(feature.system.uses.spent??0)!==spent)throw Error("The save or Indomitable resources changed. Try again.");

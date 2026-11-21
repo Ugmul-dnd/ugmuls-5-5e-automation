@@ -1,3 +1,5 @@
+// Timing: follow-up / hit-rider (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {recklessFeature,recklessEffects,canActivateReckless,activateReckless,syncRecklessConditionChoice} from "./reckless-attack.js";
 import {combatTurn} from "./frenzy.js";
 const ID="ugmuls-5-5e-automation",choices=new WeakMap(),reservations=new Map(),effectChoices=new WeakMap();
@@ -132,6 +134,7 @@ export function brutalSourceEffect(actor,value){
 }
 function brutalCardContext(card){return damageContext({message:{data:{system:card.system,flags:card.flags}}});}
 export async function applyBrutalEffects(card,{manual=false}={}){
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.blocked(card))return;
     const record=card?.getFlag?.(ID,"brutalEffects");
     if(card?.type!=="damage"||!record||card.getFlag(ID,"pendingDamage")||!game.user.isGM||(game.users?.activeGM&&game.users.activeGM.id!==game.user.id)||applyingEffects.has(card.id))return;
     const {attack}=brutalCardContext(card),usage=typeof card.system?.origin==="string"?game.messages.get(card.system.origin):card.system?.origin;

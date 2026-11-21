@@ -1,13 +1,21 @@
+// Timing: outcome / attack-hit (connected); damage rider retains native roll configuration.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard} from "./shared-activity-card.js";
 import {availableInspiration,inspiredRoll} from "./bardic-inspiration.js";
-import {recordReactionUse,reactionUsed} from "./reaction-tracker.js";
-import {shieldReactionAvailable} from "./shield-reaction.js";
 import {seekingSnapshot} from "./seeking-spell.js";
-const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),offenseChoices=new WeakMap(),offensePending=new WeakMap(),offenseReservations=new Map();
+const ID="ugmuls-5-5e-automation",enqueue=createEventQueue(),offenseChoices=new WeakMap(),offensePending=new WeakMap(),offenseReservations=new Map(),defenseJobs=new WeakMap();
 const actorFor=card=>card?.getAssociatedActor?.()??card?.getAssociatedActivity?.()?.actor;
+export function valorDefenseRecord(card,tokenUuid){
+ const records=card?.getFlag?.(ID,'valorDefense');if(!records||!tokenUuid)return null;
+ return records[tokenUuid.split('.').at(-1)]??records[tokenUuid]??tokenUuid.split('.').reduce((node,key)=>node?.[key],records)??null;
+}
+export function valorDefenseRecords(card){
+ const result=[];const visit=(node,path=[])=>{if(!node||typeof node!=='object')return;if(Number.isFinite(node.bonus)){result.push({...node,token:node.token??path.join('.')});return;}for(const [key,value]of Object.entries(node))visit(value,[...path,key]);};visit(card?.getFlag?.(ID,'valorDefense'));return result;
+}
 export function valorInspiration(actor){const entries=availableInspiration(actor);return entries.length===1&&entries[0].data.combatInspiration===true?entries[0]:null;}
 function originOf(card){const origin=card?.system?.origin;return typeof origin==="string"?game.messages.get(origin):origin;}
 function damageAttack(card){const id=card?.getFlag?.(ID,"damageAttackId");if(id)return game.messages.get(id);const origin=originOf(card);if(origin?.type==="attack")return origin;return [...(origin?.getAssociatedRolls?.("attack")??[])].filter(attack=>attack.timestamp<=card.timestamp).sort((a,b)=>b.timestamp-a.timestamp)[0];}
+const defenseReady=actor=>!!actor&&!['incapacitated','unconscious','dead','stunned','paralyzed','petrified'].some(s=>actor.statuses?.has(s));
 const allowed=(actor,user)=>!!(actor&&(user?.isGM||actor.testUserPermission?.(user,"OWNER")));
 export function canValorOffense(card,user=game.user,index=0){
     const actor=actorFor(card),attack=damageAttack(card),hits=(attack?.system?.evaluatedTargets??[]).filter(target=>target.isMiss===false);
@@ -61,19 +69,34 @@ export async function commitValorOffense(app,options){
     }catch(error){if(consumed){await effect.update({disabled:false});await effect.unsetFlag(ID,"bardicSpent");}throw error;}
     finally{offensePending.delete(app);if(offenseReservations.get(effect.uuid)===app)offenseReservations.delete(effect.uuid);}
 }
+export function valorTimingSnapshot(card){
+ if(game.settings.get(ID,'combatInspirationAutomation')!==true||card?.type!=='attack'||card.system?.targets?.length!==1)return {entries:[]};
+ const target=card.system.targets[0];let token;try{token=fromUuidSync(target.token,{strict:false});}catch{return {entries:[]};}
+ const actor=token?.actor,grant=valorInspiration(actor);
+ return {entries:actor&&Number.isFinite(target.ac)&&defenseReady(actor)&&grant?[{actor:actor.uuid,token:target.token,feature:grant.effect.uuid,sourceActor:grant.data.sourceActor,sourceItem:grant.data.sourceItem}]:[]};
+}
+export function valorTimingCandidates(card,user=game.user){return valorDefenders(card,user).map(e=>({...e,token:e.target.token,feature:{uuid:valorInspiration(e.actor).effect.uuid}}));}
 export function valorDefenders(card,user=game.user){
-    if(game.settings.get(ID,"combatInspirationAutomation")!==true||card?.type!=="attack"||isRollAdjustmentLocked(card))return [];
+    if(game.settings.get(ID,"combatInspirationAutomation")!==true||card?.type!=="attack"||card.isContentVisible===false||card.rolls?.some(r=>r.isCritical===true)||isRollAdjustmentLocked(card))return [];
     const entries=[];
     for(const target of card.system?.evaluatedTargets??[]){
-        if(target.isMiss!==false||!Number.isFinite(target.ac)||(card.getFlag?.(ID,"valorDefense")??{})[target.token])continue;
+        if(target.isMiss!==false||!Number.isFinite(target.ac)||valorDefenseRecord(card,target.token))continue;
         let token;try{token=fromUuidSync(target.token,{strict:false});}catch{continue;}
-        const actor=token?.actor;
-        if(allowed(actor,user)&&shieldReactionAvailable(actor)&&valorInspiration(actor))entries.push({actor,target,token});
+        const actor=token?.actor,snapshot=card.getFlag?.(ID,'valorTimingSnapshot');
+        if(globalThis.Ugmuls55eAutomationReactionTiming?.choiceAllowed?.(card,'valor',actor?.uuid,target.token)===false)continue;
+        if(snapshot&&!snapshot.entries?.some(e=>e.actor===actor?.uuid&&e.token===target.token&&e.feature===valorInspiration(actor)?.effect.uuid&&(!e.sourceActor||e.sourceActor===valorInspiration(actor)?.data.sourceActor)&&(!e.sourceItem||e.sourceItem===valorInspiration(actor)?.data.sourceItem)))continue;
+        if(allowed(actor,user)&&defenseReady(actor)&&valorInspiration(actor))entries.push({actor,target,token});
     }
     return entries;
 }
 const signature=card=>seekingSnapshot(card)+JSON.stringify((card.system?.targets??[]).map(target=>[target.token,target.ac]));
-export async function applyCombatInspiration(card,{mode,index=0,targetUuid=null},user=game.user){
+export async function applyCombatInspiration(card,selection,user=game.user){
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card)&&(!game.user?.isGM||game.users.activeGM?.id!==game.user.id))throw Error('A connected GM is required for this Inspiration decision.');
+ if(defenseJobs.has(card))throw Error('Combat Inspiration is already resolving.');
+ const job=(async()=>{await card.setFlag(ID,'valorAdjusting',true);let result;try{result=await applyCombatInspirationRoll(card,selection,user);}finally{await card.setFlag(ID,'valorAdjusting',false);}await globalThis.Ugmuls55eAutomationReactionTiming?.complete?.(card,'valor');globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return result;})();
+ defenseJobs.set(card,job);try{return await job;}finally{defenseJobs.delete(card);}
+}
+async function applyCombatInspirationRoll(card,{mode,index=0,targetUuid=null},user=game.user){
     if(mode!=="defense")throw Error("Choose Combat Inspiration in the damage roll configuration before rolling damage.");
     let actor,target;
     if(mode==="offense"){
@@ -81,7 +104,7 @@ export async function applyCombatInspiration(card,{mode,index=0,targetUuid=null}
         actor=actorFor(card);
     }else if(mode==="defense"){
         const entry=valorDefenders(card,user).find(entry=>entry.target.token===targetUuid);
-        if(!entry)throw Error("Combat Inspiration Defense needs a hit, an available reaction and a die granted by a Valor Bard. Undo applied damage first.");
+        if(!entry)throw Error("Combat Inspiration Defense needs a hit and a die granted by a Valor Bard. Undo applied damage first.");
         ({actor,target}=entry);
     }else throw Error("Invalid Combat Inspiration option.");
     const {effect,data}=valorInspiration(actor),before=signature(card),original=card.rolls?.[index];
@@ -92,16 +115,9 @@ export async function applyCombatInspiration(card,{mode,index=0,targetUuid=null}
         !(mode==="offense"?canValorOffense(card,user,index):valorDefenders(card,user).some(entry=>entry.actor===actor&&entry.target.token===targetUuid)))throw Error("The roll or Inspired effect changed. Try again.");
     const adjusted=mode==="offense"?await inspiredRoll(original,bonus):null;
     if(adjusted)delete adjusted.options.rsaDamageModes;
-    let consumed=false,committed=false,marker;const oldSpent=effect.getFlag?.(ID,"bardicSpent");
+    let consumed=false,committed=false;const oldSpent=effect.getFlag?.(ID,"bardicSpent");
     try{
         await effect.update({disabled:true,["flags."+ID+".bardicSpent"]:{message:card.uuid??card.id,mode}});consumed=true;
-        if(mode==="defense"){
-            if(!shieldReactionAvailable(actor))throw Error("The recipient's reaction was just used.");
-            const activity={actor,item:{type:"feat"},activation:{type:"reaction"}};
-            await recordReactionUse(activity,{}, {message:card});marker=reactionUsed(actor);
-            const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&Array.from(game.combat.combatants??[]).some(combatant=>combatant.actor?.uuid===actor.uuid);
-            if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id)throw Error("Could not reserve the recipient's reaction.");
-        }
         if(game.dice3d?.showForRoll){try{const animation=Promise.resolve(game.dice3d.showForRoll(bonus,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker));if(globalThis.Ugmuls55eAutomationWaitForAnimation)await globalThis.Ugmuls55eAutomationWaitForAnimation(animation);else if(globalThis.document?.hidden)animation.catch(console.warn);else await animation;}catch(error){console.warn("Combat Inspiration animation failed",error);}}
         if(signature(card)!==before||isRollAdjustmentLocked(card)||!effect.disabled)throw Error("The roll changed during Combat Inspiration. Resources were restored.");
         let update;
@@ -110,13 +126,13 @@ export async function applyCombatInspiration(card,{mode,index=0,targetUuid=null}
             update={rolls,["flags."+ID+".valorOffense"]:{index,formula:data.formula,total:bonus.total,sourceActor:data.sourceActor}};
         }else{
             const targets=Array.from(card.system.targets??[],entry=>({...entry,ac:entry.token===targetUuid?Number(entry.ac)+bonus.total:entry.ac}));
-            const defense={...(card.getFlag(ID,"valorDefense")??{}),[targetUuid]:{bonus:bonus.total,formula:data.formula,name:actor.name}};
+            const defense={...(card.getFlag(ID,"valorDefense")??{}),[targetUuid.split('.').at(-1)]:{token:targetUuid,actor:actor.uuid,bonus:bonus.total,formula:data.formula,name:actor.name,baseAC:Number(target.ac),ac:Number(target.ac)+bonus.total}};
             update={"system.targets":targets,["flags."+ID+".valorDefense"]:defense};
         }
         const skip=card.getFlag("dice-so-nice","skip");update["flags.dice-so-nice.skip"]=true;
         try{await card.update(update,{rsaRetarget:mode==="defense"});committed=true;}
         finally{if(skip===undefined)await card.unsetFlag("dice-so-nice","skip");else await card.setFlag("dice-so-nice","skip",skip);}
-    }catch(error){if(consumed&&!committed){await effect.update({disabled:false});if(oldSpent===undefined)await effect.unsetFlag(ID,"bardicSpent");else await effect.setFlag(ID,"bardicSpent",oldSpent);if(marker?.getFlag?.(ID,"reactionUsage")===card.id)await marker.update({disabled:true});}throw error;}
+    }catch(error){if(consumed&&!committed){await effect.update({disabled:false});if(oldSpent===undefined)await effect.unsetFlag(ID,"bardicSpent");else await effect.setFlag(ID,"bardicSpent",oldSpent);}throw error;}
 }
 function report(error){console.error("Ugmuls 5.5e Automation | Combat Inspiration",error);ui.notifications.error(error.message);}
 export function renderCombatInspiration(message,html){
@@ -129,7 +145,7 @@ export function renderCombatInspiration(message,html){
             const data=valorInspiration(actor).data,button=document.createElement("button");button.type="button";
             const img=document.createElement("img");img.src=data.img??"icons/svg/d20.svg";img.alt="";
             button.append(img,document.createTextNode(label+" ("+data.formula.replace(/^1/,"")+")"));
-            button.dataset.tooltip=selection.mode==="defense"?"Spend your Inspired die and reaction for AC against this attack only.":"Spend your Inspired die to add damage to this attack. No reaction required.";
+            button.dataset.tooltip=selection.mode==="defense"?"Spend your Inspired die for AC against this attack only. No Reaction required.":"Spend your Inspired die to add damage to this attack. No reaction required.";
             button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{
                 const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"combatInspiration",messageId:entry.card.id,selection,userId:game.user.id,gmId:gm.id});
                 else await enqueue(()=>applyCombatInspiration(entry.card,selection));
@@ -137,14 +153,14 @@ export function renderCombatInspiration(message,html){
         };
         for(const defender of valorDefenders(entry.card))add(defender.actor,{mode:"defense",targetUuid:defender.target.token},"Combat Inspiration — Defense · "+defender.actor.name);
         const offense=entry.card.getFlag?.(ID,"valorOffense");if(offense){const label=document.createElement("span");const total=offense.total??entry.card.rolls?.find(roll=>roll.options?.rsaCombatInspiration)?.total;label.textContent=total==null?"Combat Inspiration":"Combat Inspiration: +"+total+" damage";controls.append(label);}
-        for(const defense of Object.values(entry.card.getFlag?.(ID,"valorDefense")??{})){const label=document.createElement("span");label.textContent=defense.name+": +"+defense.bonus+" AC against this attack";controls.append(label);}
+        for(const defense of valorDefenseRecords(entry.card)){const label=document.createElement("span");label.textContent=(defense.name??"Target")+": +"+defense.bonus+" AC against this attack";label.dataset.tooltip="Combat Inspiration: "+defense.formula+" rolled "+defense.bonus+(Number.isFinite(defense.baseAC)&&Number.isFinite(defense.ac)?". AC "+defense.baseAC+" → "+defense.ac:".");controls.append(label);}
         if(controls.childNodes.length)entry.root.append(controls);
     }
 }
 function refresh(document,changes){globalThis.Ugmuls55eAutomationChatRefresh?.request("valor",document,changes);}
-Hooks.once("init",()=>game.settings.register(ID,"combatInspirationAutomation",{name:"Combat Inspiration Assistance",hint:"Valor-granted Inspired dice can add to initial single-target attack damage configuration or use the recipient's reaction to raise AC against one incoming hit. Original rolls are preserved.",scope:"world",config:true,type:Boolean,default:true}));
+Hooks.once("init",()=>game.settings.register(ID,"combatInspirationAutomation",{name:"Combat Inspiration Assistance",hint:"Valor-granted Inspired dice can add to initial single-target attack damage configuration or raise AC without a Reaction against one incoming hit. Original rolls are preserved.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
-    globalThis.Ugmuls55eAutomationValor={addValorOffenseChoice,finalizeValorOffense,commitValorOffense};
+    globalThis.Ugmuls55eAutomationValor={addValorOffenseChoice,finalizeValorOffense,commitValorOffense,snapshot:valorTimingSnapshot,candidates:valorTimingCandidates,defenseRecord:valorDefenseRecord};
     Hooks.on("dnd5e.renderChatMessage",renderCombatInspiration);
     for(const event of ["createActiveEffect","updateActiveEffect","deleteActiveEffect","updateCombat"])Hooks.on(event,refresh);
     game.socket.on("module."+ID,packet=>{

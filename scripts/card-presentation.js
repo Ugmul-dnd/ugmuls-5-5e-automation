@@ -249,6 +249,7 @@ export function linkedAttackDamage(attack) {
 }
 
 export async function rollAttackCardDamage(attack,event) {
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.held(attack))throw Error('Reveal the attack before rolling damage.');
     const origin=attack.system?.origin;
     const usage=typeof origin === "string" ? game.messages.get(origin) : origin;
     const activity=usage?.getAssociatedActivity?.();
@@ -268,7 +269,8 @@ export async function rollAttackCardDamage(attack,event) {
     finally {Hooks.off("dnd5e.preRollDamageV2",hook);}
 }
 
-function addAttackDamageButton(attack,root) {
+export function addAttackDamageButton(attack,root) {
+    if(globalThis.Ugmuls55eAutomationReactionTiming?.held(attack))return;
     const targets=attack.system?.evaluatedTargets??[];
     if(targets.length&&targets.every(target=>target.isMiss===true))return;
     if ((!game.user.isGM && !attack.isOwner) || !attack.isContentVisible || linkedAttackDamage(attack).length ||
@@ -276,11 +278,12 @@ function addAttackDamageButton(attack,root) {
     const activity=attack.getAssociatedActivity?.();
     if (!activity?.damage?.parts?.length) return;
     const retarget=root.querySelector("[data-rsa-retarget]");
-    let controls=root.querySelector(".rsa-attack-actions");
+    // A native continuation must never inherit a feature's reaction artwork.
+    let controls=root.querySelector(".rsa-attack-damage-actions");
     if (!controls) {
         const face=root.querySelector(".chat-card");
         if (!face) return;
-        controls=document.createElement("div");controls.className="rsa-attack-actions";
+        controls=document.createElement("div");controls.className="rsa-attack-actions rsa-attack-damage-actions";
         face.append(controls);
     }
     if (!controls) return;
@@ -324,9 +327,9 @@ export function followRollMenuExpansion(host,menu) {
     host.addEventListener("focusin",start);
 }
 const chatChangeFollowers=new WeakMap();
-export function followChatCardChanges(host) {
+export function followChatCardChanges(host,{force=false}={}) {
     const scroller=host.closest(".chat-scroll")??host.closest(".chat-log");
-    if(!scroller||scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop>40)return ()=>{};
+    if(!scroller||!force&&scroller.scrollHeight-scroller.clientHeight-scroller.scrollTop>40)return ()=>{};
     chatChangeFollowers.get(scroller)?.();
     let stopped=false,frame,timer;
     const stop=()=>{
@@ -349,6 +352,97 @@ export function followChatCardChanges(host) {
         if(stopped)return;
         clearTimeout(timer);timer=setTimeout(stop,800); // Include the tray's CSS expansion.
     };
+}
+// Reaction usage cards grow after publication (native casting, grouped saves
+// and decision controls). Follow only new presentation states, never resource
+// refreshes of old cards. Coalesce simultaneous chain updates into one scroll.
+const reactionScrollStates=new Map();let reactionScrollQueued=false,reactionScrollCard=null;
+export function reactionScrollSignature(card){
+    if(card?.isContentVisible===false)return null;
+    const flags=card?.flags?.[MODULE_ID]??{};
+    const timing=flags.reactionTimingWindow;
+    if(['attack','save'].includes(card?.type)&&timing)return JSON.stringify([card.type,timing.id,timing.feature,timing.status,timing.declinedActors??[],(card.rolls??[]).map(r=>r.total),card.system?.resisted===true]);
+    if(card?.type==='damage'&&(flags.pendingDamage!==undefined||flags.damageAttackId))return JSON.stringify(['damage',flags.pendingDamage?.session??!!flags.pendingDamage,(card.rolls??[]).map(r=>r.total)]);
+    if(card?.type==='usage'){
+        const window=flags.counterspellWindow;
+        if(!flags.shieldReactionAttack&&!flags.counterspellResponse&&!window)return null;
+        return JSON.stringify([window?.id,window?.phase,flags.counterspellResponse?.request,flags.counterspellReady===true,flags.buffAutoApplied===true,flags.outcomeEffectsApplied===true]);
+    }
+    if(card?.type!=='save'||!card.rolls?.length)return null;
+    const ref=card.system?.origin,origin=typeof ref==='string'?game.messages.get(ref.replace(/^ChatMessage\./,'')):ref;
+    if(!origin?.getFlag?.(MODULE_ID,'counterspellResponse')&&origin?.getAssociatedActivity?.()?.type!=='save')return null;
+    return JSON.stringify([card.rolls.map(roll=>roll.total),card._dice3danimating===true]);
+}
+export function scrollReactionCard(card,changes){
+    if(changes){
+        const flags=['shieldReactionAttack','counterspellResponse','counterspellWindow','counterspellReady','buffAutoApplied','outcomeEffectsApplied','reactionTimingWindow','pendingDamage'];
+        const changed=flags.some(key=>Object.hasOwn(changes,'flags.'+MODULE_ID+'.'+key)||Object.hasOwn(changes.flags?.[MODULE_ID]??{},key)||Object.keys(changes).some(path=>path.startsWith('flags.'+MODULE_ID+'.'+key+'.')));
+        if(!changed&&!(['attack','save','damage'].includes(card?.type)&&(Object.hasOwn(changes,'rolls')||Object.hasOwn(changes,'system.forceSuccess')||Object.hasOwn(changes.system??{},'forceSuccess')||Object.hasOwn(changes,'system.resisted')||Object.hasOwn(changes.system??{},'resisted'))))return;
+    }
+    const signature=reactionScrollSignature(card);
+    if(signature===null||reactionScrollStates.get(card.id)===signature)return;
+    reactionScrollStates.set(card.id,signature);while(reactionScrollStates.size>512)reactionScrollStates.delete(reactionScrollStates.keys().next().value);reactionScrollCard=card;
+    if(reactionScrollQueued)return;reactionScrollQueued=true;
+    // Native hooks precede DOM insertion. Include a second layout frame and
+    // image sizing, then reuse the existing short card-growth follower.
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        reactionScrollQueued=false;const current=reactionScrollCard;reactionScrollCard=null;
+        Promise.resolve(ui.chat?.scrollBottom?.({waitImages:true})).then(()=>{
+            const summary=globalThis.document?.querySelector?.('.card-summary[data-message-id="'+current.id+'"]');
+            const host=summary?.closest?.('.chat-message')??summary??globalThis.document?.querySelector?.('[data-message-id="'+current.id+'"]');
+            // scrollBottom may finish before the grouped card's final expansion.
+            // This is an explicit new-state scroll; follow growth even if that
+            // expansion has already left the viewport more than 40px behind.
+            if(host)followChatCardChanges(host,{force:true})();
+        }).catch(error=>console.warn('Reaction chat scroll failed',error));
+    }));
+}
+const resumedPresentations=new Map(),pendingResumedCards=new Map();let resumedFrameQueued=false;
+const presentationOrigin=card=>typeof card?.system?.origin==='string'?game.messages.get(card.system.origin.replace(/^ChatMessage\./,'')):card?.system?.origin;
+export function resumedReactionSource(card){
+    if(card?.isContentVisible===false)return null;
+    const flags=card?.flags?.[MODULE_ID]??{},spell=flags.counterspellWindow,timing=flags.reactionTimingWindow,charm=flags.instinctiveCharm;
+    let signature;
+    if(charm?.phase==='retarget')signature='charm:'+charm.request+':retarget';
+    else if(!spell&&timing&&timing.status!=='revealed')return null;
+    else if(spell&&['continued','countered'].includes(spell.phase))signature='spell:'+spell.id+':'+spell.phase;
+    else if(timing?.status==='revealed')signature='timing:'+timing.id;
+    else if(flags.shieldReactionSettled)signature='shield:'+flags.shieldReactionSettled;
+    else if(flags.shieldRechecked===true)signature='shield:rechecked';
+    if(!signature)return null;
+    const source=card.type==='usage'?card:presentationOrigin(card)??card;
+    if(source.isContentVisible===false)return null;
+    if(timing?.status==='revealed'&&globalThis.Ugmuls55eAutomationReactionTiming?.blocked?.(source))return null;
+    return {source,signature};
+}
+export function bringResumedCardToBottom(card){
+    const resumed=resumedReactionSource(card);if(!resumed)return false;
+    // Locate the visible native group, including an inline child. Move the
+    // existing element so listeners, controls, permissions and Undo stay live.
+    // Native ChatLog rerenders replace this node in place, retaining its new
+    // position. Full log reloads retain the original document chronology.
+    // No document timestamps/order or attack/damage identities are changed.
+    const ids=[...new Set([resumed.source.id,card.id])];
+    for(const id of ids)for(const node of globalThis.document?.querySelectorAll?.('[data-message-id="'+id+'"]')??[]){
+        const host=node.closest?.('.chat-message');
+        if(!host||!host.closest?.('.chat-log,.chat-scroll')||host.hidden||host.style?.display==='none'||host.closest?.('.dsn-hide'))continue;
+        const parent=host.parentElement;if(!parent||parent.lastElementChild===host)continue;
+        parent.append(host);return true;
+    }
+    return false;
+}
+export function resumeReactionPresentation(card,changes){
+    const keys=['counterspellWindow','reactionTimingWindow','shieldReactionSettled','shieldRechecked','instinctiveCharm'];
+    if(!changes||!keys.some(key=>Object.hasOwn(changes,'flags.'+MODULE_ID+'.'+key)||Object.hasOwn(changes.flags?.[MODULE_ID]??{},key)||Object.keys(changes).some(path=>path.startsWith('flags.'+MODULE_ID+'.'+key+'.'))))return;
+    const resumed=resumedReactionSource(card);
+    if(!resumed||resumedPresentations.get(card.id)===resumed.signature)return;
+    resumedPresentations.set(card.id,resumed.signature);pendingResumedCards.set(card.id,card);
+    if(resumedFrameQueued)return;resumedFrameQueued=true;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        resumedFrameQueued=false;const cards=Array.from(pendingResumedCards.values());pendingResumedCards.clear();
+        let moved=false;for(const current of cards)moved=bringResumedCardToBottom(current)||moved;
+        if(moved)Promise.resolve(ui.chat?.scrollBottom?.({waitImages:true})).catch(error=>console.warn('Resumed action chat scroll failed',error));
+    }));
 }
 const resultHandoffs=new Set(),handoffStates=new Map();
 function refreshOrigin(message){
@@ -377,6 +471,11 @@ Hooks.once("ready",()=>{
     globalThis.Ugmuls55eAutomationFollowRollMenu=followRollMenuExpansion;
     globalThis.Ugmuls55eAutomationFollowChatChanges=followChatCardChanges;
     Hooks.on("dnd5e.renderChatMessage",styleActivityCard);
+    Hooks.on("createChatMessage",card=>scrollReactionCard(card));
+    Hooks.on("updateChatMessage",scrollReactionCard);
+    Hooks.on("updateChatMessage",resumeReactionPresentation);
+    Hooks.on("deleteChatMessage",card=>{reactionScrollStates.delete(card.id);resumedPresentations.delete(card.id);pendingResumedCards.delete(card.id);});
+    Hooks.on("diceSoNiceRollComplete",id=>setTimeout(()=>{const card=game.messages.get(id);if(card)scrollReactionCard(card);},0));
     Hooks.on("renderChatMessageHTML",refreshOrigin);
     Hooks.on("createChatMessage",card=>defaultSpellTargetDisplay(card));
     Hooks.on("updateChatMessage",card=>defaultSpellTargetDisplay(card));

@@ -1,3 +1,5 @@
+// Timing: outcome / attack-roll / save-roll / check-roll (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from './shared-activity-card.js';
 import {inspiredRoll} from './bardic-inspiration.js';
 import {subtractCuttingWords} from './cutting-words.js';
@@ -79,6 +81,7 @@ export function omenTestEligible(card,index=0,mode='weal'){
 export function omenCandidates(card,index=0,user=game.user){
  if(!enabled()||!visible(card,user)||!['attack','save','check'].includes(card.type)||!Number.isInteger(index)||index<0||!card.rolls?.[index]?.d20||!card.rolls[index]._evaluated)return [];
  return (flag(card,'cosmicOmenSnapshot')?.entries??[]).map(snapshot=>{
+  const timing=globalThis.Ugmuls55eAutomationReactionTiming;if(timing?.closed?.(card,'cosmicOmen')||timing?.declined?.(card,snapshot.actor)||card.type==='attack'&&timing?.choiceAllowed?.(card,'cosmicOmen',snapshot.actor,snapshot.token)===false)return null;
   if(snapshot.relation==='friendly'&&snapshot.mode!=='weal'||snapshot.relation==='hostile'&&snapshot.mode!=='woe'||!omenTestEligible(card,index,snapshot.mode))return null;
   const actor=resolve(snapshot.actor),feature=resolve(snapshot.feature),buff=resolve(snapshot.effect);
   if(!actor||!owns(actor,user)||omenFeature(actor)?.uuid!==feature?.uuid||omenBuff(actor)?.uuid!==buff?.uuid||flag(buff,'cosmicOmen')?.mode!==snapshot.mode)return null;
@@ -105,7 +108,16 @@ function omenEffectLocked(card){
  const origin=typeof card.system?.origin==='string'?game.messages.get(card.system.origin.replace(/^ChatMessage\./,'')):card.system?.origin;
  return [card,origin].some(c=>flag(c,'outcomeEffectsApplied')===true||(flag(c,'effectUndoHistory')?.length??0)>0);
 }
-export function applyOmen(card,actorUuid,index,user=game.user){return enqueue(async()=>{
+export function omenAttackCandidates(card,user=game.user){return card?.type==='attack'?omenCandidates(card,0,user).filter(e=>!omenDisabled(card,e,0)):[];}
+export async function applyOmen(card,actorUuid,index,user=game.user){
+ if(!authority())throw Error('A connected GM is required.');
+ if(flag(card,'cosmicOmenAdjusting'))throw Error('Cosmic Omen is already resolving.');
+ const timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ const operation=async()=>{await card.setFlag(ID,'cosmicOmenAdjusting',true);try{await applyOmenCore(card,actorUuid,index,user);}finally{await card.setFlag(ID,'cosmicOmenAdjusting',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}};
+ if(card.type==='save'&&timing?.saveAdjustment)return timing.saveAdjustment(card,'cosmicOmen',operation);
+ await operation();if(card.type==='attack')await timing?.complete(card,'cosmicOmen');
+}
+function applyOmenCore(card,actorUuid,index,user=game.user){return enqueue(async()=>{
  if(!authority())throw Error('A connected GM is required.');let entry=omenCandidates(card,index,user).find(e=>e.actor.uuid===actorUuid);
  if(!entry)throw Error('Cosmic Omen is not available on this roll.');let reason=omenDisabled(card,entry,index);if(reason)throw Error(reason);
  const before=omenRollSnapshot(card);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
@@ -117,7 +129,7 @@ export function applyOmen(card,actorUuid,index,user=game.user){return enqueue(as
   if(omenRollSnapshot(card)!==before||omenDisabled(card,entry,index))throw Error('The roll or resources changed. Try again.');
   await entry.feature.update({'system.uses.spent':spent+1});charged=true;
   if(reactionUsed(entry.actor))throw Error('Reaction already used');
-  marker=await recordReactionUse(entry.activity,{}, {message:card});
+  marker=await recordReactionUse(entry.activity,{}, {message:{id:card.id}});
   const tracked=game.settings.get(ID,'reactionTracker')===true&&game.combat?.started&&values(game.combat.combatants).some(c=>c.actor?.uuid===actorUuid);
   if(tracked&&marker?.getFlag?.(ID,'reactionUsage')!==card.id)throw Error('Could not reserve the Druid’s reaction.');
   if(game.dice3d?.showForRoll){const animation=game.dice3d.showForRoll(bonus,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker);if(globalThis.Ugmuls55eAutomationWaitForAnimation)await globalThis.Ugmuls55eAutomationWaitForAnimation(animation);else await animation;}
@@ -133,7 +145,7 @@ export function renderOmen(message,html){
  if(!enabled())return;const root=html?.[0]??html;if(!root?.querySelectorAll)return;const entries=[{card:message,root}];for(const node of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(node.dataset.messageId);if(card&&!node.hidden)entries.push({card,root:node});}
  for(const {card,root}of entries){if(!visible(card,game.user))continue;for(const old of root.querySelectorAll(':scope > .rsa-cosmic-omen'))old.remove();const candidates=(card.rolls??[]).flatMap((_r,index)=>omenCandidates(card,index).filter(entry=>!reactionUsed(entry.actor)&&remaining(entry.feature)>0&&!incapable(entry.actor)&&!omenRecords(card,index).some(r=>r.actor===entry.actor.uuid)).map(entry=>({entry,index})));if(!candidates.length&&!Object.keys(flag(card,'cosmicOmenUsed')??{}).length)continue;
   const controls=document.createElement('div');controls.className='rsa-attack-actions rsa-cosmic-omen';
-  for(const {entry,index}of candidates){const button=document.createElement('button'),image=document.createElement('img'),reason=omenDisabled(card,entry,index),mode=entry.mode==='weal'?'Weal':'Woe';button.type='button';button.style.flex='0 0 auto';button.style.width='30px';button.style.padding='2px';image.src=entry.img??'icons/svg/d20.svg';image.alt=mode;image.style.width='22px';image.style.height='22px';button.append(image);button.disabled=!!reason;button.dataset.rsaReactionDescription='Spend your Reaction and one Cosmic Omen use to '+(entry.mode==='weal'?'add ':'subtract ')+entry.activity.roll.formula+(entry.mode==='weal'?' to':' from')+' this D20 Test.';button.dataset.tooltip='Cosmic Omen — '+mode+' · '+entry.name+(card.rolls.length>1?' · Roll '+(index+1):'')+(reason?' — '+reason:'');button.setAttribute('aria-label',button.dataset.tooltip);button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await requestOmen(card,entry,index);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
+  for(const {entry,index}of candidates){const button=document.createElement('button'),image=document.createElement('img'),reason=omenDisabled(card,entry,index),mode=entry.mode==='weal'?'Weal':'Woe';button.type='button';button.dataset.rsaReactionItemUuid=entry.feature.uuid;button.style.flex='0 0 auto';button.style.width='30px';button.style.padding='2px';image.src=entry.img??'icons/svg/d20.svg';image.alt=mode;image.style.width='22px';image.style.height='22px';button.append(image);button.disabled=!!reason;button.dataset.rsaReactionDescription='Spend your Reaction and one Cosmic Omen use to '+(entry.mode==='weal'?'add ':'subtract ')+entry.activity.roll.formula+(entry.mode==='weal'?' to':' from')+' this D20 Test.';button.dataset.tooltip='Cosmic Omen — '+mode+' · '+entry.name+(card.rolls.length>1?' · Roll '+(index+1):'')+(reason?' — '+reason:'');button.setAttribute('aria-label',button.dataset.tooltip);button.addEventListener('click',async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{await requestOmen(card,entry,index);}catch(error){report(error);}finally{globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}});controls.append(button);}
   for(const index of Object.keys(flag(card,'cosmicOmenUsed')??{}))for(const record of omenRecords(card,index)){const label=document.createElement('span');label.textContent='Cosmic Omen — '+(record.mode==='weal'?'Weal: +':'Woe: −')+record.total+' ('+(record.name??resolve(record.actor)?.name??'Druid')+')'+(card.rolls.length>1?' · Roll '+(Number(index)+1):'');controls.append(label);}root.append(controls);
  }
 }
@@ -149,9 +161,11 @@ export async function completedOmenRest(actor,result,config={}){
 function report(error){console.error('Cosmic Omen',error);ui.notifications.error(error.message);}
 Hooks.once('init',()=>game.settings.register(ID,'cosmicOmenAutomation',{name:'Stars Druid: Cosmic Omen',hint:'After a Long Rest, roll an omen: even grants Weal; odd grants Woe. In the chatlog, the Druid’s owner and GM see a small Cosmic Omen icon on eligible attack, saving throw and ability check cards. Weal helps friendly failed tests; Woe penalizes hostile successful tests. Unknown DCs remain a manual choice. Attacks with a kept natural 1 or 20 get neither option. Disposition and range are captured when the card appears. Hover to see Weal/Woe and availability; click to roll the native bonus die and add it (Weal) or subtract it (Woe), spending one charge and your combat Reaction. No target selection is needed: the icon adjusts the test on that card. Range and sight are checked once when the card appears; moving does not add icons to old cards. Applied damage/effects disable the icon until the GM undoes them. No icon is added when charges or the Reaction are already spent, or the Druid is incapacitated.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
+ globalThis.Ugmuls55eAutomationCosmicOmenTiming={snapshot:omenSnapshot,candidates:omenCandidates,attackCandidates:omenAttackCandidates,disabled:omenDisabled};
  installOmenRest(CONFIG.DND5E.restTypes?.long?.dialogClass);Hooks.on('dnd5e.restCompleted',(a,r,c)=>completedOmenRest(a,r,c).catch(report));
  Hooks.on('preCreateChatMessage',card=>{if(!authority())return;const snapshot=omenSnapshot(card);if(snapshot)card.updateSource({['flags.'+ID+'.cosmicOmenSnapshot']:snapshot});});
  Hooks.on('createChatMessage',card=>captureOmen(card).then(()=>bindOmenInitiative(card)).catch(report));Hooks.on('dnd5e.renderChatMessage',renderOmen);
- // No movement, actor, item, effect or combat hooks refresh old Omen cards.
+ // Refresh only captured, still-open decisions through the shared bounded queue.
+ for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem','updateActor','updateCombat'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('cosmicOmen',doc,changes));
  game.socket.on('module.'+ID,packet=>{if(packet?.action==='cosmicOmenError'&&packet.user===game.user.id){ui.notifications.error(packet.error);const card=game.messages.get(packet.card);if(card)globalThis.Ugmuls55eAutomationChatRefresh?.card(card);return;}if(packet?.action!=='cosmicOmen'||!authority()||packet.gm!==game.user.id)return;const user=game.users.get(packet.user),card=game.messages.get(packet.card);if(!user?.active||!card)return;applyOmen(card,packet.actor,packet.index,user).catch(error=>{game.socket.emit('module.'+ID,{action:'cosmicOmenError',user:user.id,card:card.id,error:error.message});});});
 });

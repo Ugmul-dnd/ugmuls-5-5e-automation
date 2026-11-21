@@ -1,3 +1,5 @@
+// Timing: outcome / attack-hit (connected); reserve before damage rolls.
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard,linkedHpCards} from './shared-activity-card.js';
 import {reactionUsed,recordReactionUse} from './reaction-tracker.js';
 import {tokenDistance} from './shared-distance.js';
@@ -12,7 +14,7 @@ const visible=(c,u)=>c?.isContentVisible!==false&&(u?.isGM||!c.blind&&(!c.whispe
 const remaining=i=>Number(i?.system?.uses?.value??(Number(i?.system?.uses?.max)-Number(i?.system?.uses?.spent??0))),reaction=i=>values(i?.system?.activities).find(a=>String(a.activation?.type).startsWith('reaction'));
 const damage=r=>!['healing','temphp','maximum'].includes(r.options?.type)&&Number(r.total)>0;
 export const sentinelFeature=a=>values(a?.items).find(i=>i.type==='feat'&&i.system?.source?.rules!=='2014'&&(key(i)==='sentinel-at-deaths-door'||i.id===BOOK||/^sentinel at death['’]s door$/i.test(i.name?.trim()??'')||[i._stats?.compendiumSource,i._stats?.duplicateSource].some(r=>r?.endsWith('.'+BOOK))));
-export function sentinelAttack(card){const explicit=flag(card,'damageAttackId');if(explicit)return game.messages.get(explicit);const origin=resolve(card?.system?.origin);if(origin?.type==='attack')return origin;const attacks=values(origin?.getAssociatedRolls?.('attack'));return attacks.length===1?attacks[0]:null;}
+export function sentinelAttack(card){if(card?.type==='attack')return card;const explicit=flag(card,'damageAttackId');if(explicit)return game.messages.get(explicit);const origin=resolve(card?.system?.origin);if(origin?.type==='attack')return origin;const attacks=values(origin?.getAssociatedRolls?.('attack'));return attacks.length===1?attacks[0]:null;}
 export function sentinelRange(source,target){
  if(!source?.actor||!target?.actor||source.parent?.uuid!==target.parent?.uuid)return false;if(source.actor.uuid===target.actor.uuid)return true;
  if(source.actor.statuses?.has('blinded')||target.hidden||target.object?.isVisible===false||!source.object?.center||!target.object?.center)return false;
@@ -21,9 +23,10 @@ export function sentinelRange(source,target){
  return tokenDistance(source,target)<=limit+1e-7&&!source.object.checkCollision?.(target.object.center,{type:'sight',mode:'any'});
 }
 export function sentinelSnapshot(card){
- const empty={turn:turn(),entries:[]};if(!enabled()||card?.type!=='damage'||isHealingCard(card)||flag(card,'masteryGraze')||card.system?.targets?.length!==1)return empty;
+ const inherited=flag(sentinelAttack(card),'sentinelSnapshot');if(card?.type==='damage'&&inherited)return inherited;
+ const empty={turn:turn(),entries:[]};if(!enabled()||!['attack','damage'].includes(card?.type)||isHealingCard(card)||flag(card,'masteryGraze')||card.system?.targets?.length!==1)return empty;
  const attack=sentinelAttack(card),descriptor=card.system.targets[0],target=resolve(descriptor.token),hp=target?.actor?.system?.attributes?.hp,max=Number(hp?.effectiveMax??hp?.max);
- if(attack?.type!=='attack'||!attack.rolls?.some(r=>r.d20&&r._evaluated)||!values(attack.system?.evaluatedTargets).some(t=>t.token===descriptor.token&&t.isMiss===false)||!Number.isFinite(hp?.value)||!(max>0)||hp.value>max/2)return empty;
+ if(attack?.type!=='attack'||!attack.rolls?.some(r=>r.d20&&r._evaluated)||!values(attack.system?.evaluatedTargets).some(t=>t.token===descriptor.token&&(card.type==='attack'||t.isMiss===false))||!Number.isFinite(hp?.value)||!(max>0)||hp.value>max/2)return empty;
  const seen=new Set();for(const token of values(target.parent?.tokens)){
   const actor=token.actor,feature=sentinelFeature(actor);if(!feature||!reaction(feature)||seen.has(actor.uuid)||unable(actor)||reactionUsed(actor)||!(remaining(feature)>=1)||!fieldFriendly(token,target)||!sentinelRange(token,target))continue;
   seen.add(actor.uuid);empty.entries.push({actor:actor.uuid,feature:feature.uuid,token:token.uuid,target:target.uuid,subject:target.actor.uuid,attack:attack.id,name:actor.name});
@@ -34,13 +37,18 @@ export function captureSentinel(card){
  if(!authority()||!liveCards.has(card)||flag(card,'sentinelSnapshot')!==undefined)return Promise.resolve();
  const snapshot=sentinelSnapshot(card),job=(async()=>{await card.setFlag(ID,'sentinelSnapshot',snapshot);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);globalThis.Ugmuls55eAutomationNpcDamage?.resumeReactive?.(card);})();capturing.set(card,job);return job;
 }
-export function sentinelCandidates(card,user=game.user,{pending=false,spentActor=null}={}){
- const snapshot=flag(card,'sentinelSnapshot');if(!enabled()||!snapshot?.entries?.length||card?.type!=='damage'||!visible(card,user)||isHealingCard(card)||flag(card,'pendingDamage')||!pending&&flag(card,'sentinelPending')||flag(card,'sentinelUsed')||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||!card.rolls.some(damage)||snapshot?.turn!==turn()||card.system?.targets?.length!==1)return [];
- const attack=sentinelAttack(card);if(!attack||isRollAdjustmentLocked(attack))return [];
+export function sentinelCandidates(...args){return sentinelCandidatesCore(...args).filter(e=>globalThis.Ugmuls55eAutomationReactive?.damageAllowed?.(args[0],e.actor)!==false);}
+function sentinelCandidatesCore(card,user=game.user,{pending=false,spentActor=null}={}){
+ const attack=sentinelAttack(card),snapshot=flag(card,'sentinelSnapshot')??flag(attack,'sentinelSnapshot');if(!enabled()||!snapshot?.entries?.length||card?.type!=='damage'||!visible(card,user)||isHealingCard(card)||flag(card,'pendingDamage')||!pending&&flag(card,'sentinelPending')||flag(card,'sentinelUsed')||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||!card.rolls.some(damage)||snapshot?.turn!==turn()||card.system?.targets?.length!==1)return [];
+ if(!attack||isRollAdjustmentLocked(attack))return [];
+ const staged=globalThis.Ugmuls55eAutomationStagedReductions,reservation=staged?.selection?.(card,'sentinelDeath');
+ if(flag(attack,'sentinelSnapshot')&&!card.rsaReductionPreview&&!reservation)return [];
  return values(snapshot.entries).flatMap(e=>{
   const actor=resolve(e.actor),token=resolve(e.token),target=resolve(e.target),feature=sentinelFeature(actor);
-  if(!owns(actor,user)||unable(actor)||feature?.uuid!==e.feature||!reaction(feature)||e.attack!==attack.id||target?.actor?.uuid!==e.subject||token?.actor?.uuid!==e.actor||card.system.targets[0].token!==e.target||!values(attack.system?.evaluatedTargets).some(t=>t.token===e.target&&t.isMiss===false)||!fieldFriendly(token,target)||!sentinelRange(token,target)||spentActor!==e.actor&&(reactionUsed(actor)||!(remaining(feature)>=1)))return [];
-  return [{...e,actor,feature,activity:reaction(feature)}];
+  if(!owns(actor,user)||unable(actor)||feature?.uuid!==e.feature||!reaction(feature)||e.attack!=null&&e.attack!==attack.id||target?.actor?.uuid!==e.subject||token?.actor?.uuid!==e.actor||card.system.targets[0].token!==e.target||!values(attack.system?.evaluatedTargets).some(t=>t.token===e.target&&t.isMiss===false)||!fieldFriendly(token,target)||!sentinelRange(token,target)||spentActor!==e.actor&&((reactionUsed(actor)&&!staged?.ownsReservation?.(card,actor))||!(remaining(feature)>=1)))return [];
+  // Foundry assigns the message ID after preCreate. The snapshot lives on
+  // this exact attack; once persisted, use its ID rather than the preCreate null.
+  return [{...e,attack:attack.id,actor,feature,activity:reaction(feature)}];
  });
 }
 export async function halveSentinelRolls(rolls){
@@ -62,9 +70,9 @@ export function useSentinel(card,actorUuid,user=game.user){return enqueue(async(
   const rolls=await halveSentinelRolls(card.rolls);
   if(state(card)!==before||!sentinelCandidates(card,user,{pending:true}).some(c=>c.actor.uuid===actorUuid))throw Error('The damage or Cleric changed.');
   spent=Number(e.feature.system.uses.spent??0);await e.feature.update({'system.uses.spent':spent+1});charged=true;
-  if(reactionUsed(e.actor))throw Error('Reaction already used.');marker=await recordReactionUse(e.activity,{}, {message:{id:card.id}});
+  if(reactionUsed(e.actor)&&!globalThis.Ugmuls55eAutomationStagedReductions?.ownsReservation?.(card,e.actor))throw Error('Reaction already used.');marker=globalThis.Ugmuls55eAutomationStagedReductions?.marker?.(card,e.actor)??await recordReactionUse(e.activity,{}, {message:{id:card.id}});
   const participant=globalThis.Ugmuls55eAutomationCompanions?.effectiveCombatant(e.actor,game.combat)??values(game.combat?.combatants).find(c=>c.actor?.uuid===actorUuid);
-  if(game.settings.get(ID,'reactionTracker')===true&&game.combat?.started&&participant&&marker?.getFlag?.(ID,'reactionUsage')!==card.id)throw Error('Could not reserve the Cleric’s Reaction.');
+  if(game.settings.get(ID,'reactionTracker')===true&&game.combat?.started&&participant&&marker?.getFlag?.(ID,'reactionUsage')!==(globalThis.Ugmuls55eAutomationStagedReductions?.selection?.(card,'sentinelDeath')?e.attack:card.id))throw Error('Could not reserve the Cleric’s Reaction.');
   if(state(card)!==before||stamp!==turn()||Number(e.feature.system.uses.spent)!==spent+1||!sentinelCandidates(card,user,{pending:true,spentActor:actorUuid}).some(c=>c.actor.uuid===actorUuid))throw Error('The damage, range or Cleric changed.');
   const record={actor:actorUuid,feature:e.feature.uuid,target:e.target,attack:e.attack,before:card.rolls.filter(damage).reduce((n,r)=>n+Number(r.total),0),after:rolls.filter(damage).reduce((n,r)=>n+Number(r.total),0)};
   const skip=card.getFlag?.('dice-so-nice','skip');try{await card.update({rolls,['flags.'+ID+'.sentinelUsed']:record,'flags.dice-so-nice.skip':true});committed=true;}finally{if(skip===undefined)await card.unsetFlag('dice-so-nice','skip');else await card.setFlag('dice-so-nice','skip',skip);}
@@ -75,7 +83,7 @@ export function sentinelReady(card){const pending=c=>flag(c,'sentinelPending')||
 export function renderSentinel(message,html){
  const root=html?.[0]??html;if(!root?.querySelectorAll)return;
  for(const {card,node}of [{card:message,node:root},...values(root.querySelectorAll('.card-summary[data-message-id]')).filter(n=>!n.hidden).map(node=>({card:game.messages.get(node.dataset.messageId),node}))]){
-  for(const old of node.querySelectorAll(':scope > .rsa-sentinel-death'))old.remove();if(!card||!visible(card,game.user)||!enabled()||card.type!=='damage')continue;
+  for(const old of node.querySelectorAll(':scope > .rsa-sentinel-death'))old.remove();if(!card||!visible(card,game.user)||!enabled()||card.type!=='damage'||flag(sentinelAttack(card),'sentinelSnapshot')&&!flag(card,'sentinelUsed'))continue;
   const row=document.createElement('div');row.className='rsa-attack-actions rsa-sentinel-death';const candidates=sentinelCandidates(card);
   for(const e of values(flag(card,'sentinelSnapshot')?.entries)){
    if(flag(card,'sentinelUsed')||!owns(resolve(e.actor),game.user))continue;
@@ -86,12 +94,13 @@ export function renderSentinel(message,html){
  }
 }
 function report(error){console.error("Sentinel at Death's Door",error);ui.notifications.warn(error.message);}
-Hooks.once('init',()=>game.settings.register(ID,'sentinelDeathAutomation',{name:"Grave Cleric: Sentinel at Death's Door",hint:'Snapshot a damage-card Reaction for a friendly Bloodied attack target within 60 feet. Spend one native use and Reaction to halve the existing raw damage (round down), before native resistance. Single-target cards only; use reactive automation to pause automatic application.',scope:'world',config:true,type:Boolean,default:true}));
+Hooks.once('init',()=>game.settings.register(ID,'sentinelDeathAutomation',{name:"Grave Cleric: Sentinel at Death's Door",hint:'Offer a hit-decision Reaction before damage rolls for a friendly Bloodied attack target within 60 feet. Spend one native use and Reaction to halve the existing raw damage (round down), before native resistance. Single-target cards only; use reactive automation to pause automatic application.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{
- globalThis.Ugmuls55eAutomationSentinel={candidates:sentinelCandidates,ready:sentinelReady,capture:captureSentinel};
+ globalThis.Ugmuls55eAutomationSentinel={snapshot:sentinelSnapshot,apply:useSentinel,candidates:sentinelCandidates,ready:sentinelReady,capture:captureSentinel};
  Hooks.on('preCreateChatMessage',card=>{if(authority()&&card.type==='damage')card.updateSource({['flags.'+ID+'.sentinelSnapshot']:sentinelSnapshot(card)});});
  // Capture player-created cards once on the active GM. Automation awaits this same job.
  Hooks.on('createChatMessage',card=>{if(card.type!=='damage')return;liveCards.add(card);captureSentinel(card).catch(report);});
  Hooks.on('dnd5e.renderChatMessage',renderSentinel);
+ for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem','updateActor','updateCombat'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('sentinelDeath',doc,changes));
  game.socket.on('module.'+ID,p=>{if(p?.action==='sentinelDeathError'&&p.user===game.user.id){ui.notifications.warn(p.error);globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(p.card));return;}if(p?.action!=='sentinelDeath'||!authority()||p.gm!==game.user.id)return;const user=game.users.get(p.user),card=game.messages.get(p.card);if(user?.active&&card)useSentinel(card,p.actor,user).catch(error=>game.socket.emit('module.'+ID,{action:'sentinelDeathError',user:user.id,card:card.id,error:error.message}));});
 });

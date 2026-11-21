@@ -1,5 +1,7 @@
+// Timing: outcome / save-result / check-result (connected).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked} from "./shared-activity-card.js";
-import {inspiredRoll} from "./bardic-inspiration.js";
+import {inspiredRoll,failureState} from "./bardic-inspiration.js";
 import {seekingSnapshot} from "./seeking-spell.js";
 const ID="ugmuls-5-5e-automation",enqueue=createEventQueue();
 const values=v=>Array.from(v?.values?.()??v??[]),actorFor=card=>card?.getAssociatedActor?.()??card?.getAssociatedActivity?.()?.actor;
@@ -11,13 +13,18 @@ export function luckFormula(actor){
 const remaining=item=>Number(item?.system?.uses?.value??(Number(item?.system?.uses?.max)-Number(item?.system?.uses?.spent??0)))||0;
 function visible(card,user){return !!user&&(user.isGM||!card.blind&&(!card.whisper?.length||card.author?.id===user.id||card.whisper.some(u=>(u.id??u)===user.id)));}
 export function canUseLuck(card,user=game.user,index=0){
- const actor=actorFor(card),roll=card?.rolls?.[index];
+ const actor=actorFor(card),roll=card?.rolls?.[index],timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ if(card?.type==='save'&&(failureState(card,index)!=='failed'||timing?.closed?.(card,'ownLuck')||timing?.declined?.(card,actor)))return false;
  return game.settings.get(ID,"darkOnesOwnLuckAutomation")===true&&["check","save"].includes(card?.type)&&Number.isInteger(index)&&index>=0&&!!roll?.d20&&roll._evaluated===true&&
  visible(card,user)&&card.isContentVisible!==false&&!!(user?.isGM||actor?.testUserPermission?.(user,"OWNER"))&&
  !card.system?.concentrationBroken&&!card.getFlag?.(ID,"automaticGrappleFailure")&&!card.getFlag?.(ID,"darkOnesOwnLuck")?.[index]&&!isRollAdjustmentLocked(card)&&remaining(luckFeature(actor))>0&&!!luckFormula(actor);
 }
 const snapshot=card=>seekingSnapshot(card)+JSON.stringify(card.rolls.map(r=>r.options?.target));
-export function applyOwnLuck(card,index=0,user=game.user){return enqueue(async()=>{
+export function applyOwnLuck(card,index=0,user=game.user){
+ const operation=()=>applyOwnLuckCore(card,index,user),timing=globalThis.Ugmuls55eAutomationReactionTiming;
+ return card?.type==='save'&&timing?.saveAdjustment?timing.saveAdjustment(card,'ownLuck',operation):operation();
+}
+function applyOwnLuckCore(card,index=0,user=game.user){return enqueue(async()=>{
  if(!canUseLuck(card,user,index))throw Error("Dark One’s Own Luck needs your unresolved ability check or saving throw and an available feature use. Undo applied damage/effects first.");
  if(!game.users.activeGM&&!game.user.isGM&&card.isOwner===false)throw Error("A connected GM is required to adjust this roll.");
  const actor=actorFor(card),feature=luckFeature(actor),formula=luckFormula(actor),spent=Number(feature.system.uses.spent??0),before=snapshot(card);
@@ -57,7 +64,7 @@ export function renderOwnLuck(message,html){
   entry.root.querySelectorAll(':scope > .rsa-own-luck-actions').forEach(node=>node.remove());if(entry.card.isContentVisible===false||!visible(entry.card,game.user))continue;
   const controls=document.createElement("div");controls.className="rsa-attack-actions rsa-own-luck-actions";
   for(const [index]of(entry.card.rolls??[]).entries())if(canUseLuck(entry.card,game.user,index)){
-   const button=document.createElement("button");button.type="button";button.textContent="Dark One’s Own Luck ("+luckFormula(actorFor(entry.card))+")"+(entry.card.rolls.length>1?" — Roll "+(index+1):"");
+   const button=document.createElement("button");button.type="button";button.dataset.rsaReactionItemUuid=luckFeature(actorFor(entry.card))?.uuid;button.textContent="Dark One’s Own Luck ("+luckFormula(actorFor(entry.card))+")"+(entry.card.rolls.length>1?" — Roll "+(index+1):"");
    button.dataset.tooltip="Roll and add the native bonus to this check/save without rerolling its dice. Spend one feature use. Once per roll; no Reaction required.";
    button.addEventListener("click",event=>{event.preventDefault();event.stopPropagation();request(entry.card,index,button);});controls.append(button);
   }
@@ -68,6 +75,7 @@ export function renderOwnLuck(message,html){
 function refresh(doc,changes){if(doc)globalThis.Ugmuls55eAutomationChatRefresh?.request("ownLuck",doc,changes);}
 Hooks.once("init",()=>game.settings.register(ID,"darkOnesOwnLuckAutomation",{name:"Fiend: Dark One’s Own Luck",hint:"Add a button to the Warlock’s ability-check and saving-throw cards. Roll the native bonus, add it without rerolling, and spend one native feature use. Once per roll, before damage/effects are applied; no Reaction required.",scope:"world",config:true,type:Boolean,default:true}));
 Hooks.once("ready",()=>{
+ globalThis.Ugmuls55eAutomationOwnLuck={canUse:canUseLuck};
  Hooks.on("dnd5e.renderChatMessage",renderOwnLuck);for(const event of ["createItem","updateItem","deleteItem"])Hooks.on(event,refresh);
  game.socket.on("module."+ID,packet=>{
   if(packet?.action==="darkOnesOwnLuckError"&&packet.userId===game.user.id){ui.notifications.error(packet.error);globalThis.Ugmuls55eAutomationChatRefresh?.card(game.messages.get(packet.messageId));return;}

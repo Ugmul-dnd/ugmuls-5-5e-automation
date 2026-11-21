@@ -117,6 +117,20 @@
 :is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .total::before,
 :is(.chat-log,.chat-popout) .message.compact.rsa-action-colors .card-summary button.dice-roll .total::after { content:""; }
 
+.rsa-action-colors .save-summary > .pills {
+    min-inline-size: 0;
+    max-inline-size: 50%;
+}
+.rsa-action-colors .save-summary > .pills > .pill.target {
+    min-inline-size: 0;
+    display: block;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+.rsa-action-colors .save-summary > button.dice-roll {
+    flex-shrink: 0;
+}
+
 /* Keep actions out of the native property-pill list. */
 .rsa-attack-actions {
     display: flex;
@@ -227,3 +241,10 @@
 .rsa-spirit-gather-dialog .form-footer {flex-direction:column;align-items:stretch;}
 .rsa-spirit-gather-dialog .form-footer button {width:100%;flex:none;}
 
+
+.rsa-unified-controls .rsa-instinctive-charm-redirect, .rsa-instinctive-charm-redirect { flex: 1 0 100%; width: 100%; border: 1px solid var(--color-border-light-primary, #777); border-radius: 4px; padding: 8px; }
+.rsa-instinctive-charm-redirect > p { width: 100%; margin: 0 0 4px; }
+
+/* Only a used ward gets a dedicated receipt row; unused icons share the footer. */
+.rsa-bastion[data-rsa-bastion-used], .rsa-unified-controls .rsa-bastion[data-rsa-bastion-used] { width:100%; justify-content:flex-start; }
+.rsa-bastion[data-rsa-bastion-used] > span { flex:0 0 100%; text-align:left; }

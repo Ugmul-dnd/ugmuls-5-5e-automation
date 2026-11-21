@@ -1,3 +1,4 @@
+// Timing: outcome / attack-hit; Redirect is a follow-up. See docs/reaction-timing.md.
 import {createEventQueue,isRollAdjustmentLocked,isHealingCard,describeTarget,actorClassLevel,nativeActivityVisible} from "./shared-activity-card.js";
 import {reactionUsed,recordReactionUse} from "./reaction-tracker.js";
 import {seekingSnapshot} from "./seeking-spell.js";
@@ -37,13 +38,16 @@ export function deflectFormula(activity){
  const number=Number(healing?.number),faces=Number(healing?.denomination);
  return number>0&&faces>0?`${number}d${faces}${healing.bonus?" + ("+healing.bonus+")":""}`:null;
 }
-export function deflectCandidates(card,user=game.user){
+// A pass applies only to this actor on this exact damage card; eligibility is rechecked by authority.
+export function deflectCandidates(...args){const result=deflectCandidatesCore(...args);return result.filter(e=>globalThis.Ugmuls55eAutomationReactive?.damageAllowed?.(args[0],e.actor)!==false);}
+function deflectCandidatesCore(card,user=game.user){
+ if(globalThis.Ugmuls55eAutomationReactionTiming?.closed(card,"deflect"))return [];
  if(!enabled()||card?.type!=="damage"||isHealingCard(card)||flags(card,"pendingDamage")||flags(card,"deflectPending")||flags(card,"protectiveFieldPending")||flags(card,"masteryGraze")||isRollAdjustmentLocked(card)||!card.rolls?.length||card.rolls.some(r=>!r._evaluated)||rawDamage(card)<=0)return [];
  const attack=deflectAttack(card),activity=attack?.getAssociatedActivity?.()??card.getAssociatedActivity?.();if(attack?.type!=="attack"||activity?.type!=="attack"||!attack.rolls?.length)return [];
  const hit=new Set(values(attack.system?.evaluatedTargets).filter(t=>t.isMiss===false).map(t=>t.token)),types=incomingDamageTypes(card),seen=new Set();
  return values(card.system?.targets).flatMap(t=>{
   const token=resolve(t.token),actor=token?.actor,config=deflectConfig(actor),{item,reduce,formula,energy,energyFeature}=config??{};
-  if(!actor||!item||!formula||!hit.has(token.uuid)||seen.has(actor.uuid)||!owns(actor,user)||unable(actor)||reactionUsed(actor)||records(card).some(r=>r.target===token.uuid)||!types.length||!energy&&!types.some(t=>['bludgeoning','piercing','slashing'].includes(t))||rawDamage(card)-fieldReduction(card,actor,token.uuid)<=0)return [];
+  if(!actor||globalThis.Ugmuls55eAutomationReactionTiming?.declined?.(card,actor)||!item||!formula||!hit.has(token.uuid)||seen.has(actor.uuid)||!owns(actor,user)||unable(actor)||(reactionUsed(actor)&&!globalThis.Ugmuls55eAutomationStagedReductions?.ownsReservation(card,actor))||records(card).some(r=>r.target===token.uuid)||!types.length||!energy&&!types.some(t=>['bludgeoning','piercing','slashing'].includes(t))||rawDamage(card)-fieldReduction(card,actor,token.uuid)<=0)return [];
   seen.add(actor.uuid);return[{actor,token,item,reduce,formula,energy,energyFeature,attack,types}];
  });
 }
@@ -54,10 +58,10 @@ export function applyDeflect(card,targetUuid,user=game.user){return enqueue(asyn
  try{
   await card.setFlag(ID,"deflectPending",{actor:c.actor.uuid,target:targetUuid});
   const roll=await new CONFIG.Dice.BasicRoll(c.formula,c.actor.getRollData?.()??{}).evaluate();
-  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||reactionUsed(c.actor)||unable(c.actor)||!sameDeflectConfig(c))throw Error("The attack or Monk’s Reaction changed before Deflect completed.");
-  marker=await recordReactionUse(c.reduce,{}, {message:{id:card.id}});
+  if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||(reactionUsed(c.actor)&&!globalThis.Ugmuls55eAutomationStagedReductions?.ownsReservation(card,c.actor))||unable(c.actor)||!sameDeflectConfig(c))throw Error("The attack or Monk’s Reaction changed before Deflect completed.");
+  marker=globalThis.Ugmuls55eAutomationStagedReductions?.marker(card,c.actor)??await recordReactionUse(c.reduce,{}, {message:{id:card.id}});
   const tracked=game.settings.get(ID,"reactionTracker")===true&&game.combat?.started&&values(game.combat.combatants).some(x=>x.actor?.uuid===c.actor.uuid);
-  if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id)throw Error("Could not reserve the Monk’s Reaction.");
+  if(tracked&&marker?.getFlag?.(ID,"reactionUsage")!==card.id&&!globalThis.Ugmuls55eAutomationStagedReductions?.ownsReservation(card,c.actor))throw Error("Could not reserve the Monk’s Reaction.");
   if(game.dice3d?.showForRoll){const animation=game.dice3d.showForRoll(roll,user,true,card.whisper?.length?card.whisper:null,card.blind??false,card.id,card.speaker);await(globalThis.Ugmuls55eAutomationWaitForAnimation?.(animation)??animation);await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);}
   if(snapshot!==seekingSnapshot(card)||attackSnapshot!==attackState(c.attack)||isRollAdjustmentLocked(card)||unable(c.actor)||!sameDeflectConfig(c))throw Error("The damage or Monk’s eligibility changed during Deflect.");
   const total=Math.max(0,Number(roll.total)||0),before=Math.max(0,rawDamage(card)-fieldReduction(card,c.actor,targetUuid));

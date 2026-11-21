@@ -207,7 +207,7 @@ export async function waitForWorkflowAnimations(message) {
         // A disconnected client cannot finish an animation. A connected but
         // unresponsive client leaves the card manual rather than applying early.
         const disconnects=setInterval(()=>{for(const id of pending)if(!game.users.get(id)?.active)pending.delete(id);finish();},500);
-        const timeout=setTimeout(()=>{cleanup();reject(Error("A connected client did not confirm dice animation completion. Refresh clients and apply this card manually."));},30000);
+        const timeout=setTimeout(()=>{cleanup();reject(Error("Dice animation completion was not confirmed by: "+[...pending].map(id=>game.users.get(id)?.name??id).join(", ")+". Refresh those clients and apply this card manually."));},30000);
         animationRequests.set(requestId,{pending,finish});
         game.socket.emit(`module.${MODULE_ID}`,{action:"waitDamageAnimations",requestId,gmId:game.user.id,rollIds});
     }):Promise.resolve();
@@ -345,6 +345,8 @@ function schedule(message) {
         enqueue(()=>applyAutomaticDamage(message)).catch(console.error);
     },100);
 }
+// These controls advance native spell/attack automation rather than hand it off manually.
+export function isAutomationContinuationControl(node){return !!node?.closest?.('.rsa-counterspell,.rsa-mirror-image,.rsa-unbreakable-majesty,.rsa-instinctive-charm-redirect');}
 export async function stopAutomaticDamage(clicked,user=game.user) {
     if(!clicked||!automationEnabled())return;
     const origin=manualKey(clicked);cancelled.add(origin.id);
@@ -394,6 +396,7 @@ Hooks.once("ready",async()=>{
     });
     Hooks.on("dnd5e.preApplyDamage",(actor,amount,updates,options)=>{
         const message=options.origin??options.originatingMessage;
+        if(globalThis.Ugmuls55eAutomationReactionTiming?.blocked(message))return false;
         // The linked automatic rescue heal must not mark the main burst as manually stopped.
         if(options.rsaSearingRescueGrant===true&&message?.getFlag?.(MODULE_ID,"searingRescueHeal"))return;
         // Blessed Healer is an independent self-heal, not a manual stop of the source spell.
@@ -406,11 +409,12 @@ Hooks.once("ready",async()=>{
     const manualInteraction=event=>{
         if(event.isTrusted===false)return;
         const interactive=event.target.closest?.("button,a,input,select,label,target-pill,[data-action]");if(!interactive)return;
+        if(globalThis.Ugmuls55eAutomationReactionTiming?.isControl(interactive))return;
         // Path to the Grave opens independent rider damage; it never pauses the hit's HP workflow.
         if(interactive.closest('.rsa-path-grave'))return;
         // These mandatory spell/feature checks continue the existing hit workflow,
         // including when the optional reaction governor is disabled.
-        if(interactive.closest('.rsa-mirror-image,.rsa-unbreakable-majesty'))return;
+        if(isAutomationContinuationControl(interactive))return;
         // Retrying an unanswered save continues the automatic workflow.
         if(globalThis.Ugmuls55eAutomationReactive?.enabled()&&globalThis.Ugmuls55eAutomationReactive?.isControl(interactive))return;
         if(interactive.closest("[data-rsa-reprompt-save],[data-rsa-reprompt-damage],[data-rsa-beguiling-choice]"))return;

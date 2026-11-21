@@ -2,10 +2,10 @@
   "id": "ugmuls-5-5e-automation",
   "title": "Ugmuls 5.5e Automation",
   "description": "Configurable D&D5e spell and feature Regions, targeting, roll controls, weapon masteries, damage and effect automation.",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "url": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation",
   "manifest": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/latest/download/module.json",
-  "download": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/download/v1.1.0/ugmuls-5-5e-automation.zip",
+  "download": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/download/v1.2.0/ugmuls-5-5e-automation.zip",
   "bugs": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/issues",
   "license": "LICENSE",
   "socket": true,
@@ -30,8 +30,7 @@
         "type": "system",
         "compatibility": {
           "minimum": "6.1.0",
-          "verified": "6.1.0",
-          "maximum": "6.1.0"
+          "verified": "6.1.0"
         }
       }
     ],
@@ -166,7 +165,9 @@
     "scripts/weird-conditions.js",
     "scripts/unified-attack-card.js",
     "scripts/unified-save-card.js",
-    "scripts/reaction-button-presentation.js"
+    "scripts/reaction-button-presentation.js",
+    "scripts/reaction-timing.js",
+    "scripts/counterspell.js"
   ],
   "styles": [
     "styles/save-roll-controls.css",

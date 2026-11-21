@@ -1,3 +1,5 @@
+// Timing: follow-up / attack-follow-up (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {dreadContext,dreadEligible,dreadUsed} from "./dread-ambusher.js";
 import {createEventQueue,describeTarget,nativeActivityVisible} from "./shared-activity-card.js";
 import {redirectRangePoints} from "./deflect-attacks.js";

@@ -242,7 +242,7 @@ function isCastFollowup(message,activity){
  // Life Transfer starts a new Death Burst area. riderTriggered prevents another
  // Reaction, but must not preserve the pre-placement selection for this area.
  if(burst?.request&&burst.companion&&burst.transfer&&activity?.type==="save"&&activity.target?.template?.type&&(activity.item?.identifier??activity.item?.system?.identifier)==="death-burst")return false;
- return flags.regionTriggered||flags.riderTriggered||flags.recurringTrigger||message?.getFlag?.(MODULE_ID,"regionTriggered")||message?.getFlag?.(MODULE_ID,"riderTriggered")||message?.getFlag?.(MODULE_ID,"recurringTrigger");
+ return flags.counterspellResponse||flags.regionTriggered||flags.riderTriggered||flags.recurringTrigger||message?.getFlag?.(MODULE_ID,"regionTriggered")||message?.getFlag?.(MODULE_ID,"riderTriggered")||message?.getFlag?.(MODULE_ID,"recurringTrigger");
 }
 export function prepareAreaConfirmation(activity, usage, dialog, message) {
     if(isCastFollowup(message,activity))return;

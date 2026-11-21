@@ -1,3 +1,5 @@
+// Timing: outcome / attack-miss (planned).
+// Timing catalog and connection status: docs/reaction-timing.md.
 import {applyConditionWithUndo} from "./damage-undo.js";
 import {createEventQueue,describeTarget,isRollAdjustmentLocked} from "./shared-activity-card.js";
 import {seekingSnapshot} from "./seeking-spell.js";
@@ -158,8 +160,13 @@ export function renderTrip(message,html){
     const button=document.createElement("button");button.type="button";button.dataset.rsaTripApply="";button.textContent=`Apply ${names[message.getFlag(ID,"maneuverStrike").key??"trip"]} Effects`;button.disabled=message.system.outcomes?.get(message.getFlag(ID,"maneuverStrike").targetToken)!=="failure";
     button.addEventListener("click",async()=>{button.disabled=true;try{await applyTripOutcome(message,{manual:true});if(message.getFlag(ID,"outcomeEffectsApplied"))button.remove();}catch(error){report(error);}finally{button.disabled=false;}});(root.querySelector('.chat-card')??root).append(button);
 }
+// Timing: Precision Attack connects at the miss decision; no Reaction is spent.
+export function precisionSnapshot(card){const actor=actorFor(card),ref=card?.getAssociatedToken?.(),token=(ref?.document??ref)?.uuid,feature=maneuverFeature(actor,'precision');return {entries:card?.type==='attack'&&card.system?.targets?.length===1&&token&&enabled('precision')&&feature&&superiorityFormula(actor,'precision')&&usable(actor,card)?[{actor:actor.uuid,token,feature:feature.uuid}]:[]};}
+export function precisionCandidates(card,user=game.user){if(!canPrecision(card,user))return [];const actor=actorFor(card),feature=maneuverFeature(actor,'precision');return (card.getFlag?.(ID,'precisionSnapshot')?.entries??[]).filter(e=>e.actor===actor.uuid&&e.feature===feature?.uuid).map(e=>({...e,actor,feature}));}
 export function canPrecision(card,user=game.user,{ignoreLock=false}={}){
-    const actor=actorFor(card),targets=card?.system?.evaluatedTargets??[];
+    const actor=actorFor(card),targets=card?.system?.evaluatedTargets??[],timing=globalThis.Ugmuls55eAutomationReactionTiming;
+    if(card?.isContentVisible===false||timing?.closed?.(card,'precision'))return false;
+    const snapshot=card?.getFlag?.(ID,'precisionSnapshot');if(snapshot){const entry=snapshot.entries?.find(e=>e.actor===actor?.uuid&&e.feature===maneuverFeature(actor,'precision')?.uuid);if(!entry||timing?.choiceAllowed?.(card,'precision',actor.uuid,entry.token)===false)return false;}
     return enabled("precision")&&card?.type==="attack"&&targets.length>0&&targets.every(target=>target.isMiss===true)&&!!card.rolls?.[0]?.d20&&
         !!maneuverFeature(actor,"precision")&&!!superiorityFormula(actor,"precision")&&usable(actor,card)&&
         !!(user?.isGM||actor?.testUserPermission?.(user,"OWNER"))&&(ignoreLock||!isRollAdjustmentLocked(card));
@@ -173,6 +180,13 @@ async function animateBonus(card,roll,user){
     if(authority())await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
 }
 export async function applyPrecision(card,user=game.user,mode="paid"){
+    if(!authority())throw Error('A connected GM is required for Precision Attack.');
+    if(card.getFlag?.(ID,'precisionAdjusting'))throw Error('Precision Attack is already resolving.');
+    const staged=globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card);await card.setFlag(ID,'precisionAdjusting',true);let committed=false;
+    try{await applyPrecisionCore(card,user,mode);committed=true;}finally{await card.setFlag(ID,'precisionAdjusting',false);globalThis.Ugmuls55eAutomationChatRefresh?.card(card);}
+    if(committed){await globalThis.Ugmuls55eAutomationReactionTiming?.complete(card,'precision');if(!staged){const origin=originOf(card);if(origin&&card.system?.evaluatedTargets?.some(t=>t.isMiss===false))await globalThis.Ugmuls55eAutomationDamage?.promptDamage?.(card.getAssociatedActivity(),origin,'attack',card);await globalThis.Ugmuls55eAutomationReactive?.completed(card);}}
+}
+async function applyPrecisionCore(card,user=game.user,mode="paid"){
     if(!canPrecision(card,user))throw Error("Precision Attack requires a missed attack, an unused maneuver, and an available Superiority Die. Undo applied damage first.");
     const actor=actorFor(card),signature=seekingSnapshot(card),turn=maneuverTurn();let refund;
     if(!paymentAvailable(actor,mode))throw Error("The selected maneuver die is no longer available.");
@@ -200,10 +214,12 @@ export function addPrecisionButton(message,html){
     const root=html?.[0]??html;if(!root?.querySelectorAll)return;
     const entries=message.type==="attack"?[{card:message,root}]:[];
     for(const node of root.querySelectorAll('.card-summary[data-message-id]')){const card=game.messages.get(node.dataset.messageId);if(card?.type==="attack")entries.push({card,root:node});}
-    for(const entry of entries){const old=entry.root.querySelector('[data-rsa-precision]');if(!canPrecision(entry.card,game.user,{ignoreLock:true})||entry.card.isContentVisible===false){old?.remove();continue;}if(old)old.remove();
-        const button=document.createElement("button");button.type="button";button.dataset.rsaPrecision="";button.textContent="Precision Attack";button.disabled=isRollAdjustmentLocked(entry.card);button.dataset.tooltip=button.disabled?"Undo applied damage, including Graze, before changing this attack.":"Add a Superiority Die to this missed attack. Relentless can replace it with a free d8 once per combat turn, when available.";
+    for(const entry of entries){for(const row of entry.root.querySelectorAll(':scope > .rsa-precision-actions'))row.remove();const old=entry.root.querySelector('[data-rsa-precision]');if(!canPrecision(entry.card,game.user,{ignoreLock:true})||entry.card.isContentVisible===false){old?.remove();continue;}if(old)old.remove();
+        const button=document.createElement("button");button.type="button";button.dataset.rsaPrecision="";button.dataset.rsaReactionItemUuid=maneuverFeature(actorFor(entry.card),"precision")?.uuid;button.textContent="Precision Attack";button.disabled=isRollAdjustmentLocked(entry.card);button.dataset.tooltip=button.disabled?"Undo applied damage, including Graze, before changing this attack.":"Add a Superiority Die to this missed attack. Relentless can replace it with a free d8 once per combat turn, when available.";
         button.addEventListener("click",async event=>{event.preventDefault();event.stopPropagation();button.disabled=true;try{const mode=await choosePrecisionDie(entry.card);if(!mode)return;const gm=game.users.activeGM;if(gm&&gm.id!==game.user.id)game.socket.emit("module."+ID,{action:"precisionAttack",messageId:entry.card.id,userId:game.user.id,gmId:gm.id,mode});else await enqueue(()=>applyPrecision(entry.card,game.user,mode));}catch(error){report(error);}finally{button.disabled=!canPrecision(entry.card);}});
-        (entry.root.querySelector('.rsa-attack-actions')??entry.root.querySelector('.chat-card')??entry.root).append(button);
+        // A dedicated action group keeps this button out of another feature's
+        // receipt text. Unified cards move the group into their shared footer.
+        const controls=document.createElement('div');controls.className='rsa-attack-actions rsa-precision-actions';controls.append(button);entry.root.append(controls);
     }
 }
 const active=effect=>!effect.disabled&&effect.active!==false&&!effect.duration?.expired&&effect.system?.expired!==true;
@@ -285,9 +301,11 @@ Hooks.once("init",()=>game.settings.register(ID,"relentlessAutomation",{name:"Re
 Hooks.on("ac5e.usageRulesReady",({usageRules}={})=>registerManeuverConditions(usageRules));
 Hooks.once("ready",()=>{
     repairGoadingExpiry().catch(report);
+    for(const event of ['createActiveEffect','updateActiveEffect','deleteActiveEffect','updateItem','deleteItem','updateActor','updateCombat'])Hooks.on(event,(doc,changes)=>globalThis.Ugmuls55eAutomationChatRefresh?.request('precision',doc,changes));
+    globalThis.Ugmuls55eAutomationBattleMasterPrecision={snapshot:precisionSnapshot,candidates:precisionCandidates};
     globalThis.Ugmuls55eAutomationBattleMaster={addManeuverChoice,finalizeManeuver,commitManeuver,maneuverSaveReady,applyTripOutcome,settle: settleSaveOutcome};registerManeuverConditions();
     Hooks.on("dnd5e.renderChatMessage",renderTrip);Hooks.on("dnd5e.renderChatMessage",addPrecisionButton);Hooks.on("dnd5e.renderChatMessage",renderDistracting);Hooks.on("dnd5e.preRollAttackV2",distractingDefaults);
     for(const event of ["createChatMessage","updateChatMessage","renderChatMessageHTML"])Hooks.on(event,card=>{if(card.type==="damage")setTimeout(()=>applyDistracting(card).catch(report),100);if(event==="createChatMessage")consumeDistracting(card).catch(report);});
-    Hooks.on("updateChatMessage",(card,changes)=>{const record=changes.flags?.[ID]?.battleManeuver;if(record?.key!=="precision"||!card.system.evaluatedTargets?.some(target=>target.isMiss===false))return;const origin=originOf(card);if(origin)globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);});
+    Hooks.on("updateChatMessage",(card,changes)=>{const record=changes.flags?.[ID]?.battleManeuver;if(record?.key!=="precision"||!card.system.evaluatedTargets?.some(target=>target.isMiss===false))return;const origin=originOf(card);if(origin&&!globalThis.Ugmuls55eAutomationReactionTiming?.held?.(card)&&!card.getFlag?.(ID,'precisionAdjusting'))globalThis.Ugmuls55eAutomationDamage?.promptDamage(card.getAssociatedActivity(),origin,"attack",card).catch(report);});
     game.socket.on("module."+ID,packet=>{if(packet?.action==="battleManeuverError"&&packet.userId===game.user.id){ui.notifications.error(packet.error);const card=game.messages.get(packet.messageId);if(card)ui.chat?.updateMessage?.(card);return;}if(packet?.action!=="precisionAttack"||!authority()||packet.gmId!==game.user.id)return;const user=game.users.get(packet.userId),card=game.messages.get(packet.messageId);if(user?.active)enqueue(()=>applyPrecision(card,user,packet.mode??"paid")).catch(error=>{report(error);game.socket.emit("module."+ID,{action:"battleManeuverError",userId:user.id,messageId:card?.id,error:error.message});});});
 });
