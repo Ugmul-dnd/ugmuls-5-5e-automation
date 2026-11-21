@@ -20,8 +20,3 @@ See the changelog in the repository for the full list of feature changes.
 - **Automated Conditions 5e** and **Dice So Nice!** must be installed and enabled. Keep an active GM connected for shared resource, effect, and HP operations.
 - Official **Player’s Handbook (2024) 3.0.0** remains the target for PHB class automation. Updating the book leaves existing character items in place. Review owned features through your usual character-content workflow if they still use older item layouts.
 - Back up your world, refresh GM and player clients after updating, and review **Reaction Triggers** and **Smart Automation** settings. Use fresh rolls when checking reaction options.
-
-## Verification
-
-- All 31 targeted regression files and all 398 full-suite test files passed. Syntax checks passed for 322 runtime scripts, and manifest assets and relative imports were validated.
-- Installation and gameplay smoke testing of the packaged ZIP in a separate Foundry world is pending.
