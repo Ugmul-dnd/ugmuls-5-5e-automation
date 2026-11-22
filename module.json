@@ -2,10 +2,10 @@
   "id": "ugmuls-5-5e-automation",
   "title": "Ugmuls 5.5e Automation",
   "description": "Configurable D&D5e spell and feature Regions, targeting, roll controls, weapon masteries, damage and effect automation.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "url": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation",
   "manifest": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/latest/download/module.json",
-  "download": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/download/v1.2.0/ugmuls-5-5e-automation.zip",
+  "download": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/releases/download/v1.2.1/ugmuls-5-5e-automation.zip",
   "bugs": "https://github.com/Ugmul-dnd/ugmuls-5-5e-automation/issues",
   "license": "LICENSE",
   "socket": true,
@@ -114,10 +114,6 @@
     "scripts/concentration-hud.js",
     "scripts/spell-manager.js",
     "scripts/module-settings.js",
-    "scripts/sheet-compendium-browser.js",
-    "scripts/pc-spells.js",
-    "scripts/pc-creator.js",
-    "scripts/create-player.js",
     "scripts/stunning-strike.js",
     "scripts/battlemaster.js",
     "scripts/bardic-inspiration.js",
@@ -172,7 +168,6 @@
   "styles": [
     "styles/save-roll-controls.css",
     "styles/card-presentation.css",
-    "styles/module-settings.css",
-    "styles/pc-creator.css"
+    "styles/module-settings.css"
   ]
 }

@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.2.1 (in development)
+
+- The guided player builder, character-sheet compendium shortcuts, and class spell loader have moved to Ugmuls Character Workshop v0.2.1. Enable Workshop to keep using them.
+
 ## v1.2.0 — Reaction Timing & Counterspell (2026-11-20)
 
 - Remove the D&D5e maximum version from the manifest. The minimum and verified versions remain 6.1.0.

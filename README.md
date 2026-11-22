@@ -33,9 +33,6 @@ Version 1.2.0 adds staged reaction decisions to grouped combat cards, Counterspe
 - **Artificer assistance:** Flash of Genius on failed checks/saves, destructive Arcane Jolt using the Artificer’s resources for a linked Steel Defender, and optional Arcane Firearm spell damage.
 - **Barbarian assistance:** Zealot Divine Fury, Fanatical Focus, Zealous Presence, and Brutal Strike with improved effect choices, native effects, Sundered attack bonuses, and Staggered save disadvantage.
 - **Unarmed combat:** Stunning Strike with native saves and Undo support; Grapple / Prone options on action-based unarmed hits, independent saving throws using the target’s better save, and Grappler’s once-per-turn damage benefit and source-specific attack advantage.
-- **Select several spells from the sheet:** Add Spell opens the native compendium with the character’s class lists preselected and a selection panel. Check spells and confirm once to add them without dragging; existing spells are skipped and new leveled spells start unprepared.
-- **Load class spells from the sheet:** Spell New/Add buttons offer full-list preparation casters a source-filtered missing-spell loader. Only currently supported spell levels are added, unprepared; existing spells remain unchanged.
-- **Guided PC creation:** Create Player in Actors walks through level-one setup, Standard Array / point buy, native source-filtered class/background/species advancement, starting equipment or gold, class cantrips/spells and preparation, and review. Close and resume from Create Player or the PC’s Actors right-click menu; token artwork stays manual.
 - **Hill’s Tumble (Goliath):** target one Large-or-smaller creature and use the feature after a qualifying damaging hit to automatically apply native Prone. Uses remain native, Effect Undo is available, and off-turn use spends no additional Reaction. Enable under Common.
 - **Elemental Adept:** owning the feat creates five disabled actor effects: Acid, Cold, Fire, Lightning, and Thunder. Enable the type(s) you selected for the feat. Matching spell damage ignores Resistance and treats damage-die results of 1 as 2, including critical dice. Immunity and weapon damage are unaffected; synchronization preserves your toggles.
 - **Mage Slayer:** Guarded Mind turns a failed Intelligence, Wisdom, or Charisma save into native success on the existing card, spending the feat’s Short/Long Rest use without rerolling or spending a Reaction. Damage-card applications against concentrating creatures create a source-linked concentration check with Disadvantage, preserving normal Advantage cancellation and protected concentration.
@@ -48,7 +45,7 @@ Version 1.2.0 adds staged reaction decisions to grouped combat cards, Counterspe
 - **Sorcerer assistance:** Native Innate Sorcery support, cast-time Transmuted/Heightened/Careful Spell, and Empowered/Seeking reroll actions with Sorcery Point consumption and Metamagic card tags.
 - **Multiple spell attacks:** Eldritch Blast and Scorching Ray offer a remaining-attacks window so users can choose targets between shots without casting or spending a slot again.
 - **Weapon masteries:** assistance for Graze, Sap, Slow, Topple, Vex, and Cleave, with individual enable/disable options. Cleave offers a separate chat-card attack once per active combat turn; choose one different target manually. It shares its use across Cleave weapons and removes only a positive ability modifier from damage. Distance/reach decisions and Undo after later corrections to the original hit remain manual. Push and Nick are not automated.
-- **Interface conveniences:** compact chat cards, remembered roll-popup positions, chat scrolling improvements, and character-sheet Add Item buttons that open the matching compendium browser tab.
+- **Interface conveniences:** compact chat cards, remembered roll-popup positions, and chat scrolling improvements.
 
 Use the module's tabbed options interface to enable the features that suit your table. The Automations section groups options into Unique Classes, Weapon Masteries, Feats, Common, and Spells. Automatic damage and effect application are optional; manual card controls remain available.
 
@@ -74,7 +71,6 @@ Both modules must be installed and enabled alongside Ugmuls 5.5e Automation. Fou
 
 ### Optional module integrations
 
-- **Tidy 5e Sheets** — supported Add Item controls open the compendium browser, alongside the standard D&D5e character sheet.
 
 See [Module Compatibility and Test Setup](COMPATIBLE-MODULES.md) for the recorded testing environment. Modules listed there as enabled are not all individually certified compatible.
 

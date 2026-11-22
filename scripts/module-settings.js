@@ -241,7 +241,7 @@ export const SETTINGS_GROUPS=[
     {id:"targeting",name:"Targeting",icon:"fa-bullseye",keys:["confirmAreaTargets","retargetActivityCards","previewRegionTargets"]},
     {id:"rolls",name:"Rolls & Damage / Healing",icon:"fa-dice",keys:["overrideInitiativePrompt","promptForSaveOnSpellCasts","promptConcentrationChecks","autoBreakConcentration","promptDamageOnSave","promptDamageOnHit","adjustSavingThrowAdvantage","adjustAttackRollAdvantage","adjustDamageCritical"]},
     {id:"npcdamage",name:"GM NPC & Damage / Healing",icon:"fa-skull",keys:["autoRollNpcSaves","autoApplyCardDamage","autoApplyCardHealing","autoApplySavedEffects","autoApplyHitEffects"]},
-    {id:"chat",name:"Chat & Sheets",icon:"fa-comments",keys:["simplifyAttackCards","simplifySaveCards","simplifyHealingCards","scrollChatOnOpen","sheetAddCompendiumBrowser","sheetLoadUnpreparedSpells"]}
+    {id:"chat",name:"Chat",icon:"fa-comments",keys:["simplifyAttackCards","simplifySaveCards","simplifyHealingCards","scrollChatOnOpen"]}
 ];
 const settingPages=()=>SETTINGS_GROUPS.flatMap(group=>group.children??[group]);
 export function searchSettingsGroups(query){
