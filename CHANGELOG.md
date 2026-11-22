@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.2.1 (in development)
+## v1.2.1 — Character Tools Move (2026-11-22)
 
 - The guided player builder, character-sheet compendium shortcuts, and class spell loader have moved to Ugmuls Character Workshop v0.2.1. Enable Workshop to keep using them.
 

@@ -12,9 +12,11 @@ Most features rely on the spells, class features, activities, chat cards, names,
 
 Some features may work with content from **D&D Beyond Importer**, but imported content has **not been tested**. Imported or homebrew items may need their names, activities, damage formulas, or effects adjusted to match the expected setup. This module does not include the official book content.
 
-## Version 1.2.0
+## Version 1.2.1
 
-Version 1.2.0 adds staged reaction decisions to grouped combat cards, Counterspell chains, and a Reaction Triggers settings page. See [1.2.0 release notes](RELEASE-NOTES-1.2.0.md) for changes, compatibility, and updating instructions.
+The guided player builder and character-sheet compendium tools have moved to Ugmuls Character Workshop v0.2.1. See the [1.2.1 release notes](RELEASE-NOTES-1.2.1.md) for updating instructions.
+
+Version 1.2.0 added staged reaction decisions to grouped combat cards, Counterspell chains, and a Reaction Triggers settings page. See [1.2.0 release notes](RELEASE-NOTES-1.2.0.md) for changes, compatibility, and updating instructions.
 
 ## Main features
 
