@@ -1,6 +1,67 @@
 const ID="ugmuls-5-5e-automation",choices=new WeakMap(),jobs=new Set();
 const values=x=>Array.from(x?.values?.()??x??[]),key=x=>x?.identifier??x?.system?.identifier;
 const enabled=()=>game.settings.get(ID,"cunningStrikeAutomation")===true;
+const supremeSneak = actor => values(actor?.items).find(item =>
+ item.type === 'feat' && key(item) === 'supreme-sneak' && item.system?.source?.rules !== '2014'
+);
+const hidingEffects = actor => values(actor?.effects).filter(effect =>
+ live(effect) && (effect.statuses?.has('hiding') || /^(?:cunning action\s*[-–—:]\s*)?hiding$/i.test(effect.name?.trim() ?? ''))
+);
+const isHiding = actor => actor?.statuses?.has('hiding') === true || hidingEffects(actor).length > 0;
+const hiddenAttacks = new Map();
+const clearingHiding = new WeakMap();
+const turnKey = () => game.combat?.started ? `${game.combat.id}:${game.combat.round}:${game.combat.turn}` : null;
+
+export function recordAttackFromHiding(card) {
+ if (card.type !== 'attack' || !card.rolls?.length || !enabled()) return;
+ const actor = card.getAssociatedActor?.();
+ if (isHiding(actor) && supremeSneak(actor)) {
+  card.updateSource({['flags.' + ID + '.attackFromHiding']: actor.uuid});
+ }
+}
+
+export async function endHiding(actor) {
+ if (!actor?.isOwner || !isHiding(actor)) return;
+ const existing = clearingHiding.get(actor);
+ if (existing) return existing;
+ const effects = hidingEffects(actor);
+ const task = effects.length
+  ? actor.deleteEmbeddedDocuments('ActiveEffect', effects.map(effect => effect.id))
+  : actor.toggleStatusEffect('hiding', {active: false});
+ clearingHiding.set(actor, task);
+ try { await task; }
+ finally { clearingHiding.delete(actor); }
+}
+
+export function completeHiddenAttack(card, userId) {
+ if (userId !== game.user.id || card.type !== 'attack' || !card.rolls?.length) return;
+ const actor = card.getAssociatedActor?.();
+ if (!actor?.isOwner) return;
+ hiddenAttacks.delete(actor.uuid);
+ if (!isHiding(actor)) return;
+ const effects = hidingEffects(actor).map(effect => effect.toObject());
+ const cleanup = endHiding(actor);
+ if (card.getFlag?.(ID, 'attackFromHiding') === actor.uuid) {
+  hiddenAttacks.set(actor.uuid, {attack: card.id, turn: turnKey(), effects, cleanup});
+ }
+ return cleanup;
+}
+
+export async function keepStealthAttackHiding(card) {
+ if (card.type !== 'damage' || card.author?.id !== game.user.id) return;
+ const job = card.rolls?.find(roll => roll.options?.rsaCunningStrike)?.options.rsaCunningStrike;
+ if (!job?.choices.includes('stealth-attack')) return;
+ const actor = card.getAssociatedActor?.();
+ if (!actor?.isOwner || actor.uuid !== job.actor || !supremeSneak(actor)) return;
+ const saved = hiddenAttacks.get(actor.uuid);
+ if (!saved || saved.attack !== job.attack || saved.turn !== turnKey()) return;
+ await saved.cleanup;
+ if (hiddenAttacks.get(actor.uuid) !== saved || saved.turn !== turnKey()) return;
+ hiddenAttacks.delete(actor.uuid);
+ if (isHiding(actor)) return;
+ if (saved.effects.length) await actor.createEmbeddedDocuments('ActiveEffect', saved.effects, {keepId:true});
+ else await actor.toggleStatusEffect('hiding', {active:true});
+}
 export const cunningFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="cunning-strike"&&i.system?.source?.rules!=="2014");
 export const terrifyFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="strike-fear"&&i.system?.source?.rules!=="2014");
 export const deviousFeature=actor=>values(actor?.items).find(i=>i.type==="feat"&&key(i)==="devious-strikes"&&i.system?.source?.rules!=="2014");
@@ -14,7 +75,7 @@ export function cunningContext(app){
  const target=targets.length===1?globalThis.fromUuidSync?.(targets[0].token,{strict:false}):null,actor=actorFor(app),feature=cunningFeature(actor);
  return {actor,feature,attack,target,record:targets[0],hit:!!target&&attack?.system?.evaluatedTargets?.some(t=>t.token===target.uuid&&t.isMiss===false)};
 }
-export function cunningOptions(actor,target){
+export function cunningOptions(actor,target,attack){
  const feature=cunningFeature(actor),scion=terrifyFeature(actor),devious=deviousFeature(actor),activities=values(feature?.system?.activities),advanced=values(devious?.system?.activities),size=target?.actor?.system?.traits?.size;
  const kit=values(actor?.items).some(i=>i.type==="tool"&&(key(i)==="poisoners-kit"||/poisoner['’]?s kit/i.test(i.name??"")));
  return [{key:"poison",label:"Poison",allowed:kit,activity:activities.find(a=>a.type==="save"&&(a.id==="n64fvJMT9fPUy7DH"||a.name==="Poison"))},
@@ -24,7 +85,11 @@ export function cunningOptions(actor,target){
  {key:"daze",label:"Daze",cost:2,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="4TnBjQTJzt9UjUos"||a.name==="Daze"))},
  {key:"obscure",label:"Obscure",cost:3,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="ki4lIPVGNA0HjEzH"||a.name==="Obscure"))},
  {key:"knock-out",label:"Knock Out",cost:6,feature:devious,allowed:true,activity:advanced.find(a=>a.type==="save"&&(a.id==="3eq7lcmpkJJBU2KO"||a.name==="Knock Out"))}
- ].filter(o=>o.activity).map(o=>({...o,feature:o.feature??feature,cost:o.cost??1}));
+ ].filter(o=>o.activity).map(o=>({...o,feature:o.feature??feature,cost:o.cost??1})).concat(
+  supremeSneak(actor) && (isHiding(actor) || attack?.getFlag?.(ID, 'attackFromHiding') === actor.uuid)
+   ? [{key:'stealth-attack', label:'Stealth Attack (check cover or obscurity at turn end)', allowed:true, cost:1}]
+   : []
+ );
 }
 export function selectCunning(app,selected){choices.set(app,selected.filter(Boolean));}
 function available(app){const c=cunningContext(app);return enabled()&&c.actor?.isOwner&&c.feature&&c.hit&&app.config?.subject?.type==="attack"&&app.config.subject.item?.type==="weapon"&&!app.message?.data?.flags?.[ID]?.masteryGraze;}
@@ -38,7 +103,7 @@ export function sneakDiceBudget(actor){
 export function addCunningChoices(app,sneakSelected){
  if(!enabled()||!cunningFeature(actorFor(app)))return;
  const root=app.element,fieldset=root.querySelector('[data-application-part="configuration"] fieldset')??root.querySelector('fieldset');if(!fieldset)return;
- const c=cunningContext(app),options=cunningOptions(c.actor,c.target),count=values(c.actor?.items).some(i=>key(i)==="improved-cunning-strike")?2:1,selected=choices.get(app)??[],budget=sneakDiceBudget(c.actor);
+ const c=cunningContext(app),options=cunningOptions(c.actor,c.target,c.attack),count=values(c.actor?.items).some(i=>key(i)==="improved-cunning-strike")?2:1,selected=choices.get(app)??[],budget=sneakDiceBudget(c.actor);
  const affordable=(option,index)=>budget===null||!option?.cost||option.cost+(options.find(o=>o.key===selected[1-index])?.cost??0)<=budget;
  for(let index=0;index<count;index++){
   const existing=root.querySelector('[data-cunning-choice="'+index+'"]');
@@ -54,14 +119,15 @@ export function addCunningChoices(app,sneakSelected){
 export function reduceCunning(app,source,{preview=false}={}){
  const selected=(choices.get(app)??[]).filter(Boolean);if(!selected.length||!enabled())return source;
  if(!available(app))throw Error('Cunning Strike needs a confirmed single-target weapon hit. Reopen the damage prompt.');
- const c=cunningContext(app),limit=values(c.actor.items).some(i=>key(i)==='improved-cunning-strike')?2:1,options=cunningOptions(c.actor,c.target);
+ const c=cunningContext(app),limit=values(c.actor.items).some(i=>key(i)==='improved-cunning-strike')?2:1,options=cunningOptions(c.actor,c.target,c.attack);
  if(selected.length>limit||new Set(selected).size!==selected.length||selected.some(k=>!options.some(o=>o.key===k&&o.allowed)))throw Error('The selected Cunning Strike options are no longer available.');
  const cost=selected.reduce((sum,k)=>sum+options.find(o=>o.key===k).cost,0);
  const parts=source.parts.map(p=>typeof p==='string'?Roll.replaceFormulaData(p,source.data??c.actor.getRollData()):p),dice=[];
  parts.forEach((p,index)=>{if(typeof p==='string')for(const m of p.matchAll(/(?<![\w.])(\d+)d6(?!\d)/g))dice.push({index,number:Number(m[1]),offset:m.index,length:m[0].length});});
  if(dice.length!==1||dice[0].number<cost)throw Error('Cunning Strike needs enough native Sneak Attack dice for its cost.');
  const d=dice[0],part=parts[d.index];parts[d.index]=part.slice(0,d.offset)+(d.number-cost)+'d6'+part.slice(d.offset+d.length);
- const job={actor:c.actor.uuid,feature:c.feature.id,target:c.target.uuid,choices:selected,cost};
+ const job={actor:c.actor.uuid,feature:c.feature.id,target:c.target.uuid,choices:selected,cost,
+  ...(selected.includes('stealth-attack') ? {attack:c.attack.id} : {})};
  return {...source,parts,options:{...source.options,flavor:'Sneak Attack — '+selected.map(k=>options.find(o=>o.key===k).label).join(' + ')+' (−'+cost+' dice)',rsaCunningStrike:job}};
 }
 export function prepareTerrifyData(data,id,actor){
@@ -96,7 +162,7 @@ export async function resolveCunning(card){
   await globalThis.Ugmuls55eAutomationNpcDamage?.waitForWorkflowAnimations?.(card);
   for(const choice of job.choices){
    if(ledger.includes(choice))continue;
-   if(choice==='withdraw'){ledger.push(choice);await card.setFlag(ID,'cunningResolved',[...ledger]);continue;}
+   if(choice==='withdraw'||(choice==='stealth-attack'&&supremeSneak(actor))){ledger.push(choice);await card.setFlag(ID,'cunningResolved',[...ledger]);continue;}
    const option=cunningOptions(actor,target).find(o=>o.key===choice);if(!option||!option.allowed)throw Error('Cunning Strike '+choice+' is no longer valid for this target.');
    const sourceFeature=option.feature,data=sourceFeature.toObject(),id=option.activity.id,use=data.system.activities[id];
    if(choice==='terrify')prepareTerrifyData(data,id,actor);
@@ -129,6 +195,34 @@ export async function resolveCunning(card){
  }finally{jobs.delete(card.id);}
 }
 function report(error){console.error('Cunning Strike',error);ui.notifications.error(error.message);}
+Hooks.once('ready', () => {
+ Hooks.on('preCreateChatMessage', recordAttackFromHiding);
+ Hooks.on('createChatMessage', (card, _options, userId) => {
+  completeHiddenAttack(card, userId)?.catch(report);
+  keepStealthAttackHiding(card).catch(report);
+ });
+ Hooks.on('updateChatMessage', (card, changes, _options, userId) => {
+  if (userId === game.user.id && changes.rolls) keepStealthAttackHiding(card).catch(report);
+ });
+ Hooks.on('dnd5e.preRollAttackV2', config => {
+  const actor = config.subject?.actor;
+  if (actor) hiddenAttacks.delete(actor.uuid);
+ });
+ Hooks.on('dnd5e.rollAttackV2', (rolls, {subject} = {}) => {
+  if (rolls?.length) endHiding(subject?.actor).catch(console.error);
+ });
+ Hooks.on('dnd5e.postUseActivity', (activity, _usage, result) => {
+  if (activity.item?.type !== 'spell' || !result || !activity.actor) return;
+  hiddenAttacks.delete(activity.actor.uuid);
+  endHiding(activity.actor).catch(report);
+ });
+ Hooks.on('updateCombat', (combat, changes) => {
+  if (!('turn' in changes || 'round' in changes || 'started' in changes)) return;
+  for (const [actor, saved] of hiddenAttacks) {
+   if (saved.turn?.startsWith(combat.id + ':')) hiddenAttacks.delete(actor);
+  }
+ });
+});
 Hooks.once('init',()=>game.settings.register(ID,'cunningStrikeAutomation',{name:'Cunning Strike Assistance',hint:'Choose Cunning Strike and owned Devious Strikes options with Sneak Attack. Deduct dice before critical scaling; save options follow applied damage. Poison requires a carried Poisoner’s Kit. Withdraw movement stays manual.',scope:'world',config:true,type:Boolean,default:true}));
 Hooks.once('ready',()=>{globalThis.Ugmuls55eAutomationCunning={addCunningChoices,reduceCunning};for(const event of ['createChatMessage','updateChatMessage'])Hooks.on(event,card=>{if(card?.rolls?.some(r=>r.options?.rsaCunningStrike))resolveCunning(card).catch(report);});});
 

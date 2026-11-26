@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Add Supreme Sneak’s Stealth Attack to Cunning Strike for Thieves who attack while Hiding. Rolling damage with Stealth Attack restores the Hiding effect from that attack. The end-of-turn cover or obscurity check remains manual.
+- Remove the native Hiding status and active Hiding or Cunning Action - Hiding effects after a completed attack roll or spell use for any actor.
+
 ## v1.2.1 — Character Tools Move (2026-11-22)
 
 - The guided player builder, character-sheet compendium shortcuts, and class spell loader have moved to Ugmuls Character Workshop v0.2.1. Enable Workshop to keep using them.

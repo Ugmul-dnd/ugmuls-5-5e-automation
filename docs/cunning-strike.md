@@ -4,7 +4,9 @@ Enable Sneak Attack Assistance and Cunning Strike Assistance under Rogue options
 
 Poison requires an owned Poisoner’s Kit tool. Trip requires a Large-or-smaller target. Their native saves use Dexterity-based Rogue DC and native Poisoned/Prone effects under existing application settings. Follow-up saves wait until damage is applied, including manual Apply. The Poison effect has an end-of-turn repeat Constitution save that removes it on success. Withdraw’s reminder appears in the damage flavor; move up to half Speed without opportunity attacks manually.
 
-Canceling or previewing spends no dice/use. Existing Sneak Attack once-per-turn tracking remains. Damage Undo/reapply does not duplicate follow-up cards; use the save card’s own effect Undo to reverse its conditions. An active GM handles follow-ups affecting other actors. Subclass-specific extensions (such as Envenom Weapons, Supreme Sneak and Versatile Trickster) remain manual.
+Canceling or previewing spends no dice/use. Existing Sneak Attack once-per-turn tracking remains. Damage Undo/reapply does not duplicate follow-up cards; use the save card’s own effect Undo to reverse its conditions. An active GM handles follow-ups affecting other actors. Envenom Weapons and Versatile Trickster remain manual.
+
+Thieves with Supreme Sneak can spend one Sneak Attack die on Stealth Attack if they attacked while Hiding. Attacks and spell casts remove Hiding for any actor. Selecting Stealth Attack restores the Hiding effect from that attack when its damage is rolled. Check Total Cover or Heavy Obscurement at the end of the turn and clear concealment if the requirement was not met.
 
 Sneak Attack defaults to Yes on Advantage or, for a finesse/ranged weapon without effective Disadvantage, when another conscious allied creature is within 5 feet of the recorded enemy. The check respects scene distance units, elevation and large-token edges; neutral/unknown allegiances remain manual. Manually selecting Sneak Attack immediately unlocks Cunning Strike; turning it off relocks the choices. No token-movement hooks are added.
 
